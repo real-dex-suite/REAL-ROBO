@@ -1,6 +1,10 @@
 import os.path as path
 import holodex
 
+# Robot type
+HAND_TYPE = "leaphand"
+ARM_TYPE = "zuka"
+
 # Allegro
 ALLEGRO_JOINT_STATE_TOPIC = '/allegroHand/joint_states'
 ALLEGRO_COMMANDED_JOINT_STATE_TOPIC = '/allegroHand/commanded_joint_states'

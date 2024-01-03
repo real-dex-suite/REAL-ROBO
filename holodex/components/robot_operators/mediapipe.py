@@ -1,12 +1,12 @@
 import rospy
 from std_msgs.msg import Float64MultiArray
 from .calibrators import MPHandBoundCalibrator
-from holodex.robot import AllegroKDLControl, AllegroHand
 from holodex.utils.files import *
 from holodex.utils.vec_ops import coord_in_bound
 from holodex.constants import *
 from copy import deepcopy as copy
 
+from holodex.robot import AllegroKDLControl, AllegroHand
 
 class MPDexArmTeleOp(object):
     def __init__(self):

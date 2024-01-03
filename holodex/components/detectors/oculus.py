@@ -51,3 +51,7 @@ class OculusVRHandDetector(object):
             self._publish_data(keypoint_dict)
             
             self.frequency_timer.sleep()
+
+if __name__ == '__main__':
+    detector = OculusVRHandDetector(HOST ="192.168.92.163", PORT ="8087")
+    detector.stream()
