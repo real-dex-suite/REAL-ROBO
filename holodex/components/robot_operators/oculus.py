@@ -1,11 +1,28 @@
 import rospy
 from std_msgs.msg import Float64MultiArray
 from .calibrators import OculusThumbBoundCalibrator
-from holodex.robot import AllegroKDLControl, AllegroJointControl, AllegroHand
+
 from holodex.utils.files import *
 from holodex.utils.vec_ops import coord_in_bound
 from holodex.constants import *
 from copy import deepcopy as copy
+
+import importlib
+
+# load module according to hand type
+module = __import__("holodex.robot.hand")
+KDLControl_module_name = f'{HAND_TYPE}KDLControl'
+JointControl_module_name = f'{HAND_TYPE}JointControl'
+Hand_module_name = f'{HAND_TYPE}Hand'
+# get relevant classes
+KDLControl = getattr(module.robot, KDLControl_module_name)
+JointControl = getattr(module.robot, JointControl_module_name)
+Hand = getattr(module.robot, Hand_module_name)
+
+# load constants according to hand type
+hand_type = HAND_TYPE.lower()
+JOINTS_PER_FINGER = eval(f'{hand_type.upper()}_JOINTS_PER_FINGER')
+JOINT_OFFSETS = eval(f'{hand_type.upper()}_JOINT_OFFSETS')
 
 class VRDexArmTeleOp(object):
     def __init__(self):
@@ -17,11 +34,11 @@ class VRDexArmTeleOp(object):
         rospy.Subscriber(VR_RIGHT_TRANSFORM_COORDS_TOPIC, Float64MultiArray, self._callback_hand_coords, queue_size = 1)
 
         # Initializing the solvers
-        self.fingertip_solver = AllegroKDLControl()
-        self.finger_joint_solver = AllegroJointControl()
+        self.fingertip_solver = KDLControl()
+        self.finger_joint_solver = JointControl()
 
         # Initializing the robot controller
-        self.robot = AllegroHand()
+        self.robot = Hand()
 
         # Initialzing the moving average queues
         self.moving_average_queues = {
@@ -34,10 +51,10 @@ class VRDexArmTeleOp(object):
         # Calibrating to get the thumb bounds
         self._calibrate_bounds()
 
-        # Getting the bounds for the allegro hand
-        allegro_bounds_path = get_path_in_package('components/robot_operators/configs/allegro_vr.yaml')
-        with open(allegro_bounds_path, 'r') as file:
-            self.allegro_bounds = yaml.safe_load(file)
+        # Getting the bounds for the robot hand
+        robohand_bounds_path = get_path_in_package('components/robot_operators/configs/{hand_type}_vr.yaml')
+        with open(robohand_bounds_path, 'r') as file:
+            self.robohand_bounds = yaml.safe_load(file)
 
     def _calibrate_bounds(self):
         print("***************************************************************")
@@ -58,12 +75,12 @@ class VRDexArmTeleOp(object):
                 hand_coordinates = self._get_finger_coords('thumb')[-1], 
                 xy_hand_bounds = self.thumb_index_bounds[:4],
                 yz_robot_bounds = [
-                    self.allegro_bounds['thumb']['top_right'], 
-                    self.allegro_bounds['thumb']['bottom_right'],
-                    self.allegro_bounds['thumb']['index_bottom'],
-                    self.allegro_bounds['thumb']['index_top']
+                    self.robohand_bounds['thumb']['top_right'], 
+                    self.robohand_bounds['thumb']['bottom_right'],
+                    self.robohand_bounds['thumb']['index_bottom'],
+                    self.robohand_bounds['thumb']['index_top']
                 ], 
-                robot_x_val = self.allegro_bounds['thumb']['x_coord'],
+                robot_x_val = self.robohand_bounds['thumb']['x_coord'],
                 moving_avg_arr = self.moving_average_queues['thumb'], 
                 curr_angles = curr_angles
             )
@@ -72,12 +89,12 @@ class VRDexArmTeleOp(object):
                 hand_coordinates = self._get_finger_coords('thumb')[-1], 
                 xy_hand_bounds = self.thumb_middle_bounds[:4],
                 yz_robot_bounds = [
-                    self.allegro_bounds['thumb']['index_top'], 
-                    self.allegro_bounds['thumb']['index_bottom'],
-                    self.allegro_bounds['thumb']['middle_bottom'],
-                    self.allegro_bounds['thumb']['middle_top']
+                    self.robohand_bounds['thumb']['index_top'], 
+                    self.robohand_bounds['thumb']['index_bottom'],
+                    self.robohand_bounds['thumb']['middle_bottom'],
+                    self.robohand_bounds['thumb']['middle_top']
                 ], 
-                robot_x_val = self.allegro_bounds['thumb']['x_coord'],
+                robot_x_val = self.robohand_bounds['thumb']['x_coord'],
                 moving_avg_arr = self.moving_average_queues['thumb'], 
                 curr_angles = curr_angles
             )
@@ -86,12 +103,12 @@ class VRDexArmTeleOp(object):
                 hand_coordinates = self._get_finger_coords('thumb')[-1], 
                 xy_hand_bounds = self.thumb_ring_bounds[:4],
                 yz_robot_bounds = [
-                    self.allegro_bounds['thumb']['middle_top'], 
-                    self.allegro_bounds['thumb']['middle_bottom'],
-                    self.allegro_bounds['thumb']['ring_bottom'],
-                    self.allegro_bounds['thumb']['ring_top']
+                    self.robohand_bounds['thumb']['middle_top'], 
+                    self.robohand_bounds['thumb']['middle_bottom'],
+                    self.robohand_bounds['thumb']['ring_bottom'],
+                    self.robohand_bounds['thumb']['ring_top']
                 ], 
-                robot_x_val = self.allegro_bounds['thumb']['x_coord'],
+                robot_x_val = self.robohand_bounds['thumb']['x_coord'],
                 moving_avg_arr = self.moving_average_queues['thumb'], 
                 curr_angles = curr_angles
             )
@@ -104,13 +121,13 @@ class VRDexArmTeleOp(object):
                 hand_coordinates = self._get_finger_coords('thumb')[-1], 
                 xy_hand_bounds = self.thumb_index_bounds[:4],
                 yz_robot_bounds = [
-                    self.allegro_bounds['thumb']['top_right'], 
-                    self.allegro_bounds['thumb']['bottom_right'],
-                    self.allegro_bounds['thumb']['index_bottom'],
-                    self.allegro_bounds['thumb']['index_top']
+                    self.robohand_bounds['thumb']['top_right'], 
+                    self.robohand_bounds['thumb']['bottom_right'],
+                    self.robohand_bounds['thumb']['index_bottom'],
+                    self.robohand_bounds['thumb']['index_top']
                 ], 
                 z_hand_bound = self.thumb_index_bounds[4], 
-                x_robot_bound = [self.allegro_bounds['thumb']['index_x_bottom'], self.allegro_bounds['thumb']['index_x_top']], 
+                x_robot_bound = [self.robohand_bounds['thumb']['index_x_bottom'], self.robohand_bounds['thumb']['index_x_top']], 
                 moving_avg_arr = self.moving_average_queues['thumb'], 
                 curr_angles = curr_angles
             )
@@ -119,13 +136,13 @@ class VRDexArmTeleOp(object):
                 hand_coordinates = self._get_finger_coords('thumb')[-1], 
                 xy_hand_bounds = self.thumb_middle_bounds[:4],
                 yz_robot_bounds = [
-                    self.allegro_bounds['thumb']['index_top'], 
-                    self.allegro_bounds['thumb']['index_bottom'],
-                    self.allegro_bounds['thumb']['middle_bottom'],
-                    self.allegro_bounds['thumb']['middle_top']
+                    self.robohand_bounds['thumb']['index_top'], 
+                    self.robohand_bounds['thumb']['index_bottom'],
+                    self.robohand_bounds['thumb']['middle_bottom'],
+                    self.robohand_bounds['thumb']['middle_top']
                 ], 
                 z_hand_bound = self.thumb_middle_bounds[4], 
-                x_robot_bound = [self.allegro_bounds['thumb']['middle_x_bottom'], self.allegro_bounds['thumb']['middle_x_top']], 
+                x_robot_bound = [self.robohand_bounds['thumb']['middle_x_bottom'], self.robohand_bounds['thumb']['middle_x_top']], 
                 moving_avg_arr = self.moving_average_queues['thumb'], 
                 curr_angles = curr_angles
             )
@@ -134,13 +151,13 @@ class VRDexArmTeleOp(object):
                 hand_coordinates = self._get_finger_coords('thumb')[-1], 
                 xy_hand_bounds = self.thumb_ring_bounds[:4],
                 yz_robot_bounds = [
-                    self.allegro_bounds['thumb']['middle_top'], 
-                    self.allegro_bounds['thumb']['middle_bottom'],
-                    self.allegro_bounds['thumb']['ring_bottom'],
-                    self.allegro_bounds['thumb']['ring_top']
+                    self.robohand_bounds['thumb']['middle_top'], 
+                    self.robohand_bounds['thumb']['middle_bottom'],
+                    self.robohand_bounds['thumb']['ring_bottom'],
+                    self.robohand_bounds['thumb']['ring_top']
                 ], 
                 z_hand_bound = self.thumb_ring_bounds[4], 
-                x_robot_bound = [self.allegro_bounds['thumb']['ring_x_bottom'], self.allegro_bounds['thumb']['ring_x_top']], 
+                x_robot_bound = [self.robohand_bounds['thumb']['ring_x_bottom'], self.robohand_bounds['thumb']['ring_x_top']], 
                 moving_avg_arr = self.moving_average_queues['thumb'], 
                 curr_angles = curr_angles
             )
@@ -159,11 +176,11 @@ class VRDexArmTeleOp(object):
                 moving_avg_arr = self.moving_average_queues['index']
             )
         else:
-            for idx in range(ALLEGRO_JOINTS_PER_FINGER):
+            for idx in range(JOINTS_PER_FINGER):
                 if idx > 0:
-                    desired_joint_angles[idx + ALLEGRO_JOINT_OFFSETS['index']] = 0.05
+                    desired_joint_angles[idx + JOINT_OFFSETS['index']] = 0.05
                 else:
-                    desired_joint_angles[idx + ALLEGRO_JOINT_OFFSETS['index']] = 0
+                    desired_joint_angles[idx + JOINT_OFFSETS['index']] = 0
 
         # Movement for the middle finger
         if not finger_configs['freeze_middle']:
@@ -174,11 +191,11 @@ class VRDexArmTeleOp(object):
                 moving_avg_arr = self.moving_average_queues['middle']
             )
         else:
-            for idx in range(ALLEGRO_JOINTS_PER_FINGER):
+            for idx in range(JOINTS_PER_FINGER):
                 if idx > 0:
-                    desired_joint_angles[idx + ALLEGRO_JOINT_OFFSETS['middle']] = 0.05
+                    desired_joint_angles[idx + JOINT_OFFSETS['middle']] = 0.05
                 else:
-                    desired_joint_angles[idx + ALLEGRO_JOINT_OFFSETS['middle']] = 0
+                    desired_joint_angles[idx + JOINT_OFFSETS['middle']] = 0
 
         # Movement for the ring finger
         # Calculating the translatory joint angles
