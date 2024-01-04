@@ -1,4 +1,5 @@
 from .detectors.mediapipe import *
+from .detectors.leapmotion import *
 from .detectors.oculus import *
 from .keypoint_transforms import *
 from .robot_operators.mediapipe import *

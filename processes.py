@@ -27,6 +27,11 @@ def start_mp_detector(options):
     detector = MPHandDetector(options['cam_serial_num'], options['resolution'], options['alpha'])
     detector.stream()
 
+def start_lp_detector(options):
+    notify_process_start("Starting Leapmotion Detection Process")
+    detector = LPHandDetector()
+    detector.stream()
+
 def start_oculus_detector(options):
     notify_process_start("Starting OculusVR Detection Process")
     detector = OculusVRHandDetector(options['host'], options['keypoint_stream_port'])
@@ -110,6 +115,14 @@ def get_detector_processes(teleop_configs):
             
         if teleop_configs.tracker['visualize_pred_stream']:
             plotter_processes.append(Process(target = viz_hand_stream, args = (teleop_configs.tracker['pred_stream_rotation_angle'], )))
+    
+    elif teleop_configs.tracker.type == 'LP':
+        detection_process = Process(target = start_lp_detector, args = (teleop_configs.tracker, ))
+        keypoint_transform_processes = [Process(target = keypoint_transform, args = ('LP', ))]
+        
+        plotter_processes = []
+        if teleop_configs.tracker['visualize_graphs']:
+            plotter_processes.append(Process(target = plot_3d, args = (teleop_configs.tracker.type, ))),
 
     elif teleop_configs.tracker.type == 'VR':
         detection_process = Process(target = start_oculus_detector, args = (teleop_configs.tracker, ))

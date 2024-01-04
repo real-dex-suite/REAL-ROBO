@@ -1,5 +1,6 @@
 import os.path as path
 import holodex
+import numpy as np
 
 # Robot type
 HAND_TYPE = "Allegro"
@@ -92,6 +93,57 @@ PRED_CONFIDENCE = 0.95
 MAX_NUM_HANDS = 1
 MP_FREQ = 30
 
+# Leapmotion detector
+# ROS Topics names
+LP_HAND_KEYPOINT_TOPIC = "/leapmotion/hand_keypoints"
+LP_ARM_KEYPOINT_TOPIC = "/leapmotion/arm_keypoints"
+
+LP_HAND_TRANSFORM_COORDS_TOPIC = "/leapmotion/transformed_hand_keypoints"
+LP_ARM_TRANSFORM_COORDS_TOPIC = "/leapmotion/transformed_arm_keypoints"
+
+# Joint information
+LP_NUM_KEYPOINTS = 21
+
+LP_HAND_VISULIZATION_LINKS = [
+    (0, 1),
+    (1, 2),
+    (2, 3),
+    (3, 4),
+    (0, 5),
+    (5, 6),
+    (6, 7),
+    (7, 8),
+    (5, 9),
+    (9, 10),
+    (10, 11),
+    (11, 12),
+    (9, 13),
+    (13, 14),
+    (14, 15),
+    (15, 16),
+    (13, 17),
+    (0, 17),
+    (17, 18),
+    (18, 19),
+    (19, 20),
+]
+
+LP_VIEW_LIMITS = {
+    'x_limits': [-0.2, 0.2],
+    'y_limits': [-0.2, 0.2],
+    'z_limits': [-0.2, 0.2]
+}
+
+# Other params
+LP_FREQ = 30
+
+OPERATOR2MANO_RIGHT = np.array(
+    [
+        [0, 0, -1],
+        [-1, 0, 0],
+        [0, 1, 0],
+    ]
+)
 
 # VR detector 
 # ROS Topic names

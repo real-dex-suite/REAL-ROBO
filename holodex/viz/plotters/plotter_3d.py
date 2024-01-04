@@ -67,6 +67,49 @@ class Plot3DRightHand(object):
         # Removing the drawing
         self.plot3D.remove()
 
+class Plot3DLPRightHand(object):
+    def __init__(self):
+        # Initializing the figure
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(111, projection='3d')
+
+        # Loading Joint information
+        self.view_limits = LP_VIEW_LIMITS
+
+        # Setting the visualizer limits
+        self._set_limits()
+
+    def _set_limits(self):
+        self.ax.set_xlim(self.view_limits['x_limits'])
+        self.ax.set_ylim(self.view_limits['y_limits'])
+        self.ax.set_zlim3d(self.view_limits['z_limits'][0], self.view_limits['z_limits'][1])
+
+    def _draw_hand(self, X, Y, Z):
+        keypoints = np.concatenate((X.reshape(-1,1), Y.reshape(-1,1), Z.reshape(-1,1)), axis=1)
+        for line in LP_HAND_VISULIZATION_LINKS:
+            self.ax.plot3D(
+                keypoints[line, 0],
+                keypoints[line, 1],
+                keypoints[line, 2],
+                "gray",
+            )
+        self.plot3D = self.ax.scatter3D(X, Y, Z, "black")
+
+    def draw(self, X, Y, Z):
+        # Setting plotting limits
+        self._set_limits()
+        
+        # Plotting the hand bones
+        self._draw_hand(X, Y, Z)
+        plt.draw()
+
+        # Resetting and Pausing the 3D plot
+        self.fig.canvas.flush_events()
+        plt.pause(0.01)
+        plt.cla()
+
+        # Removing the drawing
+        self.plot3D.remove()
 
 class Plot3DLeftHandDirection(object):
     def __init__(self):

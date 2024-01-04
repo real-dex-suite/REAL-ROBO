@@ -1,0 +1,4 @@
+type: LP
+
+# Visualize 3D and 2D plots
+visualize_graphs: true

@@ -24,6 +24,14 @@ class Hand3DVisualizer(object):
                 self._callback_keypoints, 
                 queue_size = 1
             )
+        elif detector_type == 'LP':
+            self.num_keypoints = LP_NUM_KEYPOINTS
+            rospy.Subscriber(
+                LP_HAND_TRANSFORM_COORDS_TOPIC, 
+                Float64MultiArray, 
+                self._callback_keypoints, 
+                queue_size = 1
+            )
         elif detector_type == 'MP':
             self.num_keypoints = MP_NUM_KEYPOINTS
             rospy.Subscriber(
@@ -34,10 +42,14 @@ class Hand3DVisualizer(object):
             )
         else:
             raise NotImplementedError("There are no other detectors available. \
-            The only options are Mediapipe or Oculus!")
+            The only options are Mediapipe or Leapmotion or Oculus!")
 
         # Initializing the plotting object
-        self.plotter3D = Plot3DRightHand(detector_type = detector_type)
+        if detector_type == 'LP':
+            #TODO change lp plotter
+            self.plotter3D = Plot3DLPRightHand()
+        else:
+            self.plotter3D = Plot3DRightHand(detector_type = detector_type)
 
     def _callback_keypoints(self, keypoints):
         self.keypoints = np.array(keypoints.data).reshape(self.num_keypoints, 3)

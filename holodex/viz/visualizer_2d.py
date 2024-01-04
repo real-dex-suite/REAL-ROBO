@@ -26,7 +26,7 @@ class Hand2DVisualizer(object):
                 queue_size = 1
             )
             self.plotter2D = Plot2DOculusHand(*args)
-
+            # TODO LP plot 2D
         # Selecting the Mediapipe detector
         elif detector_type == 'MP':
             self.num_keypoints = MP_NUM_KEYPOINTS

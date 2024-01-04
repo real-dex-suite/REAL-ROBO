@@ -22,6 +22,11 @@ class TransformHandCoords(object):
             self.knuckle_points = (MP_JOINTS['knuckles'][0], MP_JOINTS['knuckles'][-1])
             rospy.Subscriber(MP_KEYPOINT_TOPIC, Float64MultiArray, self._callback_hand_coords, queue_size = 1)
             self.keypoint_publisher = FloatArrayPublisher(MP_HAND_TRANSFORM_COORDS_TOPIC)
+        
+        elif detector_type == 'LP':
+            self.num_keypoints = LP_NUM_KEYPOINTS
+            rospy.Subscriber(LP_HAND_KEYPOINT_TOPIC, Float64MultiArray, self._callback_hand_coords, queue_size = 1)
+            self.keypoint_publisher = FloatArrayPublisher(LP_HAND_TRANSFORM_COORDS_TOPIC)
 
         elif detector_type == 'VR_RIGHT':
             self.num_keypoints = OCULUS_NUM_KEYPOINTS
@@ -37,11 +42,13 @@ class TransformHandCoords(object):
         
         else:
             raise NotImplementedError("There are no other detectors available. \
-            The only options are Mediapipe or Oculus!")
+            The only options are Mediapipe or Leapmotion or Oculus!")
 
         # Setting the frequency to 30 Hz
         if detector_type == 'MP':
             self.frequency_timer = frequency_timer(MP_FREQ)  
+        elif detector_type == 'LP':
+            self.frequency_timer = frequency_timer(LP_FREQ)
         elif detector_type == 'VR_RIGHT' or 'VR_LEFT': 
             self.frequency_timer = frequency_timer(VR_FREQ)
 
@@ -60,7 +67,37 @@ class TransformHandCoords(object):
         palm_direction = normalize_vector(index_knuckle_coord + pinky_knuckle_coord)         # Current Y
         cross_product = normalize_vector(np.cross(palm_direction, palm_normal))                # Current X
         return [cross_product, palm_direction, palm_normal]
+    
+    def _get_mano_coord_frame(self, keypoint_3d_array):
+        """
+        Compute the 3D coordinate frame (orientation only) from detected 3d key points
+        :param points: keypoint3 detected from MediaPipe detector. Order: [wrist, index, middle, pinky]
+        :return: the coordinate frame of wrist in MANO convention
+        """
+        assert keypoint_3d_array.shape == (21, 3)
+        points = keypoint_3d_array[[0, 5, 9], :]
 
+        # Compute vector from palm to the first joint of middle finger
+        x_vector = points[0] - points[2]
+
+        # Normal fitting with SVD
+        points = points - np.mean(points, axis=0, keepdims=True)
+        u, s, v = np.linalg.svd(points)
+
+        normal = v[2, :]
+
+        # Gram–Schmidt Orthonormalize
+        x = x_vector - np.sum(x_vector * normal) * normal
+        x = x / np.linalg.norm(x)
+        z = np.cross(x, normal)
+
+        # We assume that the vector from pinky to index is similar the z axis in MANO convention
+        if np.sum(z * (points[1] - points[2])) < 0:
+            normal *= -1
+            z *= -1
+        frame = np.stack([x, normal, z], axis=1)
+        return frame
+    
     def transform_right_keypoints(self, hand_coords):
         translated_coords = self._translate_coords(hand_coords)
         original_coord_frame = self._get_coord_frame(translated_coords[self.knuckle_points[0]], translated_coords[self.knuckle_points[1]])
@@ -82,6 +119,13 @@ class TransformHandCoords(object):
         ])
         return translated_coord_frame
 
+    def transform_lp_right_keypoints(self, hand_coords):
+        translated_coords = self._translate_coords(hand_coords)
+        original_coord_frame = self._get_mano_coord_frame(translated_coords)
+
+        transformed_coords = translated_coords @ original_coord_frame @ OPERATOR2MANO_RIGHT
+        return transformed_coords
+
     def stream(self):
         while True:
             if self.hand_coords is None:
@@ -90,11 +134,17 @@ class TransformHandCoords(object):
             # Shift the points to required axes
             if self.detector_type == "VR_LEFT":
                 transformed_coords = self.transform_left_keypoints(self.hand_coords)
+            elif self.detector_type == "LP":
+                transformed_coords = self.transform_lp_right_keypoints(self.hand_coords)
             elif self.detector_type == "VR_RIGHT" or self.detector_type == "MP":
                 transformed_coords = self.transform_right_keypoints(self.hand_coords)
-
-            # Passing the transformed coords into a moving average
-            averaged_coords = moving_average(transformed_coords, self.moving_average_queue, self.moving_average_limit)
+            
+            # TODO why moving average?
+            if self.detector_type == "LP":
+                averaged_coords = transformed_coords
+            else:
+                # Passing the transformed coords into a moving average
+                averaged_coords = moving_average(transformed_coords, self.moving_average_queue, self.moving_average_limit)
             self.keypoint_publisher.publish(averaged_coords.flatten().tolist())
 
             self.frequency_timer.sleep()
