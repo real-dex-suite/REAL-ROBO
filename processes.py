@@ -67,6 +67,11 @@ def mp_teleop(detector_config):
     teleop = MPDexArmTeleOp()
     teleop.move(detector_config['finger_configs'])
 
+def lp_teleop(detector_config):
+    notify_process_start("Starting Teleoperation Process")
+    teleop = LPDexArmTeleOp()
+    teleop.move(detector_config['finger_configs'])
+    
 def vr_teleop(detector_config):
     notify_process_start("Starting Teleoperation Process")
     teleop = VRDexArmTeleOp()
@@ -147,6 +152,8 @@ def get_detector_processes(teleop_configs):
 def get_teleop_process(teleop_configs):
     if teleop_configs.tracker.type == 'MP':
         teleop_process = Process(target = mp_teleop, args = (teleop_configs, ))
+    elif teleop_configs.tracker.type == 'LP':
+        teleop_process = Process(target = lp_teleop, args = (teleop_configs, ))
     elif teleop_configs.tracker.type == 'VR':
         teleop_process = Process(target = vr_teleop, args = (teleop_configs, ))
 
