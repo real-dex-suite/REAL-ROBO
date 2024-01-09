@@ -1,0 +1,25 @@
+retargeting:
+  type: vector
+  urdf_path: leap_hand/leap_hand_right.urdf
+  wrist_link_name: "base"
+
+  # Target refers to the retargeting target, which is the robot hand
+  target_joint_names: null
+  # target_origin_link_names: [ "base", "index_base", "middle_base", "ring_base", "base", "index_base", "middle_base", "ring_base"]
+  # target_task_link_names: [ "thumb_tip_head", "index_tip_head", "middle_tip_head", "ring_tip_head", "pip_4", "pip", "pip_2", "pip_3"]
+  # scaling_factor: [1.22, 2.058, 1.95, 2.058, 1.22, 2.058, 1.95, 2.058]
+  # target_origin_link_names: [ "base", "middle_base", "ring_base", "base", "middle_base", "ring_base", "index_base", "dip_retarget", "fingertip_retarget"]
+  # target_task_link_names: [ "thumb_tip_head", "middle_tip_head", "ring_tip_head", "pip_4", "pip_2", "pip_3", "dip_retarget", "fingertip_retarget", "index_tip_head"]
+  # scaling_factor: [1.22, 1.95, 2.058, 1.22, 1.95, 2.058, 1.514, 1.59, 2.513]
+  target_origin_link_names: [ "thumb_base", "index_base", "middle_base", "ring_base"]
+  target_task_link_names: [ "thumb_tip_head", "index_tip_head", "middle_tip_head", "ring_tip_head"]
+  scaling_factor: [1.38, 1.77, 1.55, 1.75]
+
+  # Source refers to the retargeting input, which usually corresponds to the human hand
+  # The joint indices of human hand joint which corresponds to each link in the target_link_names
+  # target_link_human_indices: [ [ 0, 5, 9, 13, 0, 5, 9, 13 ], [ 4, 8, 12, 16, 2, 6, 10, 14] ]
+  # target_link_human_indices: [ [ 0, 9, 13, 0, 9, 13,  5, 6, 7], [ 4, 12, 16, 2, 10, 14, 6, 7, 8] ]
+  target_link_human_indices: [ [ 1, 5, 9, 13], [ 4, 8, 12, 16] ]
+
+  # A smaller alpha means stronger filtering, i.e. more smooth but also larger latency
+  low_pass_alpha: 0.2

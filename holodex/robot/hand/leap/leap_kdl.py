@@ -2,14 +2,14 @@ from ikpy import chain
 from holodex.utils.files import *
 
 
-class AllegroKDL(object):
+class LeapKDL(object):
     def __init__(self):
         # Getting the URDF path
-        urdf_path = get_path_in_package("robot/hand/allegro/assets/allegro_hand_right.urdf")
+        urdf_path = get_path_in_package("robot/hand/leap/assets/leap_hand_right.urdf")
 
-        # Loading Allegro Hand configs
-        self.hand_configs = get_yaml_data(get_path_in_package("robot/hand/allegro/configs/allegro_info.yaml"))
-        self.finger_configs = get_yaml_data(get_path_in_package("robot/hand/allegro/configs/allegro_link_info.yaml"))
+        # Loading Leap Hand configs #TODO double check this
+        self.hand_configs = get_yaml_data(get_path_in_package("robot/hand/leap/configs/leap_info.yaml"))
+        self.finger_configs = get_yaml_data(get_path_in_package("robot/hand/leap/configs/leap_link_info.yaml"))
 
         # Parsing chains from the urdf file
         self.chains = {}
@@ -77,7 +77,12 @@ class AllegroKDL(object):
         output_angles = self.chains[finger_type].inverse_kinematics(input_position, initial_position = seed)
         return output_angles[1:5]
 
-if __name__ == "__main__":
-    solver = AllegroKDL()
-    print(solver.finger_forward_kinematics('ring', [0, 0, 0, 0]))
-    # print(solver.finger_inverse_kinematics('index', [0, 0, 0]))
+if __name__ == '__main__':
+    leap_kdl = LeapKDL()
+    finger_type = 'index'
+    input_angles = np.array([0, 0, 0, 0])
+    finger_tip_coords, finger_rot_mat = leap_kdl.finger_forward_kinematics(finger_type, input_angles)
+    print(finger_tip_coords)
+    print(finger_rot_mat)
+    output_angles = leap_kdl.finger_inverse_kinematics(finger_type, finger_tip_coords)
+    print(output_angles)

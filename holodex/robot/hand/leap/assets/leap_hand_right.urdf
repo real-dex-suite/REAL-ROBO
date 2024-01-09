@@ -290,20 +290,6 @@
     <joint_properties friction="0.0"/>
   </joint>
 
-  <link name="dip_retarget"/>
-  <joint name="dip_retarget_joint" type="fixed">
-    <parent link="dip"/>
-    <child link="dip_retarget"/>
-    <origin xyz="0.0 0.0 0.014" rpy="0 0 0"/>
-  </joint>
-
-  <link name="fingertip_retarget"/>
-  <joint name="fingertip_retarget_joint" type="fixed">
-    <parent link="fingertip"/>
-    <child link="fingertip_retarget"/>
-    <origin xyz="0.0 0.0 0.014" rpy="0 0 0"/>
-  </joint>
-
   <link name="mcp_joint_2">
     <visual>
       <origin xyz="0.0084 0.0077 0.01465" rpy="0 0 0"/>

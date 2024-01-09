@@ -1,0 +1,6 @@
+Metadata-Version: 2.1
+Name: Real-Robo
+Version: 1.0.0
+Summary: Official implementation of the paper Holo-dex: Towards teaching dexterity with immersive Mixed Reality.
+Home-page: https://github.com/SridharPandian/Holo-Dex
+Author: Sridhar Pandian Arunachalam, Irmak Guzey, Soumith Chintala, Lerrel Pinto

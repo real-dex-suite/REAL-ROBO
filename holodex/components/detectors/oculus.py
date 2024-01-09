@@ -53,5 +53,5 @@ class OculusVRHandDetector(object):
             self.frequency_timer.sleep()
 
 if __name__ == '__main__':
-    detector = OculusVRHandDetector(HOST ="192.168.92.163", PORT ="8087")
+    detector = OculusVRHandDetector(HOST ="192.168.90.159", PORT ="8087")
     detector.stream()

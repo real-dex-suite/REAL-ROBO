@@ -2,9 +2,26 @@ import os.path as path
 import holodex
 import numpy as np
 
+# Retarget type
+RETARGET_TYPE = "dexpilot"
+
 # Robot type
-HAND_TYPE = "Allegro"
+HAND_TYPE = "Leap"
 ARM_TYPE = "Kinova"
+
+# Leap hand
+LEAP_JOINT_STATE_TOPIC = '/leapHand/joint_states'
+LEAP_COMMANDED_JOINT_STATE_TOPIC = '/leapHand/commanded_joint_states'
+LEAP_JOINTS_PER_FINGER = 4
+LEAP_JOINT_OFFSETS = {
+    'index': 0,
+    'middle': 4,
+    'ring': 8,
+    'thumb': 12
+}
+# 16 degree 0 position
+LEAP_HOME_POSITION = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
+
 
 # Allegro
 ALLEGRO_JOINT_STATE_TOPIC = '/allegroHand/joint_states'
@@ -127,6 +144,16 @@ LP_HAND_VISULIZATION_LINKS = [
     (18, 19),
     (19, 20),
 ]
+
+LP_JOINTS = {
+    'metacarpals': [1, 5, 9, 13, 17],
+    'knuckles': [5, 9, 13, 17],
+    'thumb': [1, 2, 3, 4],
+    'index': [5, 6, 7, 8],
+    'middle': [9, 10, 11, 12],
+    'ring': [13, 14, 15, 16],
+    'pinky': [17, 18, 19, 20]
+}
 
 LP_VIEW_LIMITS = {
     'x_limits': [-0.2, 0.2],

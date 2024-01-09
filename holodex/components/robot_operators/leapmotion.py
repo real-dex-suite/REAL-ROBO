@@ -1,18 +1,23 @@
 import rospy
 from std_msgs.msg import Float64MultiArray
-from .calibrators import MPHandBoundCalibrator
+# from .calibrators import LeapThumbBoundCalibrator
+
 from holodex.utils.files import *
 from holodex.utils.vec_ops import coord_in_bound
 from holodex.constants import *
 from copy import deepcopy as copy
+
 import importlib
+from pathlib import Path
 
 # load module according to hand type
 module = __import__("holodex.robot.hand")
 KDLControl_module_name = f'{HAND_TYPE}KDLControl'
+JointControl_module_name = f'{HAND_TYPE}JointControl'
 Hand_module_name = f'{HAND_TYPE}Hand'
 # get relevant classes
 KDLControl = getattr(module.robot, KDLControl_module_name)
+JointControl = getattr(module.robot, JointControl_module_name)
 Hand = getattr(module.robot, Hand_module_name)
 
 # load constants according to hand type
@@ -29,11 +34,9 @@ class LPDexArmTeleOp(object):
         self.hand_coords = None
         rospy.Subscriber(LP_HAND_TRANSFORM_COORDS_TOPIC, Float64MultiArray, self._callback_hand_coords, queue_size = 1)
 
-        # Calibrating the hand pose and getting hand bounds
-        self._calibrate_bounds()
-
-        # Initializing the solver
-        self.finger_tip_solver = KDLControl()
+        # Initializing the solvers
+        self.fingertip_solver = KDLControl()
+        self.finger_joint_solver = JointControl()
 
         # Initializing the robot controller
         self.robot = Hand()
@@ -45,195 +48,208 @@ class LPDexArmTeleOp(object):
             'middle': [],
             'ring': []
         }
+        
+        if RETARGET_TYPE == 'dexpilot':
+            from holodex.components.retargeting.retargeting_config import RetargetingConfig
 
-        # Getting the bounds for the human hand and the robot hand
-        robohand_bounds_path = get_path_in_package(f'components/robot_operators/configs/{hand_type}_mp.yaml')
-        self.robohand_bounds = get_yaml_data(robohand_bounds_path)
+            config_path = f"holodex/components/retargeting/configs/teleop/{HAND_TYPE.lower()}_hand_right_{RETARGET_TYPE}.yml"
+            RetargetingConfig.set_default_urdf_dir("holodex/robot/hand")
+            self.retargeting = RetargetingConfig.load_from_file(config_path).build()
 
-    def _callback_hand_coords(self, coords):
-        self.hand_coords = np.array(list(coords.data)).reshape(MP_NUM_KEYPOINTS, 3)
+        elif RETARGET_TYPE == 'joint+spatial':
+            # Calibrating to get the thumb bounds
+            self._calibrate_bounds()
+
+            # Getting the bounds for the robot hand
+            robohand_bounds_path = get_path_in_package('components/robot_operators/configs/{hand_type}_lp.yaml')
+            with open(robohand_bounds_path, 'r') as file:
+                self.robohand_bounds = yaml.safe_load(file)
 
     def _calibrate_bounds(self):
         print("***************************************************************")
         print("     Starting calibration process ")
         print("***************************************************************")
-        calibrator = LPHandBoundCalibrator()
-        self.hand_bounds = calibrator.get_bounds()
+        calibrator = LeapThumbBoundCalibrator()
+        self.thumb_index_bounds, self.thumb_middle_bounds, self.thumb_ring_bounds = calibrator.get_bounds()
 
-    def get_finger_tip_coords(self):
-        finger_tip_coords = {}
+    def _callback_hand_coords(self, coords):
+        self.hand_coords = np.array(list(coords.data)).reshape(LP_NUM_KEYPOINTS, 3)
 
-        for key in ['index', 'middle', 'ring', 'pinky', 'thumb']:
-            finger_tip_coords[key] = self.hand_coords[MP_JOINTS[key][-1]]
+    def _get_finger_coords(self, finger_type):
+        return np.vstack([self.hand_coords[0], self.hand_coords[LP_JOINTS[finger_type]]])
 
-        return finger_tip_coords
-
-    def motion_2D(self, finger_configs):
-        finger_tip_coords = self.get_finger_tip_coords()
-        desired_joint_angles = copy(self.robot.get_hand_position())
-
-        # Movement for the index finger
-        if not finger_configs['freeze_index']:
-            desired_joint_angles = self.finger_tip_solver.finger_1D_motion(
-                finger_type = "index",
-                hand_y_val = finger_tip_coords['index'][1], 
-                robot_x_val = self.robohand_bounds['index']['x_coord'],
-                robot_y_val = self.robohand_bounds['index']['y_coord'], 
-                y_hand_bound = self.hand_bounds[0], 
-                z_robot_bound = [self.robohand_bounds['index']['z_bottom'], self.robohand_bounds['index']['z_top']], 
-                moving_avg_arr = self.moving_average_queues['index'], 
-                curr_angles = desired_joint_angles
-            )
-        else:
-            for idx in range(JOINTS_PER_FINGER):
-                desired_joint_angles[idx + JOINT_OFFSETS['index']] = 0
-
-        # Movement for the middle finger
-        if not finger_configs['freeze_middle']:
-            desired_joint_angles = self.finger_tip_solver.finger_1D_motion(
-                finger_type = "middle",
-                hand_y_val = finger_tip_coords['middle'][1], 
-                robot_x_val = self.robohand_bounds['middle']['x_coord'],
-                robot_y_val = self.robohand_bounds['middle']['y_coord'], 
-                y_hand_bound = self.hand_bounds[0], 
-                z_robot_bound = [self.robohand_bounds['middle']['z_bottom'], self.robohand_bounds['middle']['z_top']], 
-                moving_avg_arr = self.moving_average_queues['middle'], 
-                curr_angles = desired_joint_angles
-            )
-        else:
-            for idx in range(JOINTS_PER_FINGER):
-                desired_joint_angles[idx + JOINT_OFFSETS['middle']] = 0
-
-        # Movement for the ring finger
-        desired_joint_angles = self.finger_tip_solver.finger_2D_motion(
-            finger_type = "ring",
-            hand_x_val = finger_tip_coords['pinky'][1], 
-            hand_y_val = finger_tip_coords['ring'][1], 
-            robot_x_val = self.robohand_bounds['ring']['x_coord'],
-            x_hand_bound = self.hand_bounds[6], 
-            y_hand_bound = self.hand_bounds[4], 
-            y_robot_bound = [self.robohand_bounds['ring']['y_left'], self.robohand_bounds['ring']['y_right']], 
-            z_robot_bound = [self.robohand_bounds['ring']['z_bottom'], self.robohand_bounds['ring']['z_top']], 
-            moving_avg_arr = self.moving_average_queues['ring'], 
-            curr_angles = desired_joint_angles
-        )
-
-        # Movement for the thumb finger
-        if coord_in_bound(self.hand_bounds[7:11], finger_tip_coords['thumb'][:2]) > -1:
-            desired_joint_angles = self.finger_tip_solver.thumb_motion_2D(
-                hand_coordinates = finger_tip_coords['thumb'], 
-                xy_hand_bounds = self.hand_bounds[7:11],
+    def _get_2d_thumb_angles(self, curr_angles):
+        if coord_in_bound(self.thumb_index_bounds[:4], self._get_finger_coords('thumb')[-1][:2]) > -1:
+            return self.fingertip_solver.thumb_motion_2D(
+                hand_coordinates = self._get_finger_coords('thumb')[-1], 
+                xy_hand_bounds = self.thumb_index_bounds[:4],
                 yz_robot_bounds = [
-                    self.robohand_bounds['thumb']['yz_top_right'], 
-                    self.robohand_bounds['thumb']['yz_bottom_right'],
-                    self.robohand_bounds['thumb']['yz_bottom_left'],
-                    self.robohand_bounds['thumb']['yz_top_left']
+                    self.robohand_bounds['thumb']['top_right'], 
+                    self.robohand_bounds['thumb']['bottom_right'],
+                    self.robohand_bounds['thumb']['index_bottom'],
+                    self.robohand_bounds['thumb']['index_top']
                 ], 
                 robot_x_val = self.robohand_bounds['thumb']['x_coord'],
                 moving_avg_arr = self.moving_average_queues['thumb'], 
-                curr_angles = desired_joint_angles
+                curr_angles = curr_angles
             )
-        
-        return desired_joint_angles
-
-    def motion_3D(self, finger_configs):
-        finger_tip_coords = self.get_finger_tip_coords()
-        desired_joint_angles = copy(self.robot.get_hand_position())
-
-        # Movement for the index finger
-        if not finger_configs['freeze_index']:
-            desired_joint_angles = self.finger_tip_solver.finger_2D_depth_motion(
-                finger_type = "index",
-                hand_y_val = finger_tip_coords['index'][1], 
-                robot_y_val = self.robohand_bounds['index']['y_coord'], 
-                hand_z_val = finger_tip_coords['index'][2], 
-
-                y_hand_bound = self.hand_bounds[0], 
-                z_hand_bound = self.hand_bounds[1], 
-
-                x_robot_bound = [self.robohand_bounds['index']['x_bottom'], self.robohand_bounds['index']['x_top']], 
-                z_robot_bound = [self.robohand_bounds['index']['z_bottom'], self.robohand_bounds['index']['z_top']], 
-                moving_avg_arr = self.moving_average_queues['index'], 
-                curr_angles = desired_joint_angles
-            )
-        else:
-            for idx in range(JOINTS_PER_FINGER):
-                if idx > 0:
-                    desired_joint_angles[idx + JOINT_OFFSETS['index']] = 0.05
-                else:
-                    desired_joint_angles[idx + JOINT_OFFSETS['index']] = 0
-
-        # Movement for the middle finger
-        if not finger_configs['freeze_middle']:
-            desired_joint_angles = self.finger_tip_solver.finger_2D_depth_motion(
-                finger_type = "middle",
-                hand_y_val = finger_tip_coords['middle'][1], 
-                robot_y_val = self.robohand_bounds['middle']['y_coord'], 
-                hand_z_val = finger_tip_coords['middle'][2], 
-
-                y_hand_bound = self.hand_bounds[2], 
-                z_hand_bound = self.hand_bounds[3], 
-
-                x_robot_bound = [self.robohand_bounds['middle']['x_bottom'], self.robohand_bounds['middle']['x_top']], 
-                z_robot_bound = [self.robohand_bounds['middle']['z_bottom'], self.robohand_bounds['middle']['z_top']], 
-                moving_avg_arr = self.moving_average_queues['middle'], 
-                curr_angles = desired_joint_angles
-            )
-        else:
-            for idx in range(JOINTS_PER_FINGER):
-                if idx > 0:
-                    desired_joint_angles[idx + JOINT_OFFSETS['middle']] = 0.05
-                else:
-                    desired_joint_angles[idx + JOINT_OFFSETS['middle']] = 0
-
-        # Movement for the ring finger
-        desired_joint_angles = self.finger_tip_solver.finger_3D_motion(
-            finger_type = "ring",
-            hand_x_val = finger_tip_coords['pinky'][1], 
-            hand_y_val = finger_tip_coords['ring'][1], 
-            hand_z_val = finger_tip_coords['ring'][2], 
-
-            x_hand_bound = self.hand_bounds[6], 
-            y_hand_bound = self.hand_bounds[4], 
-            z_hand_bound = self.hand_bounds[5], 
-
-            x_robot_bound = [self.robohand_bounds['ring']['x_bottom'], self.robohand_bounds['ring']['x_top']], 
-            y_robot_bound = [self.robohand_bounds['ring']['y_left'], self.robohand_bounds['ring']['y_right']], 
-            z_robot_bound = [self.robohand_bounds['ring']['z_bottom'], self.robohand_bounds['ring']['z_top']], 
-            moving_avg_arr = self.moving_average_queues['ring'], 
-            curr_angles = desired_joint_angles
-        )
-
-        # Movement for the thumb finger
-        if coord_in_bound(self.hand_bounds[7:11], finger_tip_coords['thumb'][:2]) > -1:
-            desired_joint_angles = self.finger_tip_solver.thumb_motion_3D(
-                hand_coordinates = finger_tip_coords['thumb'], 
-                xy_hand_bounds = self.hand_bounds[7:11],
+        elif coord_in_bound(self.thumb_middle_bounds[:4], self._get_finger_coords('thumb')[-1][:2]) > -1:
+            return self.fingertip_solver.thumb_motion_2D(
+                hand_coordinates = self._get_finger_coords('thumb')[-1], 
+                xy_hand_bounds = self.thumb_middle_bounds[:4],
                 yz_robot_bounds = [
-                    self.robohand_bounds['thumb']['yz_top_right'], 
-                    self.robohand_bounds['thumb']['yz_bottom_right'],
-                    self.robohand_bounds['thumb']['yz_bottom_left'],
-                    self.robohand_bounds['thumb']['yz_top_left']
+                    self.robohand_bounds['thumb']['index_top'], 
+                    self.robohand_bounds['thumb']['index_bottom'],
+                    self.robohand_bounds['thumb']['middle_bottom'],
+                    self.robohand_bounds['thumb']['middle_top']
                 ], 
-                z_hand_bound = self.hand_bounds[11], 
-                x_robot_bound = [self.robohand_bounds['thumb']['x_bottom'], self.robohand_bounds['thumb']['x_top']], 
+                robot_x_val = self.robohand_bounds['thumb']['x_coord'],
                 moving_avg_arr = self.moving_average_queues['thumb'], 
-                curr_angles = desired_joint_angles
+                curr_angles = curr_angles
             )
-        
+        elif coord_in_bound(self.thumb_ring_bounds[:4], self._get_finger_coords('thumb')[-1][:2]) > -1:
+            return self.fingertip_solver.thumb_motion_2D(
+                hand_coordinates = self._get_finger_coords('thumb')[-1], 
+                xy_hand_bounds = self.thumb_ring_bounds[:4],
+                yz_robot_bounds = [
+                    self.robohand_bounds['thumb']['middle_top'], 
+                    self.robohand_bounds['thumb']['middle_bottom'],
+                    self.robohand_bounds['thumb']['ring_bottom'],
+                    self.robohand_bounds['thumb']['ring_top']
+                ], 
+                robot_x_val = self.robohand_bounds['thumb']['x_coord'],
+                moving_avg_arr = self.moving_average_queues['thumb'], 
+                curr_angles = curr_angles
+            )
+        else:
+            return curr_angles
+
+    def _get_3d_thumb_angles(self, curr_angles):
+        if coord_in_bound(self.thumb_index_bounds[:4], self._get_finger_coords('thumb')[-1][:2]) > -1:
+            return self.fingertip_solver.thumb_motion_3D(
+                hand_coordinates = self._get_finger_coords('thumb')[-1], 
+                xy_hand_bounds = self.thumb_index_bounds[:4],
+                yz_robot_bounds = [
+                    self.robohand_bounds['thumb']['top_right'], 
+                    self.robohand_bounds['thumb']['bottom_right'],
+                    self.robohand_bounds['thumb']['index_bottom'],
+                    self.robohand_bounds['thumb']['index_top']
+                ], 
+                z_hand_bound = self.thumb_index_bounds[4], 
+                x_robot_bound = [self.robohand_bounds['thumb']['index_x_bottom'], self.robohand_bounds['thumb']['index_x_top']], 
+                moving_avg_arr = self.moving_average_queues['thumb'], 
+                curr_angles = curr_angles
+            )
+        elif coord_in_bound(self.thumb_middle_bounds[:4], self._get_finger_coords('thumb')[-1][:2]) > -1:
+            return self.fingertip_solver.thumb_motion_3D(
+                hand_coordinates = self._get_finger_coords('thumb')[-1], 
+                xy_hand_bounds = self.thumb_middle_bounds[:4],
+                yz_robot_bounds = [
+                    self.robohand_bounds['thumb']['index_top'], 
+                    self.robohand_bounds['thumb']['index_bottom'],
+                    self.robohand_bounds['thumb']['middle_bottom'],
+                    self.robohand_bounds['thumb']['middle_top']
+                ], 
+                z_hand_bound = self.thumb_middle_bounds[4], 
+                x_robot_bound = [self.robohand_bounds['thumb']['middle_x_bottom'], self.robohand_bounds['thumb']['middle_x_top']], 
+                moving_avg_arr = self.moving_average_queues['thumb'], 
+                curr_angles = curr_angles
+            )
+        elif coord_in_bound(self.thumb_ring_bounds[:4], self._get_finger_coords('thumb')[-1][:2]) > -1:
+            return self.fingertip_solver.thumb_motion_3D(
+                hand_coordinates = self._get_finger_coords('thumb')[-1], 
+                xy_hand_bounds = self.thumb_ring_bounds[:4],
+                yz_robot_bounds = [
+                    self.robohand_bounds['thumb']['middle_top'], 
+                    self.robohand_bounds['thumb']['middle_bottom'],
+                    self.robohand_bounds['thumb']['ring_bottom'],
+                    self.robohand_bounds['thumb']['ring_top']
+                ], 
+                z_hand_bound = self.thumb_ring_bounds[4], 
+                x_robot_bound = [self.robohand_bounds['thumb']['ring_x_bottom'], self.robohand_bounds['thumb']['ring_x_top']], 
+                moving_avg_arr = self.moving_average_queues['thumb'], 
+                curr_angles = curr_angles
+            )
+        else:
+            return curr_angles
+
+    def motion(self, finger_configs):
+        if RETARGET_TYPE == 'dexpilot':
+            indices = self.retargeting.optimizer.target_link_human_indices
+            origin_indices = indices[0, :]
+            task_indices = indices[1, :]
+            ref_value = self.hand_coords[task_indices, :] - self.hand_coords[origin_indices, :]
+            desired_joint_angles = self.retargeting.retarget(ref_value)
+        else:
+            # use allegro representation, -3.14
+            desired_joint_angles = copy(self.robot.get_hand_position()) - 3.14
+
+            # Movement for the index finger
+            if not finger_configs['freeze_index']:
+                desired_joint_angles = self.finger_joint_solver.calculate_finger_angles(
+                    finger_type = 'index',
+                    finger_joint_coords = self._get_finger_coords('index'),
+                    curr_angles = desired_joint_angles,
+                    moving_avg_arr = self.moving_average_queues['index']
+                )
+            else:
+                for idx in range(JOINTS_PER_FINGER):
+                    if idx > 0:
+                        desired_joint_angles[idx + JOINT_OFFSETS['index']] = 0.05
+                    else:
+                        desired_joint_angles[idx + JOINT_OFFSETS['index']] = 0
+
+            # Movement for the middle finger
+            if not finger_configs['freeze_middle']:
+                desired_joint_angles = self.finger_joint_solver.calculate_finger_angles(
+                    finger_type = 'middle',
+                    finger_joint_coords = self._get_finger_coords('middle'),
+                    curr_angles = desired_joint_angles,
+                    moving_avg_arr = self.moving_average_queues['middle']
+                )
+            else:
+                for idx in range(JOINTS_PER_FINGER):
+                    if idx > 0:
+                        desired_joint_angles[idx + JOINT_OFFSETS['middle']] = 0.05
+                    else:
+                        desired_joint_angles[idx + JOINT_OFFSETS['middle']] = 0
+
+            # Movement for the ring finger
+            # Calculating the translatory joint angles
+            desired_joint_angles = self.finger_joint_solver.calculate_finger_angles(
+                finger_type = 'ring',
+                finger_joint_coords = self._get_finger_coords('ring'),
+                curr_angles = desired_joint_angles,
+                moving_avg_arr = self.moving_average_queues['ring']
+            )
+
+            if RETARGET_TYPE == 'joint+spatial':
+                # Movement for the thumb finger - we disable 3D motion just for the thumb
+                if finger_configs['three_dim']:
+                    desired_joint_angles = self._get_3d_thumb_angles(desired_joint_angles)
+                else:
+                    desired_joint_angles = self._get_2d_thumb_angles(desired_joint_angles)
+            elif RETARGET_TYPE == 'joint':
+                desired_joint_angles = self.finger_joint_solver.calculate_finger_angles(
+                    finger_type = 'thumb',
+                    finger_joint_coords = self._get_finger_coords('thumb'),
+                    curr_angles = desired_joint_angles,
+                    moving_avg_arr = self.moving_average_queues['thumb']
+                )
+
         return desired_joint_angles
+
 
     def move(self, finger_configs):
         print("\n******************************************************************************")
         print("     Controller initiated. ")
         print("******************************************************************************\n")
-        print("Start controlling the robot hand using the tele-op.\n")
+        print("Start controlling the robot hand using the Leapmotion.\n")
 
         while True:
             if self.hand_coords is not None and self.robot.get_hand_position() is not None:
-                if finger_configs['three_dim']:
-                    desired_joint_angles = self.motion_3D(finger_configs)  
-                else: 
-                    desired_joint_angles = self.motion_2D(finger_configs)
-                    
-                self.robot.move(desired_joint_angles)
+                # Obtaining the desired angles
+                desired_joint_angles = self.motion(finger_configs)
+                print(desired_joint_angles)
+                # Move the hand based on the desired angles
+                self.robot.move(np.array(desired_joint_angles)[[1,0,2,3,5,4,6,7,9,8,10,11,12,13,14,15]])
