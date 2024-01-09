@@ -4,8 +4,8 @@ from typing import Optional
 import numpy as np
 import transforms3d
 
-from dex_retargeting.optimizer import Optimizer
-from dex_retargeting.optimizer_utils import LPFilter
+from holodex.components.retargeting.optimizer import Optimizer
+from holodex.components.retargeting.optimizer_utils import LPFilter
 
 
 class SeqRetargeting:

@@ -71,8 +71,8 @@ class LeapJointControl(object):
         # Checking if the finger tip is on the left side or the right side of the knuckle
         knuckle_vector = finger_joint_coords[1] - finger_joint_coords[0] 
         tip_vector = finger_joint_coords[-1] - finger_joint_coords[0]
-        knuckle_vector_slope = knuckle_vector[1] / (knuckle_vector[0]+ 1e-6)
-        tip_vector_slope = tip_vector[1] / (tip_vector[0]+ 1e-6)
+        knuckle_vector_slope = knuckle_vector[1] / (knuckle_vector[0])
+        tip_vector_slope = tip_vector[1] / (tip_vector[0])
 
         if knuckle_vector_slope > tip_vector_slope:
             return angle

@@ -7,8 +7,8 @@ from typing import Union
 import numpy as np
 import yaml
 
-from dex_retargeting.optimizer_utils import LPFilter
-from dex_retargeting.seq_retarget import SeqRetargeting
+from holodex.components.retargeting.optimizer_utils import LPFilter
+from holodex.components.retargeting.seq_retarget import SeqRetargeting
 
 
 @dataclass
@@ -35,6 +35,7 @@ class RetargetingConfig:
     target_task_link_names: Optional[List[str]] = None
 
     # DexPilot retargeting link names
+    target_tip_link_human_indices: Optional[np.ndarray] = None
     finger_tip_link_names: Optional[List[str]] = None
 
     # Scaling factor for vector retargeting only
@@ -84,6 +85,8 @@ class RetargetingConfig:
         elif self.type == "dexpilot":
             if self.finger_tip_link_names is None or self.wrist_link_name is None:
                 raise ValueError(f"Position retargeting requires: finger_tip_link_names + wrist_link_name")
+            if self.target_tip_link_human_indices is None:
+                raise ValueError(f"Dexpilot retargeting requires: target_tip_link_human_indices")
 
         # URDF path check
         urdf_path = Path(self.urdf_path)
@@ -119,13 +122,13 @@ class RetargetingConfig:
         return config
 
     def build(self, scene: Optional[sapien.Scene] = None) -> SeqRetargeting:
-        from dex_retargeting.optimizer import (
+        from holodex.components.retargeting.optimizer import (
             VectorOptimizer,
             PositionOptimizer,
             DexPilotAllegroOptimizer,
         )
-        from dex_retargeting.optimizer_utils import SAPIENKinematicsModelStandalone
-        from dex_retargeting import yourdfpy as urdf
+        from holodex.components.retargeting.optimizer_utils import SAPIENKinematicsModelStandalone
+        from holodex.components.retargeting import yourdfpy as urdf
         import tempfile
 
         # Process the URDF with yourdfpy to better find file path
@@ -176,6 +179,7 @@ class RetargetingConfig:
                 finger_tip_link_names=self.finger_tip_link_names,
                 wrist_link_name=self.wrist_link_name,
                 scaling=self.scaling_factor,
+                target_tip_link_human_indices=self.target_tip_link_human_indices,
             )
         else:
             raise RuntimeError()

@@ -1,0 +1,8 @@
+README.md
+setup.py
+retargeting.egg-info/PKG-INFO
+retargeting.egg-info/SOURCES.txt
+retargeting.egg-info/dependency_links.txt
+retargeting.egg-info/requires.txt
+retargeting.egg-info/top_level.txt
+retargeting.egg-info/zip-safe

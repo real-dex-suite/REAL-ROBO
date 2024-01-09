@@ -1,0 +1,76 @@
+Metadata-Version: 2.1
+Name: retargeting
+Version: 0.0.2
+Summary: Hand pose retargeting for dexterous robot hand.
+Home-page: https://github.com/dexsuite/dex-retargeting
+Author: Yuzhe Qin
+Author-email: y1qin@ucsd.edu
+Maintainer: Yuzhe Qin
+Maintainer-email: y1qin@ucsd.edu
+License: MIT
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Natural Language :: English
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Requires-Python: >=3.7,<3.11
+Description-Content-Type: text/markdown
+Requires-Dist: numpy<1.24
+Requires-Dist: torch
+Requires-Dist: sapien>=2.0.0
+Requires-Dist: nlopt
+Requires-Dist: trimesh
+Requires-Dist: anytree
+Requires-Dist: pycollada
+Requires-Dist: pyyaml
+Requires-Dist: lxml
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: black; extra == "dev"
+Requires-Dist: isort; extra == "dev"
+Requires-Dist: pytest-xdist; extra == "dev"
+Requires-Dist: pyright; extra == "dev"
+Requires-Dist: ruff; extra == "dev"
+Provides-Extra: example
+Requires-Dist: tyro; extra == "example"
+Requires-Dist: tqdm; extra == "example"
+Requires-Dist: opencv-python; extra == "example"
+Requires-Dist: mediapipe; extra == "example"
+
+Dex Retargeting
+---
+<p align="center">
+    <!-- code check badges -->
+    <a href='https://github.com/dexsuite/dex-retargeting/blob/main/.github/workflows/test.yml'>
+        <img src='https://github.com/dexsuite/dex-retargeting/actions/workflows/test.yml/badge.svg' alt='Test Status' />
+    </a>
+    <!-- license badge -->
+    <a href="https://github.com/dexsuite/dex-retargeting/blob/main/LICENSE">
+        <img alt="License" src="https://img.shields.io/badge/license-MIT-blue">
+    </a>
+</p>
+
+## Installation
+
+```shell
+pip3 install -e ".[example]"
+# If you do not need to run the examples:
+# pip install -e .
+
+```
+
+## Examples
+
+### Retargeting from human hand video
+
+[Tutorial on retargeting from human hand video](example/vector_retargeting/README.md)
+
+### Retarget from hand object pose dataset
+
+[Tutorial on retargeting from hand-object pose dataset](example/position_retargeting/README.md)

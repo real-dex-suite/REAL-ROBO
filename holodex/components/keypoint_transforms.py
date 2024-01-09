@@ -68,14 +68,18 @@ class TransformHandCoords(object):
         cross_product = normalize_vector(np.cross(palm_direction, palm_normal))                # Current X
         return [cross_product, palm_direction, palm_normal]
     
-    def _get_mano_coord_frame(self, keypoint_3d_array):
+    def _get_mano_coord_frame(self, keypoint_3d_array, oculus=False):
         """
         Compute the 3D coordinate frame (orientation only) from detected 3d key points
         :param points: keypoint3 detected from MediaPipe detector. Order: [wrist, index, middle, pinky]
         :return: the coordinate frame of wrist in MANO convention
         """
-        assert keypoint_3d_array.shape == (21, 3)
-        points = keypoint_3d_array[[0, 5, 9], :]
+        if oculus:
+            assert keypoint_3d_array.shape == (24, 3)
+            points = keypoint_3d_array[[0, 6, 9], :] # TODO check if this is correct
+        else:
+            assert keypoint_3d_array.shape == (21, 3)
+            points = keypoint_3d_array[[0, 5, 9], :]
 
         # Compute vector from palm to the first joint of middle finger
         x_vector = points[0] - points[2]
@@ -119,9 +123,9 @@ class TransformHandCoords(object):
         ])
         return translated_coord_frame
 
-    def transform_lp_right_keypoints(self, hand_coords):
+    def transform_lp_right_keypoints(self, hand_coords, oculus=False):
         translated_coords = self._translate_coords(hand_coords)
-        original_coord_frame = self._get_mano_coord_frame(translated_coords)
+        original_coord_frame = self._get_mano_coord_frame(translated_coords, oculus=oculus)
 
         transformed_coords = translated_coords @ original_coord_frame @ OPERATOR2MANO_RIGHT
         return transformed_coords
@@ -138,6 +142,10 @@ class TransformHandCoords(object):
                 transformed_coords = self.transform_lp_right_keypoints(self.hand_coords)
             elif self.detector_type == "VR_RIGHT" or self.detector_type == "MP":
                 transformed_coords = self.transform_right_keypoints(self.hand_coords)
+                if RETARGET_TYPE == "dexpilot":
+                    transformed_coords = self.transform_lp_right_keypoints(transformed_coords, oculus=True)
+                    # transform coords around z axis for 180 degree
+                    transformed_coords[:, 0] *= -1
             
             # TODO why moving average?
             if self.detector_type == "LP":
@@ -145,6 +153,7 @@ class TransformHandCoords(object):
             else:
                 # Passing the transformed coords into a moving average
                 averaged_coords = moving_average(transformed_coords, self.moving_average_queue, self.moving_average_limit)
+            
             self.keypoint_publisher.publish(averaged_coords.flatten().tolist())
 
             self.frequency_timer.sleep()

@@ -319,6 +319,7 @@ class DexPilotAllegroOptimizer(Optimizer):
         eta1=1e-4,
         eta2=3e-2,
         scaling=1.0,
+        target_tip_link_human_indices=np.array([0,1,2,3])
     ):
         if len(finger_tip_link_names) < 4 or len(finger_tip_link_names) > 5:
             raise ValueError(f"DexPilot optimizer can only be applied to hands with four or five fingers")
@@ -332,7 +333,14 @@ class DexPilotAllegroOptimizer(Optimizer):
             task_link_index = [1, 1, 1, 1, 2, 2, 2, 3, 3, 4, 1, 2, 3, 4, 5]
             self.num_fingers = 5
 
-        target_link_human_indices = (np.stack([origin_link_index, task_link_index], axis=0) * 4).astype(int)
+        human_thumb_idx = target_tip_link_human_indices[0]
+        human_index_idx = target_tip_link_human_indices[1]
+        human_middle_idx = target_tip_link_human_indices[2]
+        human_ring_idx = target_tip_link_human_indices[3]
+        human_origin_link_index = [human_index_idx, human_middle_idx, human_ring_idx, human_middle_idx, human_ring_idx, human_ring_idx, 0, 0, 0, 0]
+        human_task_link_index = [human_thumb_idx, human_thumb_idx, human_thumb_idx, human_index_idx, human_index_idx, human_middle_idx, human_thumb_idx, human_index_idx, human_middle_idx, human_ring_idx]
+        target_link_human_indices = (np.stack([human_origin_link_index, human_task_link_index], axis=0)).astype(int)
+
         link_names = [wrist_link_name] + finger_tip_link_names
         target_origin_link_names = [link_names[index] for index in origin_link_index]
         target_task_link_names = [link_names[index] for index in task_link_index]
