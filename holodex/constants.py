@@ -1,9 +1,10 @@
 import os.path as path
 import holodex
 import numpy as np
+from math import pi as PI
 
 # Retarget type
-RETARGET_TYPE = "dexpilot"
+RETARGET_TYPE = "joint"
 
 # Robot type
 HAND_TYPE = "Leap"
@@ -22,6 +23,8 @@ LEAP_JOINT_OFFSETS = {
 # 16 degree 0 position
 LEAP_HOME_POSITION = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
 
+# Jaka
+JAKA_POSITIONS = [-PI/2,0,-PI/2,0,-PI/2,-PI*124.5/180]
 
 # Allegro
 ALLEGRO_JOINT_STATE_TOPIC = '/allegroHand/joint_states'
