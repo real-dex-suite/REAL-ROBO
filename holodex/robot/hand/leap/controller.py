@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 import numpy as np
+import rospy
+from sensor_msgs.msg import JointState
 
 from holodex.robot.hand.leap.leap_hand_utils.dynamixel_client import *
 import holodex.robot.hand.leap.leap_hand_utils.leap_hand_utils as lhu
-import time
-#######################################################
+from leap_hand.srv import *#######################################################
 """This can control and query the LEAP Hand
 
 I recommend you only query when necessary and below 90 samples a second.  Each of position, velociy and current costs one sample, so you can sample all three at 30 hz or one at 90hz.
@@ -19,94 +20,70 @@ I recommend you only query when necessary and below 90 samples a second.  Each o
 """
 ########################################################
 class LeapNode:
-    def __init__(self, vel_limit=100):
-        ####Some parameters
-        # self.ema_amount = float(rospy.get_param('/leaphand_node/ema', '1.0')) #take only current
-        self.kP = 600
-        self.kI = 0
-        self.kD = 200
-        self.curr_lim = 350
-        self.prev_pos = self.pos = self.curr_pos = lhu.allegro_to_LEAPhand(np.zeros(16))
-           
-        #You can put the correct port here or have the node auto-search for a hand at the first 3 ports.
-        self.motors = motors = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-        try:
-            self.dxl_client = DynamixelClient(motors, '/dev/ttyUSB0', 4000000)
-            self.dxl_client.connect()
-        except Exception:
-            try:
-                self.dxl_client = DynamixelClient(motors, '/dev/ttyUSB1', 4000000)
-                self.dxl_client.connect()
-            except Exception:
-                self.dxl_client = DynamixelClient(motors, 'COM13', 4000000)
-                self.dxl_client.connect()
-        #Enables position-current control mode and the default parameters, it commands a position and then caps the current so the motors don't overload
-        self.dxl_client.sync_write(motors, np.ones(len(motors))*5, 11, 1)
-        self.dxl_client.set_torque_enabled(motors, True)
-        self.dxl_client.sync_write(motors, np.ones(len(motors)) * self.kP, 84, 2) # Pgain stiffness     
-        self.dxl_client.sync_write([0,4,8], np.ones(3) * (self.kP * 0.75), 84, 2) # Pgain stiffness for side to side should be a bit less
-        self.dxl_client.sync_write(motors, np.ones(len(motors)) * self.kI, 82, 2) # Igain
-        self.dxl_client.sync_write(motors, np.ones(len(motors)) * self.kD, 80, 2) # Dgain damping
-        self.dxl_client.sync_write([0,4,8], np.ones(3) * (self.kD * 0.75), 80, 2) # Dgain damping for side to side should be a bit less
-        #Max at current (in unit 1ma) so don't overheat and grip too hard #500 normal or #350 for lite
-        self.dxl_client.sync_write(motors, np.ones(len(motors)) * self.curr_lim, 102, 2)
-        self.dxl_client.write_desired_pos(self.motors, self.curr_pos)
+    def __init__(self, cmd_type, vel_limit=100):
+        self.cmd_type = cmd_type
 
+        self.cmd_allegro = rospy.Publisher("/leaphand_node/cmd_allegro", JointState, queue_size = 1) 
+        self.cmd_leap = rospy.Publisher("/leaphand_node/cmd_leap", JointState, queue_size = 1)
+        self.cmd_ones = rospy.Publisher("/leaphand_node/cmd_ones", JointState, queue_size = 1)
+        
         self.angle_min, self.angle_max = lhu.LEAPsim_limits()
         self.vel_limit = vel_limit
+
+        self.prev_pos = self.pos = self.curr_pos = lhu.allegro_to_LEAPhand(np.zeros(16))
 
     #Receive LEAP pose and directly control the robot
     def set_leap(self, pose):
         self.prev_pos = self.curr_pos
         pose = self.compute_pose_according_to_vel_limit(self.prev_pos, pose)
         self.curr_pos = np.array(pose)
-        self.dxl_client.write_desired_pos(self.motors, self.curr_pos)
+        #Set the position of the hand when you're done
+        stater = JointState()
+        stater.position = self.curr_pos.copy()
+        self.cmd_leap.publish(stater)
     #allegro compatibility
     def set_allegro(self, pose, clip=True):
         if clip:
             pose = np.clip(pose, self.angle_min, self.angle_max)
+        # TODO vel limit weired, clean publish for diff func
         pose = lhu.allegro_to_LEAPhand(pose, zeros=False)
         self.prev_pos = self.curr_pos
         pose = self.compute_pose_according_to_vel_limit(self.prev_pos, pose)
         self.curr_pos = np.array(pose)
-        self.dxl_client.write_desired_pos(self.motors, self.curr_pos)
-
-    #compatibility
-    def move_hand(self, pose, clip=True):
-        if clip:
-            pose = np.clip(pose, self.angle_min, self.angle_max)
-        pose = lhu.allegro_to_LEAPhand(pose, zeros=False)
-        self.prev_pos = self.curr_pos
-        pose = self.compute_pose_according_to_vel_limit(self.prev_pos, pose)
-        self.curr_pos = np.array(pose)
-        self.dxl_client.write_desired_pos(self.motors, self.curr_pos)
+        #Set the position of the hand when you're done
+        stater = JointState()
+        stater.position = self.curr_pos
+        self.cmd_leap.publish(stater)
     
     #Sim compatibility, first read the sim value in range [-1,1] and then convert to leap
     def set_ones(self, pose):
         pose = lhu.sim_ones_to_LEAPhand(np.array(pose))
         self.prev_pos = self.curr_pos
+        pose = self.compute_pose_according_to_vel_limit(self.prev_pos, pose)
         self.curr_pos = np.array(pose)
-        self.dxl_client.write_desired_pos(self.motors, self.curr_pos)
+        #Set the position of the hand when you're done
+        stater = JointState()
+        stater.position = self.curr_pos
+        self.cmd_leap.publish(stater)
 
     def compute_pose_according_to_vel_limit(self, prev_pos, curr_pos):
         # compute the velocity
         vel = curr_pos - prev_pos
-        print(vel)
         # clip the velocity
         vel = np.clip(vel, -self.vel_limit, self.vel_limit)
         # compute the position
         pose = prev_pos + vel
         return pose
+    
+    #compatibility
+    def move_hand(self, pose, clip=True):
+        if self.cmd_type == "allegro":
+            self.set_allegro(pose, clip=clip)
+        elif self.cmd_type == "leap": # TODO configure other cmd clip
+            self.set_leap(pose)
+        elif self.cmd_type == "ones":   
+            self.set_ones(pose)
 
-    #read position
-    def read_pos(self):
-        return self.dxl_client.read_pos()
-    #read velocity
-    def read_vel(self):
-        return self.dxl_client.read_vel()
-    #read current
-    def read_cur(self):
-        return self.dxl_client.read_cur()
 #init the node
 def main(**kwargs):
     leap_hand = LeapNode()
