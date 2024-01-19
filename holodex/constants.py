@@ -4,11 +4,11 @@ import numpy as np
 from math import pi as PI
 
 # Retarget type
-RETARGET_TYPE = "joint"
+RETARGET_TYPE = "dexpilot"
 
 # Robot type
 HAND_TYPE = "Leap"
-ARM_TYPE = "Kinova"
+ARM_TYPE = "Jaka"
 
 # Leap hand
 LEAP_JOINT_STATE_TOPIC = '/leapHand/joint_states'
@@ -22,9 +22,14 @@ LEAP_JOINT_OFFSETS = {
 }
 # 16 degree 0 position
 LEAP_HOME_POSITION = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
+LEAP_CMD_TYPE = 'allegro'
 
 # Jaka
-JAKA_POSITIONS = [-PI/2,0,-PI/2,0,-PI/2,-PI*124.5/180]
+JAKA_DOF = 6
+JAKA_POSITIONS = {
+    'home':[-PI/2,0,-PI/2,0,-PI/2,-PI*124.5/180]
+}
+JAKA_IP = "192.168.90.71"
 
 # Allegro
 ALLEGRO_JOINT_STATE_TOPIC = '/allegroHand/joint_states'
@@ -123,6 +128,7 @@ LP_ARM_TRANSFORM_COORDS_TOPIC = "/leapmotion/transformed_arm_keypoints"
 
 # Joint information
 LP_NUM_KEYPOINTS = 21
+LP_ARM_NUM_KEYPOINTS = 4
 
 LP_HAND_VISULIZATION_LINKS = [
     (0, 1),
@@ -166,6 +172,10 @@ LP_VIEW_LIMITS = {
 
 # Other params
 LP_FREQ = 30
+
+LP_TO_ROBOT = np.array([-1, 0, 0,
+                                 0, 0, 1,
+                                 0, 1, 0]).reshape(3, 3)
 
 OPERATOR2MANO_RIGHT = np.array(
     [

@@ -6,7 +6,8 @@ retargeting:
   # Target refers to the retargeting target, which is the robot hand
   target_joint_names: null
   finger_tip_link_names: [ "thumb_tip_head", "index_tip_head", "middle_tip_head", "ring_tip_head" ]
-  target_tip_link_human_indices: [19, 20, 21, 22]
+  target_tip_link_human_indices: [19, 20, 21, 22] # oculus #TODO condifureable
+  # target_tip_link_human_indices: [4, 8, 12, 16]
   scaling_factor: 1.6
 
   # A smaller alpha means stronger filtering, i.e. more smooth but also larger latency

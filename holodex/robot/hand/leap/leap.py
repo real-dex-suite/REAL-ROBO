@@ -5,6 +5,8 @@ from .leap_kdl import LeapKDL
 from holodex.constants import *
 from holodex.utils.files import get_yaml_data, get_path_in_package
 from holodex.robot.hand.leap.controller import LeapNode # From https://github.com/NYU-robot-learning/DIME-Controllers
+import holodex.robot.hand.leap.leap_hand_utils.leap_hand_utils as lhu
+
 from copy import deepcopy as copy
 
 from leap_hand.srv import *
@@ -12,7 +14,7 @@ from leap_hand.srv import *
 class LeapHand(object):
     def __init__(self):
         self.kdl_solver = LeapKDL()
-        self.controller = LeapNode()
+        self.controller = LeapNode(LEAP_CMD_TYPE)
         self.joint_limit_config = get_yaml_data(get_path_in_package("robot/hand/leap/configs/leap_link_info.yaml"))['links_info']
 
         self.leap_joint_state = None
@@ -37,8 +39,14 @@ class LeapHand(object):
     def get_hand_position(self):
         if self.leap_position is None:
             return None
-
-        return np.array(self.leap_position().position, dtype = np.float32)
+        
+        if LEAP_CMD_TYPE == 'allegro':
+            leap_hand_position = np.array(self.leap_position().position, dtype = np.float32)
+            leap_hand_position = lhu.LEAPhand_to_allegro(leap_hand_position, zeros=False)
+        elif LEAP_CMD_TYPE == 'leap':
+            leap_hand_position = np.array(self.leap_position().position, dtype = np.float32)
+            # TODO configure position type
+        return leap_hand_position
 
     def get_hand_velocity(self):
         if self.leap_velocity is None:
