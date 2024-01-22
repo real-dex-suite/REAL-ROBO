@@ -130,10 +130,6 @@ if __name__ == "__main__":
     controller = Leap.Controller()
     robot = JakaArm()
 
-    fake_to_ee_transformation_matrix = np.eye(4)
-    fake_to_ee_transformation_matrix[:3, :3] = R.from_euler('xyz', [-180, 0, 124.5], degrees=True).as_matrix()
-
-
     SENSOR_TO_ROBOT = np.array([-1, 0, 0,
                                  0, 0, 1,
                                  0, 1, 0]).reshape(3, 3)
