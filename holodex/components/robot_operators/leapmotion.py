@@ -255,11 +255,10 @@ class LPDexArmTeleOp(object):
         # new_arm_pose[3:6] = R.from_matrix(new_arm_transformation_matrix[:3,:3]).as_euler('xyz')
 
         # convert rotation vector to rotation matrix
-        init_rotation = self.init_arm_transformation_matrix[:3,:3]
+        new_ee_transformation_matrix = (self.init_arm_transformation_matrix @ (self.fake_to_ee_transformation_matrix@transfomation)) @ np.linalg.inv(self.fake_to_ee_transformation_matrix)
 
-        # create composed rotation and translation
-        composed_rotation = np.dot(rotation, init_rotation)
-        composed_translation = np.dot(rotation, translation) + self.init_arm_pos
+        composed_translation = new_ee_transformation_matrix[:3,3]
+        composed_rotation = new_ee_transformation_matrix[:3,:3]
 
         # convert rotation matrix to rotation vector
         composed_rotation = R.from_matrix(composed_rotation).as_euler('xyz')
@@ -324,6 +323,10 @@ class LPDexArmTeleOp(object):
         self.init_arm_transformation_matrix = np.eye(4)
         self.init_arm_transformation_matrix[:3,:3] = R.from_euler('xyz', self.init_arm_rot).as_matrix()
         self.init_arm_transformation_matrix[:3,3] = self.init_arm_pos.reshape(3)
+
+        # algin ee coordinate to fake coordinate consistent with human hand coordinate
+        self.fake_to_ee_transformation_matrix = np.eye(4)
+        self.fake_to_ee_transformation_matrix[:3, :3] = np.linalg.inv(self.init_arm_transformation_matrix[:3,:3])
 
     def move(self, finger_configs):
         print("\n******************************************************************************")

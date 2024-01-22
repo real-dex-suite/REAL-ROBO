@@ -129,7 +129,10 @@ class SampleListener(Leap.Listener):
 if __name__ == "__main__":
     controller = Leap.Controller()
     robot = JakaArm()
-    R.from_euler('xyz', [0, 0, 0], degrees=True).as_matrix()
+
+    fake_to_ee_transformation_matrix = np.eye(4)
+    fake_to_ee_transformation_matrix[:3, :3] = R.from_euler('xyz', [-180, 0, 124.5], degrees=True).as_matrix()
+
 
     SENSOR_TO_ROBOT = np.array([-1, 0, 0,
                                  0, 0, 1,
@@ -174,6 +177,10 @@ if __name__ == "__main__":
         init_arm_transformation_matrix[:3,:3] = R.from_euler('xyz', init_arm_rot).as_matrix()
         init_arm_transformation_matrix[:3,3] = init_arm_pos.reshape(3)
 
+        # algin ee coordinate to fake coordinate consistent with human hand coordinate
+        fake_to_ee_transformation_matrix = np.eye(4)
+        fake_to_ee_transformation_matrix[:3, :3] = np.linalg.inv(init_arm_transformation_matrix[:3,:3])
+
         frame_number += 1
 
     while True:
@@ -204,11 +211,17 @@ if __name__ == "__main__":
         # new_arm_pose[3:6] = R.from_matrix(new_arm_transformation_matrix[:3,:3]).as_euler('xyz')
 
         # convert rotation vector to rotation matrix
-        init_rotation = init_arm_transformation_matrix[:3,:3]
+        # init_rotation = init_arm_transformation_matrix[:3,:3]
 
-        # create composed rotation and translation
-        composed_rotation = np.dot(rotation, init_rotation)
-        composed_translation = np.dot(rotation, translation) + init_arm_pos
+        # # create composed rotation and translation
+        # composed_rotation = np.dot(init_rotation, rotation)
+        # composed_translation = np.dot(rotation, translation) + init_arm_pos
+
+        new_ee_transformation_matrix = (init_arm_transformation_matrix @ (fake_to_ee_transformation_matrix@transfomation)) @ np.linalg.inv(fake_to_ee_transformation_matrix)
+
+        composed_translation = new_ee_transformation_matrix[:3,3]
+        composed_rotation = new_ee_transformation_matrix[:3,:3]
+        
 
         # convert rotation matrix to rotation vector
         composed_rotation = R.from_matrix(composed_rotation).as_euler('xyz')
