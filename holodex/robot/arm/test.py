@@ -12,6 +12,11 @@ from scipy.spatial.transform import Rotation as R
 
 import open3d as o3d
 
+direction_scale = 2
+palm_normal_scale = 2
+wrist_position_scale = 2
+palm_position_scale = 2
+
 def leap_vector_to_numpy(vector) -> np.ndarray:
     """Converts a Leap Motion `Vector` to a numpy array."""
     return np.array([vector.x, vector.y, vector.z])
@@ -37,10 +42,10 @@ def leap_hand_to_keypoints(hand) -> np.ndarray:
     return keypoints, armpoints
 
 def leap_motion_to_robot(armpoints):
-    direction = np.dot(SENSOR_TO_ROBOT,armpoints[0]/1000)
-    palm_normal = np.dot(SENSOR_TO_ROBOT,armpoints[1]/1000)
-    wrist_position = np.dot(SENSOR_TO_ROBOT,armpoints[2]/1000)
-    palm_position = np.dot(SENSOR_TO_ROBOT,armpoints[3]/1000)
+    direction = np.dot(SENSOR_TO_ROBOT,armpoints[0]/1000) * direction_scale
+    palm_normal = np.dot(SENSOR_TO_ROBOT,armpoints[1]/1000) * palm_normal_scale
+    wrist_position = np.dot(SENSOR_TO_ROBOT,armpoints[2]/1000) * wrist_position_scale
+    palm_position = np.dot(SENSOR_TO_ROBOT,armpoints[3]/1000) * palm_position_scale
     return direction, palm_normal, wrist_position, palm_position
 
 def best_fit_transform(A, B):
@@ -129,7 +134,7 @@ class SampleListener(Leap.Listener):
 if __name__ == "__main__":
     controller = Leap.Controller()
     robot = JakaArm()
-
+    # TODO double check this
     SENSOR_TO_ROBOT = np.array([-1, 0, 0,
                                  0, 0, 1,
                                  0, 1, 0]).reshape(3, 3)

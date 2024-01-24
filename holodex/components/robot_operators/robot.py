@@ -23,7 +23,7 @@ JOINT_OFFSETS = eval(f'{hand_type.upper()}_JOINT_OFFSETS')
 
 class RobotController(object):
     def __init__(self, teleop) -> None:
-        self.arm = Arm() if ARM_TYPE is not None else None
+        self.arm = Arm(safety_moving_trans=JAKA_SAFE_MOVING_TRANS) if ARM_TYPE is not None else None
 
         self.hand = Hand() if HAND_TYPE is not None else None
         self.hand_KDLControl = KDLControl() if HAND_TYPE is not None else None

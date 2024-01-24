@@ -282,10 +282,10 @@ class LPDexArmTeleOp(object):
         return desired_cmd
     
     def leap_motion_to_robot(self, armpoints):
-        direction = np.dot(LP_TO_ROBOT,armpoints[0])
-        palm_normal = np.dot(LP_TO_ROBOT,armpoints[1])
-        wrist_position = np.dot(LP_TO_ROBOT,armpoints[2])
-        palm_position = np.dot(LP_TO_ROBOT,armpoints[3])
+        direction = np.dot(LP_TO_ROBOT,armpoints[0]) * LP_WORKSPACE_SCALE
+        palm_normal = np.dot(LP_TO_ROBOT,armpoints[1]) * LP_WORKSPACE_SCALE
+        wrist_position = np.dot(LP_TO_ROBOT,armpoints[2]) * LP_WORKSPACE_SCALE
+        palm_position = np.dot(LP_TO_ROBOT,armpoints[3]) * LP_WORKSPACE_SCALE
         return direction, palm_normal, wrist_position, palm_position
 
     def _calibrate_lp_arm_bounds(self):

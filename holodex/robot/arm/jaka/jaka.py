@@ -6,7 +6,7 @@ from jkrc import jkrc
 from holodex.constants import JAKA_IP, JAKA_POSITIONS, JAKA_DOF
 
 class JakaArm(object):
-    def __init__(self, servo_mode = True):
+    def __init__(self, servo_mode = True, safety_moving_trans = 100):
         # rospy.init_node('jaka_arm_controller')
 
         self.robot = jkrc.RC(JAKA_IP)
@@ -21,6 +21,7 @@ class JakaArm(object):
         self.is_block = True
         self.speed = 0.1
         self.dof = JAKA_DOF
+        self.safety_moving_trans = safety_moving_trans
 
         self.servo_mode = servo_mode
         self.robot.servo_move_enable(self.servo_mode)
@@ -48,7 +49,18 @@ class JakaArm(object):
     def move_joint(self, input_angles):
         self.robot.joint_move(input_angles, self.move_mode, self.is_block, self.speed)
     
+    def safety_check(self, target_arm_pose):
+        current_arm_pose = self.get_tcp_position()
+        if np.any(np.abs(target_arm_pose[:3] - current_arm_pose[:3]) > self.safety_moving_trans):
+            print('Target pose is too far from current pose, arm will not moving')
+            return current_arm_pose
+        else:
+            return target_arm_pose
+        
+    
     def move(self, input_cmd):
+        # TODO velocity limit
+        input_cmd = self.safety_check(input_cmd)
         # TODO add pose command
         if self.servo_mode:
             self.robot.servo_move_enable(True)

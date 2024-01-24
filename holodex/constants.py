@@ -30,6 +30,7 @@ JAKA_POSITIONS = {
     'home':[-PI/2,0,-PI/2,0,-PI/2,-PI*124.5/180]
 }
 JAKA_IP = "192.168.90.71"
+JAKA_SAFE_MOVING_TRANS = 50
 
 # Allegro
 ALLEGRO_JOINT_STATE_TOPIC = '/allegroHand/joint_states'
@@ -185,11 +186,15 @@ OPERATOR2MANO_RIGHT = np.array(
     ]
 )
 
+LP_WORKSPACE_SCALE = 2
+
 # VR detector 
 # ROS Topic names
+VR_RIGHT_ARM_KEYPOINTS_TOPIC = '/OculusVR/right_arm_keypoints'
 VR_RIGHT_HAND_KEYPOINTS_TOPIC = '/OculusVR/right_hand_keypoints'
 VR_LEFT_HAND_KEYPOINTS_TOPIC = '/OculusVR/left_hand_keypoints'
 
+VR_RIGHT_ARM_TRANSFORM_COORDS_TOPIC = '/OculusVR/transformed_right_arm'
 VR_RIGHT_TRANSFORM_COORDS_TOPIC = "/OculusVR/transformed_right"
 VR_LEFT_TRANSFORM_DIR_TOPIC = "/OculusVR/left_dir_vectors"
 
@@ -200,6 +205,7 @@ VR_2D_PLOT_SAVE_PATH = path.join(CALIBRATION_FILES_PATH, 'oculus_hand_2d_plot.jp
 
 # Joint Information
 OCULUS_NUM_KEYPOINTS = 24
+OCULUS_ARM_NUM_KEYPOINTS = 3
 VR_THUMB_BOUND_VERTICES = 8
 
 OCULUS_JOINTS = {
@@ -220,3 +226,9 @@ OCULUS_VIEW_LIMITS = {
 
 # Other params
 VR_FREQ = 60
+
+
+
+LEFT_TO_RIGHT = np.array([1, 0, 0,
+                          0, -1, 0,
+                          0, 0, 1]).reshape(3, 3)

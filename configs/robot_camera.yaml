@@ -5,4 +5,4 @@ robot_cam_serial_numbers:
 resolution: [1280, 720]
 
 # Visualize image streams
-visualize_stream: false
+visualize_stream: True

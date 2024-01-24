@@ -82,3 +82,20 @@ def best_fit_transform(A, B):
         T[:m, m] = t
 
         return T, R, t
+
+
+def check_best_fit_transform():
+    from scipy.spatial.transform import Rotation as R
+    random_rotation = R.random().as_matrix()
+    random_translation = np.random.rand(3)
+    random_transform = np.eye(4)
+    random_transform[:3, :3] = random_rotation
+    random_transform[:3, 3] = random_translation
+    test_data = np.random.rand(100, 3)
+    transformed_data = (random_transform @ np.hstack([test_data, np.ones((test_data.shape[0], 1))]).T).T[:, :3]
+    transform, _, _ = best_fit_transform(test_data, transformed_data)
+    return transform
+
+
+if __name__ == "__main__":
+    check_best_fit_transform()
