@@ -227,8 +227,6 @@ OCULUS_VIEW_LIMITS = {
 # Other params
 VR_FREQ = 60
 
-
-
 LEFT_TO_RIGHT = np.array([1, 0, 0,
                           0, -1, 0,
                           0, 0, 1]).reshape(3, 3)

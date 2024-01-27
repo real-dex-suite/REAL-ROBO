@@ -223,13 +223,13 @@
     <visual>
       <origin xyz="0.0132 -0.0061 0.0144" rpy="3.1415926 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/fingertip_paxini.obj"/>
+        <mesh filename="meshes/visual/fingertip_paxini_fu.obj"/>
       </geometry>
     </visual>
     <collision>     <!-- fingertip -->
       <origin xyz="0.0132 -0.0061 0.0144" rpy="3.1415926 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/fingertip_paxini.obj"/>
+        <mesh filename="meshes/visual/fingertip_paxini_fu.obj"/>
       </geometry>
     </collision>
     <!-- <collision>
@@ -405,13 +405,13 @@
     <visual>
       <origin xyz="0.0132 -0.0061 0.01450" rpy="3.1415926 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/fingertip_paxini.obj"/>
+        <mesh filename="meshes/visual/fingertip_paxini_fu.obj"/>
       </geometry>
     </visual>
     <collision>     <!-- fingertip -->
       <origin xyz="0.0132 -0.0061 0.01450" rpy="3.1415926 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/fingertip_paxini.obj"/>
+        <mesh filename="meshes/visual/fingertip_paxini_fu.obj"/>
       </geometry>
     </collision>
     <!-- <visual>
@@ -598,13 +598,13 @@
     <visual>
       <origin xyz="0.0132 -0.0061 0.0145" rpy="3.1415926 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/fingertip_paxini.obj"/>
+        <mesh filename="meshes/visual/fingertip_paxini_fu.obj"/>
       </geometry>
     </visual>
     <collision>     <!-- fingertip -->
       <origin xyz="0.0132 -0.0061 0.0145" rpy="3.1415926 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/fingertip_paxini.obj"/>
+        <mesh filename="meshes/visual/fingertip_paxini_fu.obj"/>
       </geometry>
     </collision>
     <!-- <visual>
@@ -773,13 +773,13 @@
     <visual>
       <origin xyz="0.0625 0.0784 0.0489" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/thumb_fingertip_paxini.obj"/>
+        <mesh filename="meshes/visual/thumb_fingertip_paxini_fu.obj"/>
       </geometry>
     </visual>
     <collision>     <!-- fingertip -->
       <origin xyz="0.0625 0.0784 0.0489" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/thumb_fingertip_paxini.obj"/>
+        <mesh filename="meshes/visual/thumb_fingertip_paxini_fu.obj"/>
       </geometry>
     </collision>
 
