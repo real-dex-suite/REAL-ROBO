@@ -128,6 +128,105 @@ class SampleListener(Leap.Listener):
 
 if __name__ == "__main__":
     robot = JakaArm()
+    
+    # moving test
+    # robot = JakaArm(servo_mode=False)
+    # arm_position = robot.get_tcp_position()
+    # # home pose
+    # print("home pose")
+    # current_arm_pose = arm_position.copy()
+    # robot.set_tcp_position(current_arm_pose)
+    # print("current ee pose: ", robot.get_tcp_position())
+    # print("current joint pose: ", robot.get_arm_position())
+
+    # print("move along x positive 50mm")
+    # current_arm_pose = arm_position.copy()
+    # current_arm_pose[0] += 50
+    # robot.set_tcp_position(current_arm_pose)
+    # print("current ee pose: ", robot.get_tcp_position())
+    # print("current joint pose: ", robot.get_arm_position())
+
+    # print("move along x negative 50mm")
+    # current_arm_pose = arm_position.copy()
+    # current_arm_pose[0] -= 50
+    # robot.set_tcp_position(current_arm_pose)
+    # print("current ee pose: ", robot.get_tcp_position())
+    # print("current joint pose: ", robot.get_arm_position())
+
+    # print("move along y positive 50mm")
+    # current_arm_pose = arm_position.copy()
+    # current_arm_pose[1] += 50
+    # robot.set_tcp_position(current_arm_pose)
+    # print("current ee pose: ", robot.get_tcp_position())
+    # print("current joint pose: ", robot.get_arm_position())
+
+    # print("move along y negative 50mm")
+    # current_arm_pose = arm_position.copy()
+    # current_arm_pose[1] -= 50
+    # robot.set_tcp_position(current_arm_pose)
+    # print("current ee pose: ", robot.get_tcp_position())
+    # print("current joint pose: ", robot.get_arm_position())
+
+    # print("move along z positive 50mm")
+    # current_arm_pose = arm_position.copy()
+    # current_arm_pose[2] += 50
+    # robot.set_tcp_position(current_arm_pose)
+    # print("current ee pose: ", robot.get_tcp_position())
+    # print("current joint pose: ", robot.get_arm_position())
+
+    # print("move along z negative 50mm")
+    # current_arm_pose = arm_position.copy()
+    # current_arm_pose[2] -= 50
+    # robot.set_tcp_position(current_arm_pose)
+    # print("current ee pose: ", robot.get_tcp_position())
+    # print("current joint pose: ", robot.get_arm_position())
+
+    # print("move along roll positive 0.5 rad")
+    # current_arm_pose = arm_position.copy()
+    # current_arm_pose[3] += 0.5
+    # robot.set_tcp_position(current_arm_pose)
+    # print("current ee pose: ", robot.get_tcp_position())
+    # print("current joint pose: ", robot.get_arm_position())
+
+    # print("move along roll negative 0.5 rad")
+    # current_arm_pose = arm_position.copy()
+    # current_arm_pose[3] -= 0.5
+    # robot.set_tcp_position(current_arm_pose)
+    # print("current ee pose: ", robot.get_tcp_position())
+    # print("current joint pose: ", robot.get_arm_position())
+
+    # print("move along pitch positive 0.5 rad")
+    # current_arm_pose = arm_position.copy()
+    # current_arm_pose[4] += 0.5
+    # robot.set_tcp_position(current_arm_pose)
+    # print("current ee pose: ", robot.get_tcp_position())
+    # print("current joint pose: ", robot.get_arm_position())
+
+    # print("move along pitch negative 0.5 rad")
+    # current_arm_pose = arm_position.copy()
+    # current_arm_pose[4] -= 0.5
+    # robot.set_tcp_position(current_arm_pose)
+    # print("current ee pose: ", robot.get_tcp_position())
+    # print("current joint pose: ", robot.get_arm_position())
+
+    # print("move along yaw positive 0.5 rad")
+    # current_arm_pose = arm_position.copy()
+    # current_arm_pose[5] += 0.5
+    # robot.set_tcp_position(current_arm_pose)
+    # print("current ee pose: ", robot.get_tcp_position())
+    # print("current joint pose: ", robot.get_arm_position())
+
+    # print("move along yaw negative 0.5 rad")
+    # current_arm_pose = arm_position.copy()
+    # current_arm_pose[5] -= 0.5
+    # robot.set_tcp_position(current_arm_pose)
+    # print("current ee pose: ", robot.get_tcp_position())
+    # print("current joint pose: ", robot.get_arm_position())
+
+
+    
+
+
 
 
         

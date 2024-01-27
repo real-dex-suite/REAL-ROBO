@@ -23,7 +23,7 @@ JOINT_OFFSETS = eval(f'{hand_type.upper()}_JOINT_OFFSETS')
 
 class RobotController(object):
     def __init__(self, teleop) -> None:
-        self.arm = Arm(safety_moving_trans=JAKA_SAFE_MOVING_TRANS) if ARM_TYPE is not None else None
+        self.arm = Arm(teleop=teleop, safety_moving_trans=JAKA_SAFE_MOVING_TRANS) if ARM_TYPE is not None else None
 
         self.hand = Hand() if HAND_TYPE is not None else None
         self.hand_KDLControl = KDLControl() if HAND_TYPE is not None else None
@@ -87,7 +87,7 @@ class RobotController(object):
 if __name__ == "__main__":
     import rospy
     rospy.init_node("test")
-    robot = RobotController()
+    robot = RobotController(teleop=False)
     robot.home_robot()
     # robot.reset_robot()
     arm_position = robot.get_arm_position()

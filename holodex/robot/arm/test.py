@@ -231,7 +231,7 @@ if __name__ == "__main__":
         new_arm_pose[3:6] = composed_rotation
 
         # robot.robot.linear_move_extend(new_arm_pose,0,True,100,50,0.1)
-        robot.robot.servo_p(new_arm_pose,0)
+        robot.move(np.array(new_arm_pose))
     
     robot.robot.servo_move_enable(False)
 
