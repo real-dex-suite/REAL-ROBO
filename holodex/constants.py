@@ -27,10 +27,10 @@ LEAP_CMD_TYPE = 'allegro'
 # Jaka
 JAKA_DOF = 6
 JAKA_POSITIONS = {
-    'home':[-PI/2,0,-PI/2,0,-PI/2,-PI*124.5/180]
+    'home':[-PI/2,-PI*2.2/180,-PI*72/180,0,-PI*105/180,-PI*124.5/180]
 }
 JAKA_IP = "192.168.90.71"
-JAKA_SAFE_MOVING_TRANS = 100
+JAKA_SAFE_MOVING_TRANS = 50
 
 # Allegro
 ALLEGRO_JOINT_STATE_TOPIC = '/allegroHand/joint_states'

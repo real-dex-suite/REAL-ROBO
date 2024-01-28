@@ -34,6 +34,7 @@ class JakaArm(object):
         self.dof = JAKA_DOF
         self.safety_moving_trans = safety_moving_trans
         self.joint_vel_limit = 0.5 #TODO configureable
+        self.joint_pos_limit = np.array([6.28, 2.09, 2.27, 6.28, 2.09, 6.28])
 
         self.servo_mode = servo_mode
         self.robot.servo_move_enable(self.servo_mode)
@@ -68,6 +69,7 @@ class JakaArm(object):
         current_arm_pose = self.get_tcp_position()
         if np.any(np.abs(target_arm_pose[:3] - current_arm_pose[:3]) > self.safety_moving_trans):
             print('Target pose is too far from current pose, arm will not moving')
+            self.robot.motion_abort()
             return current_arm_pose
         else:
             return target_arm_pose
@@ -79,12 +81,17 @@ class JakaArm(object):
     
     def compute_joint(self, cart_pose):
         current_joint = self.get_arm_position()
-        success, joint = self.robot.kine_inverse(current_joint, cart_pose)
-        if success == 0:
-            return joint
+        joint_tuple = self.robot.kine_inverse(current_joint, cart_pose)
+        if len(joint_tuple) > 1:
+            return joint_tuple[1]
         else:
+            print(joint_tuple)
             print('Inverse kinematics failed, arm will not moving')
             return current_joint
+    
+    def limit_joint_pos(self, target_joint):
+        target_joint = np.clip(target_joint, -self.joint_pos_limit, self.joint_pos_limit)
+        return target_joint
     
     def move(self, input_cmd):
         if self.teleop:
@@ -95,6 +102,7 @@ class JakaArm(object):
             input_cmd = self.compute_joint(input_cmd)
             if self.teleop:
                 input_cmd = self.limit_joint_vel(input_cmd)
+                input_cmd = self.limit_joint_pos(input_cmd)
             self.robot.servo_j(input_cmd, self.move_mode)
         else:
             self.robot.joint_move(input_cmd, self.move_mode, self.is_block, self.speed)
