@@ -8,7 +8,9 @@ from holodex.constants import *
 
 
 class RealSenseRobotStream(object):
-    def __init__(self, cam_serial_num, robot_cam_num, rotation_angle = 0):
+    def __init__(self, cam_serial_num, robot_cam_num, rotation_angle = 0, mode='rgb'):
+        self.mode = mode
+
         # Initializing ROS Node
         rospy.init_node('robot_cam_{}_stream'.format(robot_cam_num))
 
@@ -17,7 +19,8 @@ class RealSenseRobotStream(object):
 
         # Creating ROS Publishers
         self.color_image_publisher = ImagePublisher(publisher_name = '/robot_camera_{}/color_image'.format(robot_cam_num), color_image = True)
-        self.depth_image_publisher = ImagePublisher(publisher_name = '/robot_camera_{}/depth_image'.format(robot_cam_num), color_image = False)
+        if self.mode == 'rgbd':
+            self.depth_image_publisher = ImagePublisher(publisher_name = '/robot_camera_{}/depth_image'.format(robot_cam_num), color_image = False)
         self.intrinsics_publisher = FloatArrayPublisher(publisher_name = '/robot_camera_{}/intrinsics'.format(robot_cam_num))
 
         # Setting rotation settings
@@ -37,15 +40,17 @@ class RealSenseRobotStream(object):
 
         # Enabling camera streams
         config.enable_stream(rs.stream.color, width, height, rs.format.bgr8, fps)
-        config.enable_stream(rs.stream.depth, width, height, rs.format.z16, fps)
+        if self.mode == 'rgbd':
+            config.enable_stream(rs.stream.depth, width, height, rs.format.z16, fps)
 
         # Starting the pipeline
         cfg = pipeline.start(config)
         device = cfg.get_device()
 
-        # Setting the depth mode to high accuracy mode
-        depth_sensor = device.first_depth_sensor()
-        depth_sensor.set_option(rs.option.visual_preset, processing_preset) # High accuracy post-processing mode
+        if self.mode == 'rgbd':
+            # Setting the depth mode to high accuracy mode
+            depth_sensor = device.first_depth_sensor()
+            depth_sensor.set_option(rs.option.visual_preset, processing_preset) # High accuracy post-processing mode
         self.realsense = pipeline
 
         # Obtaining the color intrinsics matrix for aligning the color and depth images
@@ -69,26 +74,38 @@ class RealSenseRobotStream(object):
             frames = self.realsense.wait_for_frames()
             aligned_frames = self.align.process(frames)
 
-            depth_frame = aligned_frames.get_depth_frame()
+            if self.mode == 'rgbd':
+                depth_frame = aligned_frames.get_depth_frame()
             color_frame = aligned_frames.get_color_frame()
 
             # Getting the images from the frames
-            depth_image = np.asanyarray(depth_frame.get_data())
+            if self.mode == 'rgbd':
+                depth_image = np.asanyarray(depth_frame.get_data())
             color_image = np.asanyarray(color_frame.get_data())
 
-        return color_image, depth_image
-
+            if self.mode == 'rgbd':
+                return color_image, depth_image
+            else:
+                return color_image
+            
     def stream(self):
         print("Starting stream!\n")
         while True:
-            color_image, depth_image = self.get_rgb_depth_images()
-            color_image, depth_image = rotate_image(color_image, self.rotation_angle), rotate_image(depth_image, self.rotation_angle)
+            if self.mode == 'rgbd':
+                color_image, depth_image = self.get_rgb_depth_images()
+                color_image, depth_image = rotate_image(color_image, self.rotation_angle), rotate_image(depth_image, self.rotation_angle)
+
+                # Publishing the original color and depth images
+                self.color_image_publisher.publish(color_image)
+                self.depth_image_publisher.publish(depth_image)
+            elif self.mode == 'rgb':
+                color_image = self.get_rgb_depth_images()
+                color_image = rotate_image(color_image, self.rotation_angle)
+
+                # Publishing the original color image
+                self.color_image_publisher.publish(color_image)
 
             # Publishing the intrinsics of the camera
             self.intrinsics_publisher.publish(self.intrinsics_matrix.reshape(9).tolist())
-
-            # Publishing the original color and depth images
-            self.color_image_publisher.publish(color_image)
-            self.depth_image_publisher.publish(depth_image)
 
             self.rate.sleep()
