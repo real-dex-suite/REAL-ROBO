@@ -143,45 +143,59 @@ class OculusThumbBoundCalibrator(object):
     def _calibrate(self):
         register = input("Place the thumb in the top right corner.")
         top_right_coord = self._get_xy_coords()
+        print('top right coord:', top_right_coord)
 
         register = input("Place the thumb in the bottom right corner.")
         bottom_right_coord = self._get_xy_coords()
+        print('bottom right coord:', bottom_right_coord)
 
         register = input("Place the thumb in the index bottom corner.")
         index_bottom_coord = self._get_xy_coords()
+        print('index bottom coord:', index_bottom_coord)
 
         register = input("Place the thumb in the index top corner.")
         index_top_coord = self._get_xy_coords()
+        print('index top coord:', index_top_coord)
 
         register = input("Stretch the thumb to get highest index bound z value.")
         index_high_z = self._get_z_coord()
+        print('index high z:', index_high_z)
 
         register = input("Relax the thumb to get the lowest index bound z value.")
         index_low_z = self._get_z_coord()
+        print('index low z:', index_low_z)
 
         register = input("Place the thumb in the middle bottom corner.")
         middle_bottom_coord = self._get_xy_coords()
+        print('middle bottom coord:', middle_bottom_coord)
 
         register = input("Place the thumb in the middle top corner.")
         middle_top_coord = self._get_xy_coords()
+        print('middle top coord:', middle_top_coord)
 
         register = input("Stretch the thumb to get highest middle bound z value.")
         middle_high_z = self._get_z_coord()
+        print('middle high z:', middle_high_z)
 
         register = input("Relax the thumb to get the lowest middle bound z value.")
         middle_low_z = self._get_z_coord()
+        print('middle low z:', middle_low_z)
 
         register = input("Place the thumb in the ring bottom corner.")
         ring_bottom_coord = self._get_xy_coords()
+        print('ring bottom coord:', ring_bottom_coord)
 
         register = input("Place the thumb in the ring top corner.")
         ring_top_coord = self._get_xy_coords()
+        print('ring top coord:', ring_top_coord)
         
         register = input("Stretch the thumb to get highest ring bound z value.")
         ring_high_z = self._get_z_coord()
+        print('ring high z:', ring_high_z)
 
         register = input("Relax the thumb to get the lowest ring bound z value.")
         ring_low_z = self._get_z_coord()
+        print('ring low z:', ring_low_z)
 
         thumb_index_bounds = np.array([
             top_right_coord,
