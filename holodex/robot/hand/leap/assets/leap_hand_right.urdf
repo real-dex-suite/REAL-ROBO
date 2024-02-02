@@ -4,7 +4,7 @@
   <joint name="base_joint" type="fixed">
     <parent link="base"/>
     <child link="palm_lower"/>
-    <origin xyz="-0.015 0.038 0.098" rpy="0 -1.57079 0"/>
+    <origin xyz="-0.015 0.038 0.058" rpy="0 -1.57079 0"/>
   </joint>
 
    <link name="thumb_base"/>
@@ -180,7 +180,7 @@
     <visual>
       <origin xyz="0.0211 -0.0084 0.0097" rpy="-3.1415926 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/dip.obj"/>
+        <mesh filename="meshes/visual/dip_new_convex.obj"/>
       </geometry>
     </visual>
     <collision>     <!-- dip -->
@@ -223,13 +223,13 @@
     <visual>
       <origin xyz="0.0132 -0.0061 0.0144" rpy="3.1415926 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/fingertip_paxini_fu.obj"/>
+        <mesh filename="meshes/visual/fingertip_new_convex.obj"/>
       </geometry>
     </visual>
     <collision>     <!-- fingertip -->
       <origin xyz="0.0132 -0.0061 0.0144" rpy="3.1415926 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/fingertip_paxini_fu.obj"/>
+        <mesh filename="meshes/visual/fingertip_new_convex.obj"/>
       </geometry>
     </collision>
     <!-- <collision>
@@ -362,7 +362,7 @@
     <visual>
       <origin xyz="0.0211 -0.0084 0.0097" rpy="-3.14159 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/dip.obj"/>
+        <mesh filename="meshes/visual/dip_new_convex.obj"/>
       </geometry>
     </visual>
     <collision>     <!-- dip -->
@@ -405,13 +405,13 @@
     <visual>
       <origin xyz="0.0132 -0.0061 0.01450" rpy="3.1415926 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/fingertip_paxini_fu.obj"/>
+        <mesh filename="meshes/visual/fingertip_new_convex.obj"/>
       </geometry>
     </visual>
     <collision>     <!-- fingertip -->
       <origin xyz="0.0132 -0.0061 0.01450" rpy="3.1415926 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/fingertip_paxini_fu.obj"/>
+        <mesh filename="meshes/visual/fingertip_new_convex.obj"/>
       </geometry>
     </collision>
     <!-- <visual>
@@ -555,7 +555,7 @@
     <visual>
       <origin xyz="0.0211 -0.0084 0.0097" rpy="-3.14159 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/dip.obj"/>
+        <mesh filename="meshes/visual/dip_new_convex.obj"/>
       </geometry>
     </visual>
     <collision>     <!-- dip -->
@@ -598,13 +598,13 @@
     <visual>
       <origin xyz="0.0132 -0.0061 0.0145" rpy="3.1415926 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/fingertip_paxini_fu.obj"/>
+        <mesh filename="meshes/visual/fingertip_new_convex.obj"/>
       </geometry>
     </visual>
     <collision>     <!-- fingertip -->
       <origin xyz="0.0132 -0.0061 0.0145" rpy="3.1415926 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/fingertip_paxini_fu.obj"/>
+        <mesh filename="meshes/visual/fingertip_new_convex.obj"/>
       </geometry>
     </collision>
     <!-- <visual>
@@ -773,13 +773,13 @@
     <visual>
       <origin xyz="0.0625 0.0784 0.0489" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/thumb_fingertip_paxini_fu.obj"/>
+        <mesh filename="meshes/visual/thumb_fingertip_paxini_convex.obj"/>
       </geometry>
     </visual>
     <collision>     <!-- fingertip -->
       <origin xyz="0.0625 0.0784 0.0489" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="meshes/visual/thumb_fingertip_paxini_fu.obj"/>
+        <mesh filename="meshes/visual/thumb_fingertip_paxini_convex.obj"/>
       </geometry>
     </collision>
 
@@ -853,6 +853,57 @@
   </joint>
 
   <!--  virtual auxiliary link-->
+  <!-- <link name="thumb_tip_head"/>
+  <link name="index_tip_head"/>
+  <link name="middle_tip_head"/>
+  <link name="ring_tip_head"/>
+  <joint name="thumb_tip" type="fixed">
+    <parent link="thumb_fingertip"/>
+    <child link="thumb_tip_head"/>
+    <origin rpy="0 0 0" xyz="0 -0.059 -0.015"/>
+  </joint>
+  <joint name="index_tip" type="fixed">
+    <parent link="fingertip"/>
+    <child link="index_tip_head"/>
+    <origin rpy="0 0 0" xyz="0 -0.047 0.015"/>
+  </joint>
+  <joint name="middle_tip" type="fixed">
+    <parent link="fingertip_2"/>
+    <child link="middle_tip_head"/>
+    <origin rpy="0 0 0" xyz="0 -0.047 0.015"/>
+  </joint>
+  <joint name="ring_tip" type="fixed">
+    <parent link="fingertip_3"/>
+    <child link="ring_tip_head"/>
+    <origin rpy="0 0 0" xyz="0 -0.047 0.015"/>
+  </joint> -->
+
+  <link name="thumb_dip_head"/>
+  <link name="index_dip_head"/>
+  <link name="middle_dip_head"/>
+  <link name="ring_dip_head"/>
+  <joint name="thumb_dip_retarget" type="fixed">
+    <parent link="thumb_fingertip"/>
+    <child link="thumb_dip_head"/>
+    <origin xyz="0.0 0.0 -0.014" rpy="0 0 0"/>
+  </joint>
+  <joint name="index_dip_retarget" type="fixed">
+    <parent link="fingertip"/>
+    <child link="index_dip_head"/>
+    <origin xyz="0.0 0.0 0.014" rpy="0 0 0"/>
+  </joint>
+  <joint name="middle_dip_retarget" type="fixed">
+    <parent link="fingertip_2"/>
+    <child link="middle_dip_head"/>
+    <origin xyz="0.0 0.0 0.014" rpy="0 0 0"/>
+  </joint>
+  <joint name="ring_dip_retarget" type="fixed">
+    <parent link="fingertip_3"/>
+    <child link="ring_dip_head"/>
+    <origin xyz="0.0 0.0 0.014" rpy="0 0 0"/>
+  </joint>
+
+  <!--  virtual auxiliary link-->
   <link name="thumb_tip_head"/>
   <link name="index_tip_head"/>
   <link name="middle_tip_head"/>
@@ -860,21 +911,21 @@
   <joint name="thumb_tip" type="fixed">
     <parent link="thumb_fingertip"/>
     <child link="thumb_tip_head"/>
-    <origin rpy="0 0 0" xyz="0 -0.048 -0.015"/>
+    <origin rpy="0 0 0" xyz="-0.011 -0.043 -0.015"/>
   </joint>
   <joint name="index_tip" type="fixed">
     <parent link="fingertip"/>
     <child link="index_tip_head"/>
-    <origin rpy="0 0 0" xyz="0 -0.036 0.015"/>
+    <origin rpy="0 0 0" xyz="-0.011 -0.029 0.015"/>
   </joint>
   <joint name="middle_tip" type="fixed">
     <parent link="fingertip_2"/>
     <child link="middle_tip_head"/>
-    <origin rpy="0 0 0" xyz="0 -0.036 0.015"/>
+    <origin rpy="0 0 0" xyz="-0.011 -0.029 0.015"/>
   </joint>
   <joint name="ring_tip" type="fixed">
     <parent link="fingertip_3"/>
     <child link="ring_tip_head"/>
-    <origin rpy="0 0 0" xyz="0 -0.036 0.015"/>
+    <origin rpy="0 0 0" xyz="-0.011 -0.029 0.015"/>
   </joint>
 </robot>
