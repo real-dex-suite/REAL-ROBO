@@ -36,7 +36,9 @@ class RetargetingConfig:
 
     # DexPilot retargeting link names
     target_tip_link_human_indices: Optional[np.ndarray] = None
+    target_dip_link_human_indices: Optional[np.ndarray] = None
     finger_tip_link_names: Optional[List[str]] = None
+    finger_dip_link_names: Optional[List[str]] = None
 
     # Scaling factor for vector retargeting only
     # For example, Allegro is 1.6 times larger than normal human hand, then this scaling factor should be 1.6
@@ -177,9 +179,11 @@ class RetargetingConfig:
                 robot,
                 joint_names,
                 finger_tip_link_names=self.finger_tip_link_names,
+                finger_dip_link_names=self.finger_dip_link_names,
                 wrist_link_name=self.wrist_link_name,
                 scaling=self.scaling_factor,
                 target_tip_link_human_indices=self.target_tip_link_human_indices,
+                target_dip_link_human_indices=self.target_dip_link_human_indices,
             )
         else:
             raise RuntimeError()

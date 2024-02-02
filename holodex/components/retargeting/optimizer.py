@@ -309,6 +309,7 @@ class DexPilotAllegroOptimizer(Optimizer):
         robot: sapien.Articulation,
         target_joint_names: List[str],
         finger_tip_link_names: List[str],
+        finger_dip_link_names: List[str],
         wrist_link_name: str,
         huber_delta=0.03,
         norm_delta=4e-3,
@@ -319,7 +320,8 @@ class DexPilotAllegroOptimizer(Optimizer):
         eta1=1e-4,
         eta2=3e-2,
         scaling=1.0,
-        target_tip_link_human_indices=np.array([0,1,2,3])
+        target_tip_link_human_indices=np.array([0,1,2,3]),
+        target_dip_link_human_indices=np.array([])
     ):
         if len(finger_tip_link_names) < 4 or len(finger_tip_link_names) > 5:
             raise ValueError(f"DexPilot optimizer can only be applied to hands with four or five fingers")
@@ -327,6 +329,12 @@ class DexPilotAllegroOptimizer(Optimizer):
         if is_four_finger:
             origin_link_index = [2, 3, 4, 3, 4, 4, 0, 0, 0, 0]
             task_link_index = [1, 1, 1, 2, 2, 3, 1, 2, 3, 4]
+            if len(finger_dip_link_names) > 0:
+                origin_link_index += [5, 6, 7, 8]
+                task_link_index += [1, 2, 3, 4]
+                self.num_dip_fingers = len(finger_dip_link_names)
+            else:
+                self.num_dip_fingers = 0
             self.num_fingers = 4
         else:
             origin_link_index = [2, 3, 4, 5, 3, 4, 5, 4, 5, 5, 0, 0, 0, 0, 0]
@@ -339,9 +347,13 @@ class DexPilotAllegroOptimizer(Optimizer):
         human_ring_idx = target_tip_link_human_indices[3]
         human_origin_link_index = [human_index_idx, human_middle_idx, human_ring_idx, human_middle_idx, human_ring_idx, human_ring_idx, 0, 0, 0, 0]
         human_task_link_index = [human_thumb_idx, human_thumb_idx, human_thumb_idx, human_index_idx, human_index_idx, human_middle_idx, human_thumb_idx, human_index_idx, human_middle_idx, human_ring_idx]
+        if len(finger_dip_link_names) > 0:
+            human_origin_link_index += target_dip_link_human_indices
+            human_task_link_index += [human_thumb_idx, human_index_idx, human_middle_idx, human_ring_idx]
+
         target_link_human_indices = (np.stack([human_origin_link_index, human_task_link_index], axis=0)).astype(int)
 
-        link_names = [wrist_link_name] + finger_tip_link_names
+        link_names = [wrist_link_name] + finger_tip_link_names + finger_dip_link_names
         target_origin_link_names = [link_names[index] for index in origin_link_index]
         target_task_link_names = [link_names[index] for index in task_link_index]
 
@@ -388,7 +400,7 @@ class DexPilotAllegroOptimizer(Optimizer):
             self.s2_project_index_origin = np.array([1, 2, 3, 2, 3, 3], dtype=int)
             self.s2_project_index_task = np.array([0, 0, 0, 1, 1, 2], dtype=int)
             self.projected_dist = np.array([eta1] * 4 + [eta2] * 6)
-
+     
     def _get_objective_function_four_finger(
         self, target_vector: np.ndarray, fixed_qpos: np.ndarray, last_qpos: np.ndarray
     ):
@@ -419,7 +431,7 @@ class DexPilotAllegroOptimizer(Optimizer):
         # We change the weight to 10 instead of 1 here, for vector originate from wrist to fingertips
         # This ensures better intuitive mapping due wrong pose detection
         weight = torch.from_numpy(
-            np.concatenate([weight, np.ones(self.num_fingers, dtype=np.float32) * len_proj + self.num_fingers])
+            np.concatenate([weight, np.ones(self.num_fingers, dtype=np.float32) * len_proj + self.num_fingers, np.ones(self.num_dip_fingers, dtype=np.float32)*10])
         )
 
         # Compute reference distance vector
