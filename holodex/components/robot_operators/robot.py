@@ -31,6 +31,8 @@ class RobotController(object):
         self.joints_per_finger = JOINTS_PER_FINGER
         self.joint_offsets = JOINT_OFFSETS
         self.teleop = teleop
+
+        self.home_robot()
     
     def home_robot(self):
         if ARM_TYPE is not None:
@@ -90,21 +92,21 @@ if __name__ == "__main__":
     robot = RobotController(teleop=False)
     robot.home_robot()
     # robot.reset_robot()
-    arm_position = robot.get_arm_position()
-    hand_position = robot.get_hand_position()
-    hand_position[1] += 1.57
-    robot.move_hand(hand_position)
-    arm_position[1] += 0.2
-    robot.move_arm(arm_position)
+    # arm_position = robot.get_arm_position()
+    # hand_position = robot.get_hand_position()
+    # hand_position[1] += 1.57
+    # robot.move_hand(hand_position)
+    # arm_position[1] += 0.2
+    # robot.move_arm(arm_position)
 
-    current_hand_position = robot.get_hand_position()
-    current_arm_position = robot.get_arm_position()
-    # print difference
-    print("Hand position difference: ", current_hand_position - hand_position)
-    print("Arm position difference: ", current_arm_position - arm_position)
+    # current_hand_position = robot.get_hand_position()
+    # current_arm_position = robot.get_arm_position()
+    # # print difference
+    # print("Hand position difference: ", current_hand_position - hand_position)
+    # print("Arm position difference: ", current_arm_position - arm_position)
 
-    current_hand_position[1] -= 1.57
-    current_arm_position[1] -= 0.2
-    robot.move_hand(current_hand_position)
-    robot.move_arm(current_arm_position)
-    robot.move_arm_and_hand(np.concatenate((current_arm_position, current_hand_position)))
+    # current_hand_position[1] -= 1.57
+    # current_arm_position[1] -= 0.2
+    # robot.move_hand(current_hand_position)
+    # robot.move_arm(current_arm_position)
+    # robot.move_arm_and_hand(np.concatenate((current_arm_position, current_hand_position)))

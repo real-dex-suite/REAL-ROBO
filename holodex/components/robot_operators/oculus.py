@@ -15,6 +15,40 @@ hand_type = HAND_TYPE.lower()
 JOINTS_PER_FINGER = eval(f'{hand_type.upper()}_JOINTS_PER_FINGER')
 JOINT_OFFSETS = eval(f'{hand_type.upper()}_JOINT_OFFSETS')
 
+def get_mano_coord_frame(keypoint_3d_array, oculus=False):
+        """
+        Compute the 3D coordinate frame (orientation only) from detected 3d key points
+        :param points: keypoint3 detected from MediaPipe detector. Order: [wrist, index, middle, pinky]
+        :return: the coordinate frame of wrist in MANO convention
+        """
+        if oculus:
+            assert keypoint_3d_array.shape == (24, 3)
+            points = keypoint_3d_array[[0, 6, 9], :] # TODO check if this is correct
+        else:
+            assert keypoint_3d_array.shape == (21, 3)
+            points = keypoint_3d_array[[0, 5, 9], :]
+
+        # Compute vector from palm to the first joint of middle finger
+        x_vector = points[0] - points[2]
+
+        # Normal fitting with SVD
+        points = points - np.mean(points, axis=0, keepdims=True)
+        u, s, v = np.linalg.svd(points)
+
+        normal = v[2, :]
+
+        # Gram–Schmidt Orthonormalize
+        x = x_vector - np.sum(x_vector * normal) * normal
+        x = x / np.linalg.norm(x)
+        z = np.cross(x, normal)
+
+        # We assume that the vector from pinky to index is similar the z axis in MANO convention
+        if np.sum(z * (points[1] - points[2])) < 0:
+            normal *= -1
+            z *= -1
+        frame = np.stack([x, normal, z], axis=1)
+        return frame
+
 class VRDexArmTeleOp(object):
     def __init__(self):
         # Initializing the ROS Node
@@ -45,7 +79,21 @@ class VRDexArmTeleOp(object):
             config_path = f"holodex/components/retargeting/configs/teleop/{HAND_TYPE.lower()}_hand_right_{RETARGET_TYPE}.yml"
             RetargetingConfig.set_default_urdf_dir("holodex/robot/hand")
             self.retargeting = RetargetingConfig.load_from_file(config_path).build()
-        else:
+        elif RETARGET_TYPE == 'joint':
+            # Calibrating to get the thumb bounds
+            self._calibrate_bounds()
+
+            # Getting the bounds for the robot hand
+            robohand_bounds_path = get_path_in_package(f'components/robot_operators/configs/{hand_type}_vr.yaml')
+            with open(robohand_bounds_path, 'r') as file:
+                self.robohand_bounds = yaml.safe_load(file)
+        elif RETARGET_TYPE == 'dexjoint':
+            from holodex.components.retargeting.retargeting_config import RetargetingConfig
+
+            config_path = f"holodex/components/retargeting/configs/teleop/{HAND_TYPE.lower()}_hand_right_dexpilot.yml"
+            RetargetingConfig.set_default_urdf_dir("holodex/robot/hand")
+            self.retargeting = RetargetingConfig.load_from_file(config_path).build()
+
             # Calibrating to get the thumb bounds
             self._calibrate_bounds()
 
@@ -179,7 +227,7 @@ class VRDexArmTeleOp(object):
             task_indices = indices[1, :]
             ref_value = self.hand_coords[task_indices, :] - self.hand_coords[origin_indices, :]
             desired_joint_angles = self.retargeting.retarget(ref_value)
-        else:
+        elif RETARGET_TYPE == 'joint':
             desired_joint_angles = copy(self.robot.get_hand_position())
 
             # Movement for the index finger
@@ -226,7 +274,74 @@ class VRDexArmTeleOp(object):
                 desired_joint_angles = self._get_3d_thumb_angles(desired_joint_angles)
             else:
                 desired_joint_angles = self._get_2d_thumb_angles(desired_joint_angles)
-        
+
+            desired_joint_angles = np.array(desired_joint_angles)[[1,0,2,3,5,4,6,7,9,8,10,11,12,13,14,15]] # the original hand order is 0,1, but in robot the order change to 1,0 for dexpilot, so for oculus we need to change back
+        elif RETARGET_TYPE == 'dexjoint':
+            indices = self.retargeting.optimizer.target_link_human_indices
+            origin_indices = indices[0, :]
+            task_indices = indices[1, :]
+
+            translated_coords = self.hand_coords.copy()
+            original_coord_frame = get_mano_coord_frame(translated_coords, oculus=True)
+            transformed_coords = translated_coords @ original_coord_frame @ OPERATOR2MANO_RIGHT
+            # transform coords around z axis for 180 degree
+            transformed_coords[:, 0] *= -1
+
+            ref_value = transformed_coords[task_indices, :] - transformed_coords[origin_indices, :]
+            desired_joint_angles = self.retargeting.retarget(ref_value)
+            desired_thumb_angles = desired_joint_angles[-5:].copy()
+
+            desired_joint_angles = copy(self.robot.get_hand_position())
+
+            # Movement for the index finger
+            if not finger_configs['freeze_index']:
+                desired_joint_angles = self.finger_joint_solver.calculate_finger_angles(
+                    finger_type = 'index',
+                    finger_joint_coords = self._get_finger_coords('index'),
+                    curr_angles = desired_joint_angles,
+                    moving_avg_arr = self.moving_average_queues['index']
+                )
+            else:
+                for idx in range(JOINTS_PER_FINGER):
+                    if idx > 0:
+                        desired_joint_angles[idx + JOINT_OFFSETS['index']] = 0.05
+                    else:
+                        desired_joint_angles[idx + JOINT_OFFSETS['index']] = 0
+
+            # Movement for the middle finger
+            if not finger_configs['freeze_middle']:
+                desired_joint_angles = self.finger_joint_solver.calculate_finger_angles(
+                    finger_type = 'middle',
+                    finger_joint_coords = self._get_finger_coords('middle'),
+                    curr_angles = desired_joint_angles,
+                    moving_avg_arr = self.moving_average_queues['middle']
+                )
+            else:
+                for idx in range(JOINTS_PER_FINGER):
+                    if idx > 0:
+                        desired_joint_angles[idx + JOINT_OFFSETS['middle']] = 0.05
+                    else:
+                        desired_joint_angles[idx + JOINT_OFFSETS['middle']] = 0
+
+            # Movement for the ring finger
+            # Calculating the translatory joint angles
+            desired_joint_angles = self.finger_joint_solver.calculate_finger_angles(
+                finger_type = 'ring',
+                finger_joint_coords = self._get_finger_coords('ring'),
+                curr_angles = desired_joint_angles,
+                moving_avg_arr = self.moving_average_queues['ring']
+            )
+
+            # Movement for the thumb finger - we disable 3D motion just for the thumb
+            if finger_configs['three_dim']:
+                desired_joint_angles = self._get_3d_thumb_angles(desired_joint_angles)
+            else:
+                desired_joint_angles = self._get_2d_thumb_angles(desired_joint_angles)
+
+            desired_joint_angles = np.array(desired_joint_angles)[[1,0,2,3,5,4,6,7,9,8,10,11,12,13,14,15]] # the original hand order is 0,1, but in robot the order change to 1,0 for dexpilot, so for oculus we need to change back
+            
+            desired_joint_angles[-5:] = desired_thumb_angles
+
         return desired_joint_angles
     
     def vr_to_robot(self, armpoints):
@@ -234,6 +349,7 @@ class VRDexArmTeleOp(object):
         # index_knuckle_coord = np.dot(VR_TO_ROBOT,np.dot(LEFT_TO_RIGHT, armpoints[1]))
         # pinky_knuckle_coord = np.dot(VR_TO_ROBOT,np.dot(LEFT_TO_RIGHT, armpoints[2]))
         # important! do not count use coordinate in world space!
+        armpoints[0] = np.average(armpoints, axis=0) # use mean as palm center position
         wrist_position = np.dot(LEFT_TO_RIGHT, armpoints[0])
         index_knuckle_coord = np.dot(LEFT_TO_RIGHT, armpoints[1] - armpoints[0])
         pinky_knuckle_coord = np.dot(LEFT_TO_RIGHT, armpoints[2] - armpoints[0])
@@ -316,7 +432,7 @@ class VRDexArmTeleOp(object):
         return desired_cmd
 
     def _calibrate_vr_arm_bounds(self):
-        inital_frame_number = 50
+        inital_frame_number = 1 # set to 50 will cause collision
         initial_hand_centers = []
         initial_hand_xs = []
         initial_hand_ys = []
