@@ -1,0 +1,162 @@
+import serial
+import warnings
+import struct
+
+from holodex.constants import *
+
+class PaxiniTactileStream:
+    """
+    Args:
+        serial_port
+        baudrate
+        vis
+    """
+    def __init__(self, serial_port_number, baudrate, vis=False):
+        self.serial_port_number = serial_port_number
+        self.baudrate = baudrate
+
+        self.force_unit = 0.1
+        self.vis = vis
+        self.point_per_sensor = 15 # accoding to paxini
+        self.force_dim_per_point = 3 # accoding to paxini
+        self.data_chunk_size = self.point_per_sensor * self.force_dim_per_point
+        self.force_data_start_index = 3 # accoding to paxini
+        self.full_data_chunk_size = 50 # accoding to paxini
+        # indices in paxini is not increase order, we change according to map
+        self.tip_indices = [9, 4, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11, 0, 5, 10] # accoding to paxini
+        self.pulp_indices = [3, 0, 10, 2, 8, 9, 1, 7, 5, 13, 14, 6, 4, 12, 11] # accoding to paxini
+        self.read_type = 'each'
+
+        self.tip_name = PAXINI_FINGER_NAMES['tip'] # accoding to paxini
+        self.pulp_name = PAXINI_FINGER_NAMES['pulp'] # accoding to paxini
+        
+        self.start_tag = []
+        for group in PAXINI_GROUP_IDS: # read each group first
+            for finger in PAXINI_FINGER_IDS:    
+                self.start_tag.append(finger+group)
+        
+        self.sensor_number = len(self.start_tag)
+
+        print(f"Started the Paxini Tactile stream on port: {serial_port_number} with baudrate: {baudrate}!")
+
+    def open(self):
+        self.serial_port = serial.Serial(
+            port=self.serial_port_number,
+            baudrate=self.baudrate,
+            bytesize=serial.EIGHTBITS,
+            parity=serial.PARITY_NONE,
+            stopbits=serial.STOPBITS_ONE,
+        )
+
+    def close(self):
+        if self.serial_port:
+            self.serial_port.close()
+
+    def flushInput(self):
+        if self.serial_port:
+            self.serial_port.reset_input_buffer()
+    
+    def read_each_sensor(self,start_tag):
+        self.serial_port.read_until(start_tag)
+        received_data = self.serial_port.read(1)
+        if received_data != b'\x01':
+            warning_message = f"\ndata invalid,will return None, tag={start_tag} state = {received_data}"
+            warnings.warn(warning_message)
+            self.wrong_data_flag = True
+        else:
+            return self.serial_port.read(size = self.data_chunk_size), self.wrong_data_flag
+    
+    def read_all_sensors(self,start_tag):
+        self.wrong_data_flag = False
+        self.serial_port.read_until(start_tag)
+        received_data = self.serial_port.read_until(start_tag)
+        received_data = received_data[-len(start_tag):] + received_data[:-len(start_tag)]
+        retry_time = 1
+
+        while len(received_data) != self.sensor_number*self.full_data_chunk_size:
+            self.serial_port.read_until(start_tag)
+            received_data = self.serial_port.read_until(start_tag)
+            received_data = received_data[-len(start_tag):] + received_data[:-len(start_tag)]
+            print("retry time: {retry_time}")
+            retry_time += 1
+
+        sequence_len = len(received_data)
+        format_string = f'<{sequence_len}b'
+        integer_values = struct.unpack(format_string, received_data)
+        integer_lists = list(integer_values)
+        integer_lists = np.array(integer_lists).reshape(self.sensor_number,self.full_data_chunk_size)
+        flag_lists =  [integer_list[2] for integer_list in integer_lists]
+        if len(set(flag_lists)) != 1:
+            self.wrong_data_flag = True
+
+        return received_data
+    
+    def process_data(self, tactile_data):
+        if self.read_type == 'all':
+            sequence_len = len(tactile_data)
+            format_string = f'<{sequence_len}b'
+            integer_values = struct.unpack(format_string, tactile_data)
+            integer_lists = list(integer_values)
+            integer_lists = np.array(integer_lists).reshape(self.sensor_number,self.full_data_chunk_size)
+            data_lists = [np.array(integer_list[self.force_data_start_index:self.force_data_start_index+self.data_chunk_size]).reshape(self.point_per_sensor,self.force_dim_per_point) for integer_list in integer_lists]
+            return data_lists
+        elif self.read_type == 'each':
+            sequence_len = len(tactile_data[0])
+            format_string = f'<{sequence_len}b'
+            integer_values = struct.unpack(format_string, tactile_data[0])
+            integer_list = list(integer_values)
+            integer_list = np.array(integer_list).reshape(self.point_per_sensor, self.force_dim_per_point)
+            return integer_list
+    
+    def transform_data_order(self, tactile_data):
+        for i in range(len(tactile_data)):
+            if self.tip_name in str(self.start_tag[i]):
+                tactile_data[i] = tactile_data[i][self.tip_indices]
+            elif self.pulp_name in str(self.start_tag[i]):
+                tactile_data[i] = tactile_data[i][self.pulp_indices]
+        
+        return tactile_data
+    
+    def get_data(self):
+        self.wrong_data_flag = True
+        read_step = 0
+        processed_data_list = None
+
+        while self.wrong_data_flag and read_step < 1:
+            self.wrong_data_flag = False
+            self.open()
+            self.flushInput()
+
+            if self.read_type == 'all':
+                raw_data_list = self.read_all_sensors(self.start_tag[0])
+            elif self.read_type == 'each':
+                raw_data_list = list(map(self.read_each_sensor, self.start_tag))
+
+            if not self.wrong_data_flag:
+                if self.read_type == 'all':
+                    processed_data_list = np.array(self.process_data(raw_data_list))
+                elif self.read_type == 'each':
+                    processed_data_list = np.array(list(map(self.process_data, raw_data_list)))
+                
+                processed_data_list = self.transform_data_order(processed_data_list)
+
+            self.close()
+            read_step += 1
+
+        return processed_data_list
+
+    def stream(self):
+        print("Starting stream!\n")
+        while True:
+            tactile_data = self.get_data()
+
+
+if __name__ == "__main__":
+    tactile = PaxiniTactileStream(serial_port_number = '/dev/ttyACM0', baudrate = 460800)
+    import time
+    while True:
+        st = time.time()
+        tactile_data = tactile.get_data()
+        print(time.time()-st)
+        if tactile_data is None:
+            print(tactile_data)
