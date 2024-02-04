@@ -65,6 +65,39 @@ KINOVA_POSITIONS = {
 # Calibration file paths
 CALIBRATION_FILES_PATH = path.join(path.dirname(holodex.__path__[0]), 'calibration_files')
 
+# Paxixni Tactile parameters
+PAXINI_FINGER_IDS = [b'\xaa', b'\xcc']
+PAXINI_GROUP_IDS = [b'\xee', b'\xff']
+PAXINI_FINGER_NAMES = {
+    'tip': 'aa',
+    'pulp': 'cc'
+}
+
+THUMB_TACTILE_INFO = {
+    'serial_port_number': "/dev/ttyACM0",
+    'group_id': 0,
+}
+INDEX_TACTILE_INFO = {
+    'serial_port_number': "/dev/ttyACM0",
+    'group_id': 1,
+}
+MIDDLE_TACTILE_INFO = {
+    'serial_port_number': "/dev/ttyACM1",
+    'group_id': 0,
+}
+RING_TACTILE_INFO = {
+    'serial_port_number': "/dev/ttyACM1",
+    'group_id': 1,
+}
+
+PAXINI_LEAPHAND = {
+    "thumb": THUMB_TACTILE_INFO,
+    "index": INDEX_TACTILE_INFO,
+    "middle": MIDDLE_TACTILE_INFO,
+    "ring": RING_TACTILE_INFO
+}
+TACTILE_FPS = 30
+
 # Realsense Camera parameters
 NUM_CAMS = 3
 CAM_FPS = 30
@@ -231,3 +264,6 @@ VR_FREQ = 120 #60 original
 LEFT_TO_RIGHT = np.array([1, 0, 0,
                           0, -1, 0,
                           0, 0, 1]).reshape(3, 3)
+
+
+

@@ -1,7 +1,9 @@
 import serial
 import warnings
 import struct
+import rospy
 
+from holodex.utils.network import FloatArrayPublisher
 from holodex.constants import *
 
 class PaxiniTactileStream:
@@ -12,6 +14,15 @@ class PaxiniTactileStream:
         vis
     """
     def __init__(self, serial_port_number, baudrate, vis=False):
+        # Initializing ROS Node
+        rospy.init_node('tactile_{}_stream'.format(serial_port_number.split('/')[-1]))
+        self.tactile_data_publisher = FloatArrayPublisher(publisher_name = '/tactile_{}/raw_data'.format(serial_port_number.split('/')[-1]))
+        # Setting ROS frequency
+        self.rate = rospy.Rate(TACTILE_FPS)
+
+        # Disabling scientific notations
+        np.set_printoptions(suppress=True)
+
         self.serial_port_number = serial_port_number
         self.baudrate = baudrate
 
@@ -147,8 +158,15 @@ class PaxiniTactileStream:
 
     def stream(self):
         print("Starting stream!\n")
+        # import time
         while True:
+            # st = time.time()
             tactile_data = self.get_data()
+            # print(self.serial_port_number, time.time()-st, tactile_data is None)
+            if tactile_data is not None:
+                # Publishing the tactile data
+                self.tactile_data_publisher.publish(tactile_data.flatten().tolist())
+            self.rate.sleep()
 
 
 if __name__ == "__main__":
