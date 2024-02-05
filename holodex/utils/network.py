@@ -2,7 +2,7 @@ import rospy
 import zmq
 
 from std_msgs.msg import Float64MultiArray, Bool
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, JointState
 from cv_bridge import CvBridge, CvBridgeError
 
 def create_pull_socket(HOST, PORT):
@@ -32,6 +32,15 @@ class FloatArrayPublisher(object):
         data_struct.data = float_array
         self.publisher.publish(data_struct)
 
+class JointStatePublisher(object):
+    def __init__(self, publisher_name):
+        # Initializing the publisher
+        self.publisher = rospy.Publisher(publisher_name, JointState, queue_size = 1)
+
+    def publish(self, position):
+        data_struct = JointState()
+        data_struct.position = position
+        self.publisher.publish(data_struct)
 
 class ImagePublisher(object):
     def __init__(self, publisher_name, color_image = False):

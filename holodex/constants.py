@@ -25,6 +25,9 @@ LEAP_HOME_POSITION = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.
 LEAP_CMD_TYPE = 'allegro'
 
 # Jaka
+JAKA_JOINT_STATE_TOPIC = '/jaka/joint_states'
+JAKA_EE_POSE_TOPIC = '/jaka/ee_pose'
+
 JAKA_DOF = 6
 JAKA_POSITIONS = {
     # 'home':[-PI/2,-PI*2.2/180,-PI*90/180,0,-PI*90/180,-PI*124.5/180]
@@ -66,6 +69,8 @@ KINOVA_POSITIONS = {
 CALIBRATION_FILES_PATH = path.join(path.dirname(holodex.__path__[0]), 'calibration_files')
 
 # Paxixni Tactile parameters
+POINT_PER_SENSOR = 15
+FORCE_DIM_PER_POINT = 3
 PAXINI_FINGER_IDS = [b'\xaa', b'\xcc']
 PAXINI_GROUP_IDS = [b'\xee', b'\xff']
 PAXINI_FINGER_NAMES = {
@@ -264,6 +269,3 @@ VR_FREQ = 120 #60 original
 LEFT_TO_RIGHT = np.array([1, 0, 0,
                           0, -1, 0,
                           0, 0, 1]).reshape(3, 3)
-
-
-
