@@ -9,8 +9,11 @@ demo_num: 1
 # data paths
 storage_path: 'recorded_data/'
 
+# Number of tactile sensor board
+num_tactiles: 2
+
 # Number of view images 
-num_cams: 3
+num_cams: 2
 
 # State Offset
 offset: 0
