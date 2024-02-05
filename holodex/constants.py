@@ -11,7 +11,7 @@ HAND_TYPE = "Leap"
 ARM_TYPE = "Jaka"
 
 # Leap hand
-LEAP_JOINT_STATE_TOPIC = '/leapHand/joint_states'
+LEAP_JOINT_STATE_TOPIC = '/leaphand_node/joint_states'
 LEAP_COMMANDED_JOINT_STATE_TOPIC = '/leapHand/commanded_joint_states'
 LEAP_JOINTS_PER_FINGER = 4
 LEAP_JOINT_OFFSETS = {

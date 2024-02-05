@@ -20,14 +20,14 @@ class LeapHand(object):
         self.leap_joint_state = None
         self.leap_commanded_joint_state = None
 
-        rospy.wait_for_service('/leap_position')
-        self.leap_position = rospy.ServiceProxy('/leap_position', leap_position)
-        rospy.wait_for_service('/leap_velocity')
-        self.leap_velocity = rospy.ServiceProxy('/leap_velocity', leap_velocity)
-        rospy.wait_for_service('/leap_effort')
-        self.leap_effort = rospy.ServiceProxy('/leap_effort', leap_effort)
+        # rospy.wait_for_service('/leap_position')
+        # self.leap_position = rospy.ServiceProxy('/leap_position', leap_position)
+        # rospy.wait_for_service('/leap_velocity')
+        # self.leap_velocity = rospy.ServiceProxy('/leap_velocity', leap_velocity)
+        # rospy.wait_for_service('/leap_effort')
+        # self.leap_effort = rospy.ServiceProxy('/leap_effort', leap_effort)
 
-        # rospy.Subscriber(LEAP_JOINT_STATE_TOPIC, JointState, self._callback_joint_state, queue_size = 1)
+        rospy.Subscriber(LEAP_JOINT_STATE_TOPIC, JointState, self._callback_joint_state, queue_size = 1)
         rospy.Subscriber(LEAP_COMMANDED_JOINT_STATE_TOPIC, JointState, self._callback_commanded_joint_state, queue_size = 1)
 
     def _callback_joint_state(self, joint_state):
@@ -37,28 +37,28 @@ class LeapHand(object):
         self.leap_commanded_joint_state = joint_state
 
     def get_hand_position(self):
-        if self.leap_position is None:
+        if self.leap_joint_state is None:
             return None
         
         if LEAP_CMD_TYPE == 'allegro':
-            leap_hand_position = np.array(self.leap_position().position, dtype = np.float32)
+            leap_hand_position = np.array(self.leap_joint_state.position, dtype = np.float32)
             leap_hand_position = lhu.LEAPhand_to_allegro(leap_hand_position, zeros=False)
         elif LEAP_CMD_TYPE == 'leap':
-            leap_hand_position = np.array(self.leap_position().position, dtype = np.float32)
+            leap_hand_position = np.array(self.leap_joint_state.position, dtype = np.float32)
             # TODO configure position type
         return leap_hand_position
 
     def get_hand_velocity(self):
-        if self.leap_velocity is None:
+        if self.leap_joint_state is None:
             return None
 
-        return np.array(self.leap_velocity().velocity, dtype = np.float32)
+        return np.array(self.leap_joint_state.velocity, dtype = np.float32)
 
     def get_hand_torque(self):
-        if self.leap_effort is None:
+        if self.leap_joint_state is None:
             return None
 
-        return np.array(self.leap_effort().effort, dtype = np.float32)
+        return np.array(self.leap_joint_state.effort, dtype = np.float32)
 
     def get_commanded_joint_position(self):
         if self.leap_commanded_joint_state is None:
