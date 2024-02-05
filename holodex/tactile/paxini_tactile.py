@@ -13,10 +13,10 @@ class PaxiniTactileStream:
         baudrate
         vis
     """
-    def __init__(self, serial_port_number, baudrate, vis=False):
+    def __init__(self, serial_port_number, tactile_num, baudrate, vis=False):
         # Initializing ROS Node
-        rospy.init_node('tactile_{}_stream'.format(serial_port_number.split('/')[-1]))
-        self.tactile_data_publisher = FloatArrayPublisher(publisher_name = '/tactile_{}/raw_data'.format(serial_port_number.split('/')[-1]))
+        rospy.init_node('tactile_{}_stream'.format(tactile_num))
+        self.tactile_data_publisher = FloatArrayPublisher(publisher_name = '/tactile_{}/raw_data'.format(tactile_num))
         # Setting ROS frequency
         self.rate = rospy.Rate(TACTILE_FPS)
 
@@ -28,8 +28,8 @@ class PaxiniTactileStream:
 
         self.force_unit = 0.1
         self.vis = vis
-        self.point_per_sensor = 15 # accoding to paxini
-        self.force_dim_per_point = 3 # accoding to paxini
+        self.point_per_sensor = POINT_PER_SENSOR # accoding to paxini
+        self.force_dim_per_point = FORCE_DIM_PER_POINT # accoding to paxini
         self.data_chunk_size = self.point_per_sensor * self.force_dim_per_point
         self.force_data_start_index = 3 # accoding to paxini
         self.full_data_chunk_size = 50 # accoding to paxini
@@ -48,7 +48,7 @@ class PaxiniTactileStream:
         
         self.sensor_number = len(self.start_tag)
 
-        print(f"Started the Paxini Tactile stream on port: {serial_port_number} with baudrate: {baudrate}!")
+        print(f"Started the Paxini Tactile {tactile_num} stream on port: {serial_port_number} with baudrate: {baudrate}!")
 
     def open(self):
         self.serial_port = serial.Serial(
@@ -170,7 +170,7 @@ class PaxiniTactileStream:
 
 
 if __name__ == "__main__":
-    tactile = PaxiniTactileStream(serial_port_number = '/dev/ttyACM0', baudrate = 460800)
+    tactile = PaxiniTactileStream(serial_port_number = '/dev/ttyACM0', tactile_num=2, baudrate = 460800)
     import time
     while True:
         st = time.time()

@@ -73,6 +73,22 @@ class BoolPublisher(object):
     def publish(self, bool):
         self.publisher.publish(Bool(bool))
 
+class TactileSubscriber(object):
+    def __init__(self, tactile_num):
+        try:
+            rospy.init_node(f'tactile_subscriber_{tactile_num}', disable_signals = True)
+        except:
+            pass
+        
+        self.tactile_data = None
+        # Initializing the subscriber
+        self.subscriber = rospy.Subscriber('/tactile_{}/raw_data'.format(tactile_num), Float64MultiArray, self._callback_tactile_raw_data, queue_size = 1)
+
+    def _callback_tactile_raw_data(self, tactile_data):
+        self.tactile_data = tactile_data.data
+
+    def get_data(self):
+        return self.tactile_data
 
 class ImageSubscriber(object):
     def __init__(self, subscriber_name, node_name, color = True):

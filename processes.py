@@ -5,12 +5,17 @@ from holodex.viz import Hand2DVisualizer, Hand3DVisualizer, MPImageVisualizer
 from holodex.viz.visualizer_3d import OculusLeftHandDirVisualizer
 from holodex.camera.realsense_camera import RealSenseRobotStream
 from holodex.camera.camera_streamer import RobotCameraStreamer
-
+from holodex.tactile.paxini_tactile import PaxiniTactileStream
 
 def notify_process_start(notification_statement):
     print("***************************************************************")
     print("     {}".format(notification_statement))
     print("***************************************************************")
+
+def start_paxini_tactile_stream(serial_port, tactile_num, baudrate):
+    notify_process_start("Starting Paxini Tactile Stream Process")
+    tactile = PaxiniTactileStream(serial_port, tactile_num, baudrate)
+    tactile.stream()
 
 def start_robot_cam_stream(cam_serial_num, robot_cam_num):
     notify_process_start("Starting Robot Camera Stream {} Process".format(robot_cam_num))
@@ -84,6 +89,16 @@ def deploy_model(configs):
     notify_process_start("Starting Deployment Process")
     deployer = DexArmDeploy(configs)
     deployer.solve()
+
+def get_tactile_stream_processes(configs):
+    tactile_processes = []
+    if configs['tactile']['type'] == 'paxini':
+        if len(configs['tactile']['serial_port_number']) > 0:
+            for idx, serial_port_number in enumerate(configs['tactile']['serial_port_number']):
+                tactile_processes.append(
+                    Process(target = start_paxini_tactile_stream, args = (serial_port_number, idx+1, configs['tactile']['baudrate']))
+                )
+    return tactile_processes
 
 def get_camera_stream_processes(configs):
     robot_camera_processes = []
