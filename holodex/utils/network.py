@@ -27,9 +27,11 @@ class FloatArrayPublisher(object):
         # Initializing the publisher
         self.publisher = rospy.Publisher(publisher_name, Float64MultiArray, queue_size = 1)
 
-    def publish(self, float_array):
+    def publish(self, float_array, id=0):
+        # use id to identify which serial number
         data_struct = Float64MultiArray()
         data_struct.data = float_array
+        data_struct.layout.data_offset = id
         self.publisher.publish(data_struct)
 
 class JointStatePublisher(object):

@@ -17,6 +17,7 @@ class PaxiniTactileStream:
         # Initializing ROS Node
         rospy.init_node('tactile_{}_stream'.format(tactile_num))
         self.tactile_data_publisher = FloatArrayPublisher(publisher_name = '/tactile_{}/raw_data'.format(tactile_num))
+        self.id = tactile_num
         # Setting ROS frequency
         self.rate = rospy.Rate(TACTILE_FPS)
 
@@ -34,12 +35,13 @@ class PaxiniTactileStream:
         self.force_data_start_index = 3 # accoding to paxini
         self.full_data_chunk_size = 50 # accoding to paxini
         # indices in paxini is not increase order, we change according to map
-        self.tip_indices = [9, 4, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11, 0, 5, 10] # accoding to paxini
-        self.pulp_indices = [3, 0, 10, 2, 8, 9, 1, 7, 5, 13, 14, 6, 4, 12, 11] # accoding to paxini
+        self.ip_indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14] # accoding to paxini
+        self.dp_indices = [4, 13, 1, 2, 3, 12, 14, 7, 8, 0, 11, 6, 5, 9, 10] # accoding to paxini
+        
         self.read_type = 'each'
 
-        self.tip_name = PAXINI_FINGER_NAMES['tip'] # accoding to paxini
-        self.pulp_name = PAXINI_FINGER_NAMES['pulp'] # accoding to paxini
+        self.tip_name = PAXINI_FINGER_PART_NAMES['tip'] # accoding to paxini
+        self.pulp_name = PAXINI_FINGER_PART_NAMES['pulp'] # accoding to paxini
         
         self.start_tag = []
         for group in PAXINI_GROUP_IDS: # read each group first
@@ -122,9 +124,9 @@ class PaxiniTactileStream:
     def transform_data_order(self, tactile_data):
         for i in range(len(tactile_data)):
             if self.tip_name in str(self.start_tag[i]):
-                tactile_data[i] = tactile_data[i][self.tip_indices]
+                tactile_data[i] = tactile_data[i][self.ip_indices]
             elif self.pulp_name in str(self.start_tag[i]):
-                tactile_data[i] = tactile_data[i][self.pulp_indices]
+                tactile_data[i] = tactile_data[i][self.dp_indices]
         
         return tactile_data
     
@@ -165,7 +167,7 @@ class PaxiniTactileStream:
             # print(self.serial_port_number, time.time()-st, tactile_data is None)
             if tactile_data is not None:
                 # Publishing the tactile data
-                self.tactile_data_publisher.publish(tactile_data.flatten().tolist())
+                self.tactile_data_publisher.publish(tactile_data.flatten().tolist(), self.id)
             self.rate.sleep()
 
 

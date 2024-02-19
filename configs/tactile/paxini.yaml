@@ -1,6 +1,7 @@
 type: paxini
 
 serial_port_number:
+ # from small to large
  - "/dev/ttyACM0"
  - "/dev/ttyACM1"
 

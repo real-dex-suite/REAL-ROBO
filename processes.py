@@ -95,8 +95,9 @@ def get_tactile_stream_processes(configs):
     if configs['tactile']['type'] == 'paxini':
         if len(configs['tactile']['serial_port_number']) > 0:
             for idx, serial_port_number in enumerate(configs['tactile']['serial_port_number']):
+                tactile_num = int(serial_port_number[serial_port_number.find("ACM")+3])
                 tactile_processes.append(
-                    Process(target = start_paxini_tactile_stream, args = (serial_port_number, idx+1, configs['tactile']['baudrate']))
+                    Process(target = start_paxini_tactile_stream, args = (serial_port_number, tactile_num+1, configs['tactile']['baudrate']))
                 )
     return tactile_processes
 
