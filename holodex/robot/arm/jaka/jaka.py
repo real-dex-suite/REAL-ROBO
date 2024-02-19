@@ -8,7 +8,7 @@ from holodex.utils.network import JointStatePublisher, FloatArrayPublisher
 
 class JakaArm(object):
     def __init__(self, servo_mode = True, teleop=False, safety_moving_trans = 100):
-        rospy.init_node('jaka_arm_controller')
+        # rospy.init_node('jaka_arm_controller')
 
         # Creating ROS Publishers
         self.joint_state_publisher = JointStatePublisher(publisher_name=JAKA_JOINT_STATE_TOPIC)

@@ -84,7 +84,7 @@ class DataCollector(object):
                 if self.hand.get_hand_position() is None:
                     print('Hand data not available!')
                     skip_loop = True
-                if self.arm_joint_state is None:
+                if self.arm_joint_state is None or self.arm_ee_pose is None:
                     print('Arm data not available!')
                     skip_loop = True
 
