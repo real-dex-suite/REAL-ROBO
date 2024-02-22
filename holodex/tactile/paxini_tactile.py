@@ -38,7 +38,7 @@ class PaxiniTactileStream:
         self.ip_indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14] # accoding to paxini
         self.dp_indices = [4, 13, 1, 2, 3, 12, 14, 7, 8, 0, 11, 6, 5, 9, 10] # accoding to paxini
         
-        self.read_type = 'each'
+        self.read_type = 'all'
 
         self.tip_name = PAXINI_FINGER_PART_NAMES['tip'] # accoding to paxini
         self.pulp_name = PAXINI_FINGER_PART_NAMES['pulp'] # accoding to paxini
@@ -48,6 +48,8 @@ class PaxiniTactileStream:
             for finger in PAXINI_FINGER_IDS:    
                 self.start_tag.append(finger+group)
         
+        assert self.start_tag == [b'\xaa\xee', b'\xcc\xee', b'\xaa\xff', b'\xcc\xff']
+
         self.sensor_number = len(self.start_tag)
 
         print(f"Started the Paxini Tactile {tactile_num} stream on port: {serial_port_number} with baudrate: {baudrate}!")
@@ -90,7 +92,7 @@ class PaxiniTactileStream:
             self.serial_port.read_until(start_tag)
             received_data = self.serial_port.read_until(start_tag)
             received_data = received_data[-len(start_tag):] + received_data[:-len(start_tag)]
-            print("retry time: {retry_time}")
+            print(f"retry time: {retry_time}")
             retry_time += 1
 
         sequence_len = len(received_data)
@@ -112,11 +114,13 @@ class PaxiniTactileStream:
             integer_lists = list(integer_values)
             integer_lists = np.array(integer_lists).reshape(self.sensor_number,self.full_data_chunk_size)
             data_lists = [np.array(integer_list[self.force_data_start_index:self.force_data_start_index+self.data_chunk_size]).reshape(self.point_per_sensor,self.force_dim_per_point) for integer_list in integer_lists]
+            # assert (np.array(np.array(data_lists).reshape(-1))<6).all()
             return data_lists
         elif self.read_type == 'each':
             sequence_len = len(tactile_data[0])
             format_string = f'<{sequence_len}b'
             integer_values = struct.unpack(format_string, tactile_data[0])
+            # assert (np.array(integer_values)<6).all()
             integer_list = list(integer_values)
             integer_list = np.array(integer_list).reshape(self.point_per_sensor, self.force_dim_per_point)
             return integer_list
@@ -172,7 +176,8 @@ class PaxiniTactileStream:
 
 
 if __name__ == "__main__":
-    tactile = PaxiniTactileStream(serial_port_number = '/dev/ttyACM0', tactile_num=2, baudrate = 460800)
+    tactile = PaxiniTactileStream(serial_port_number = '/dev/ttyACM0', tactile_num=1, baudrate = 460800)
+    # tactile.stream()
     import time
     while True:
         st = time.time()
