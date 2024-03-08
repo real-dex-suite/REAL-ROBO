@@ -92,7 +92,8 @@ class DataCollector(object):
                     if color_image_subscriber.get_image() is None:
                         print('Color image not available!')
                         skip_loop = True
-
+                
+                # Comment out the depth image subscriber for now
                 # for depth_image_subscriber in self.depth_image_subscribers:
                 #     if depth_image_subscriber.get_image() is None:
                 #         skip_loop = True
@@ -112,7 +113,7 @@ class DataCollector(object):
                 state['hand_joint_effort'] = self.hand.get_hand_torque()
                 state['hand_commanded_joint_position'] = self.hand.get_commanded_joint_position()
 
-                # Kinova data
+                # Arm data
                 state['arm_joint_positions'] = self.arm_joint_state.position
                 state['arm_ee_pose'] = self.arm_ee_pose.data
 

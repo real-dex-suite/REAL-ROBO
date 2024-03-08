@@ -32,3 +32,6 @@ outputs/*
 recorded_data/*
 filtered_data/*
 extracted_data/*
+
+# Test data
+test/*
