@@ -30,8 +30,8 @@ JAKA_EE_POSE_TOPIC = '/jaka/ee_pose'
 
 JAKA_DOF = 6
 JAKA_POSITIONS = {
-    # 'home':[-PI/2,-PI*2.2/180,-PI*90/180,0,-PI*90/180,-PI*124.5/180]
-    'home': [-PI*128/180, -PI*15/180, -PI*95/180, PI*8/180, -PI*65/180, -PI*168/180]
+    'home':[-PI/2,-PI*2.2/180,-PI*90/180,0,-PI*90/180,-PI*124.5/180]
+    # 'home': [-PI*128/180, -PI*15/180, -PI*95/180, PI*8/180, -PI*65/180, -PI*168/180]
 }
 JAKA_IP = "192.168.90.71"
 JAKA_SAFE_MOVING_TRANS = 50

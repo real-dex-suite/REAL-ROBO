@@ -156,6 +156,8 @@ class PaxiniTactileStream:
                     processed_data_list = np.array(list(map(self.process_data, raw_data_list)))
                 
                 processed_data_list = self.transform_data_order(processed_data_list)
+            else:
+                print(None)
 
             self.close()
             read_step += 1

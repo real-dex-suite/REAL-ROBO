@@ -1,3 +1,4 @@
+import rospy
 from holodex.constants import *
 
 # load module according to hand type
@@ -87,7 +88,6 @@ class RobotController(object):
             self.move_hand(input_angles)
 
 if __name__ == "__main__":
-    import rospy
     rospy.init_node("test")
     robot = RobotController(teleop=False)
     robot.home_robot()
