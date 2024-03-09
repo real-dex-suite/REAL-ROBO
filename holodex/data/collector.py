@@ -108,7 +108,7 @@ class DataCollector(object):
                     # state['camera_{}_depth_image'.format(cam_num + 1)] = self.depth_image_subscribers[cam_num].get_image()
                 
                 # Hand data
-                state['hand_joint_positions'] = self.hand.get_hand_position()
+                state['hand_joint_positions'] = self.hand.get_hand_position() # follow orignal joint order, first mcp-pip, then palm-mcp
                 state['hand_joint_velocity'] = self.hand.get_hand_velocity()
                 state['hand_joint_effort'] = self.hand.get_hand_torque()
                 state['hand_commanded_joint_position'] = self.hand.get_commanded_joint_position()
