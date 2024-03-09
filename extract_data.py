@@ -1,7 +1,15 @@
 import os
 import hydra
-from dexVR.data import FilterData, ColorImageExtractor, DepthImageExtractor, StateExtractor, ActionExtractor
-from dexVR.utils.files import *
+from holodex.data import (
+    FilterData, 
+    ColorImageExtractor, 
+    DepthImageExtractor, 
+    StateExtractor, 
+    ActionExtractor, 
+)
+
+from holodex.utils.files import *
+
 
 @hydra.main(version_base = '1.2', config_path='configs', config_name='demo_extract')
 def main(configs):
@@ -22,11 +30,21 @@ def main(configs):
     if not os.path.exists(configs.storage_path):
         print("No data available.")
 
-    print(f"\nUsing min-action distance: {configs['min_action_distance']}")
+    print(f"\nUsing hand-min-action distance to filter data: {configs['hand_min_action_distance']} {configs['hand_distance_unit']}")
+    print(f"\nUsing arm-min-action distance to filter data: {configs['hand_min_action_distance']} {configs['arm_distance_unit']}")
 
+    print("***************************************************************")
+    print("     Starting Filtering and Extraction of Demonstrations!")
+    print("***************************************************************")
+         
     if configs.sample:
         print("\nFiltering demonstrations!")
-        data_filter = FilterData(data_path = configs.storage_path, delta = 0.01 * configs['min_action_distance'])        
+        # If we don't want to filter the data by hand and arm distance, we can set
+        # the hand_min_action_distance and arm_min_action_distance to 0 in
+        # configs/demo_extract.yaml.
+        hand_delta = configs['hand_min_action_distance']
+        arm_delta = configs['arm_min_action_distance']
+        data_filter = FilterData(data_path = configs.storage_path, hand_delta = hand_delta, arm_delta = arm_delta)     
         data_filter.filter(configs.filter_path)
 
     if configs.color_images:
@@ -45,14 +63,14 @@ def main(configs):
 
     if configs.states:
         print("\nExtracting states!")
-        extractor = StateExtractor(configs.filter_path)
+        extractor = StateExtractor(configs.filter_path, configs.state_data_types)
         states_path = os.path.join(configs.target_path, 'states')
         make_dir(states_path)
         extractor.extract(states_path)
 
     if configs.actions:
         print("\nExtracting actions!")
-        extractor = ActionExtractor(configs.filter_path)
+        extractor = ActionExtractor(configs.filter_path, configs.action_data_types)
         actions_path = os.path.join(configs.target_path, 'actions')
         make_dir(actions_path)
         extractor.extract(actions_path)

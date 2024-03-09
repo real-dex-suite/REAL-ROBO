@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - image_parameters: planar_rotation # Used just for crop sizes
+  - image_parameters: template # Used just for crop sizes
   - override hydra/hydra_logging: disabled  
   - override hydra/job_logging: disabled  
 
@@ -8,9 +8,27 @@ defaults:
 ssl_data: false
 sample: true
 color_images: true
-depth_images: true
+depth_images: false
 states: true
 actions: true
+
+# extract state data type
+state_data_types: [
+  "arm_abs_joint",
+  "hand_abs_joint",
+  ]
+# arm_abs_ee, arm_rel_ee, arm_abs_joint, arm_rel_joint
+# hand_coords, hand_abs_joint, hand_rel_joint
+
+# extract action data type
+action_data_types: [
+  "arm_cmd_abs_joint",
+  "arm_abs_joint",
+  "hand_cmd_abs_joint",
+  "hand_abs_joint",
+  ] 
+# arm_abs_ee, arm_rel_ee, arm_abs_joint, arm_rel_joint
+# hand_coords, hand_abs_joint, hand_rel_joint
 
 # data paths
 storage_path: 'recorded_data/'
@@ -18,7 +36,16 @@ filter_path: 'filtered_data/'
 target_path: 'extracted_data/'
 
 # Number of view images 
-num_cams: 3
+num_cams: 2 #3
 
 # Delta for extracting states
-min_action_distance: 2 # cm
+# If we don't want to filter the data by hand and arm distance, we can set
+# the hand_min_action_distance and arm_min_action_distance to 0 in
+# configs/demo_extract.yaml.
+hand_min_action_distance: 0 # cm
+arm_min_action_distance: 0 # cm
+
+hand_distance_unit: cm
+arm_distance_unit: cm
+
+

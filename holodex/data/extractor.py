@@ -4,13 +4,20 @@ import cv2
 from PIL import Image
 import torch
 
-from holodex.robot.allegro_kdl import AllegroKDL
 from holodex.utils.files import make_dir, get_pickle_data
 
+from holodex.constants import *
+# load module according to hand type
+hand_module = __import__("holodex.robot.hand")
+HandKDL_module_name = f'{HAND_TYPE}KDL'
+# get relevant classes
+HandKDL = getattr(hand_module.robot, HandKDL_module_name)
 
 class ColorImageExtractor(object):
     def __init__(self, data_path, num_cams, image_size, crop_sizes = None):
-        assert num_cams == len(crop_sizes)
+        # TODO BUG: if set num_cam to 1 in demo_extract, size not match
+        # uncomment if camera > 1
+        # assert num_cams == len(crop_sizes)
         
         self.data_path = data_path
         self.num_cams = num_cams
@@ -55,7 +62,8 @@ class ColorImageExtractor(object):
 
 class DepthImageExtractor(object):
     def __init__(self, data_path, num_cams, image_size, crop_sizes = None):
-        assert num_cams == len(crop_sizes)
+        # TODO BUG uncomment if camera > 1
+        # assert num_cams == len(crop_sizes)
         
         self.data_path = data_path
         self.num_cams = num_cams
@@ -99,11 +107,17 @@ class DepthImageExtractor(object):
 
 
 class StateExtractor(object):
-    def __init__(self, data_path):
+    def __init__(self, data_path, extract_state_types):
         self.data_path = data_path
-        self.kdl_solver = AllegroKDL()
+        self.kdl_solver = HandKDL()
+        self.extract_state_types = extract_state_types
 
     def _get_coords(self, joint_angles):
+        if "LEAP" in HAND_TYPE.upper():
+            # Highlight!!!!!!!!!!!!!!!!!!!!!!!!!!!!  the urdf we use to calculate the finger coordinates use first palm-mcp, then mcp-pip which is different
+            # with current hand joint angles, so we need to change the order of joint angles
+            joint_angles = np.array(joint_angles)[[1,0,2,3,5,4,6,7,9,8,10,11,12,13,14,15]]
+            
         index_coords, _ = self.kdl_solver.finger_forward_kinematics('index', list(joint_angles)[0:4])
         middle_coords, _ = self.kdl_solver.finger_forward_kinematics('middle', list(joint_angles)[4:8])
         ring_coords, _ = self.kdl_solver.finger_forward_kinematics('ring', list(joint_angles)[8:12])
@@ -116,15 +130,26 @@ class StateExtractor(object):
         states = os.listdir(demo_path)
         states.sort(key = lambda f: int(''.join(filter(str.isdigit, f))))
 
-        demo_state_data = []
+        demo_state_data = {}
+        for state_type in self.extract_state_types:
+            demo_state_data[state_type] = []
 
         for idx in range(len(states) - 1):
             state_data = get_pickle_data(os.path.join(demo_path, states[idx]))
-            state_joint_angles = state_data['allegro_joint_positions']
-            state_joint_coords = self._get_coords(state_joint_angles)
-            demo_state_data.append(state_joint_coords)
+            for state_type in demo_state_data.keys():   
+                if state_type == "arm_abs_joint":
+                    arm_state_abs_joint = state_data['arm_joint_positions']
+                    demo_state_data[state_type].append(arm_state_abs_joint)
+                if state_type == "hand_abs_joint":
+                    hand_state_abs_joint = state_data['hand_joint_positions']
+                    demo_state_data[state_type].append(hand_state_abs_joint)
+                if state_type == "hand_coords":
+                    state_joint_angles = state_data['hand_joint_positions']
+                    state_joint_coords = self._get_coords(state_joint_angles)
+        
+        for state_type in self.extract_state_types:
+             demo_state_data[state_type] = torch.tensor(np.array(demo_state_data[state_type])).squeeze()
 
-        demo_state_data = torch.tensor(np.array(demo_state_data)).squeeze()
         torch.save(demo_state_data, target_path)
 
     def extract(self, target_path):
@@ -140,11 +165,17 @@ class StateExtractor(object):
 
 
 class ActionExtractor(object):
-    def __init__(self, data_path):
+    def __init__(self, data_path, extract_action_types):
         self.data_path = data_path
-        self.kdl_solver = AllegroKDL()
+        self.kdl_solver = HandKDL()
+        self.extract_action_types = extract_action_types
 
     def _get_coords(self, joint_angles):
+        if "LEAP" in HAND_TYPE.upper():
+            # Highlight!!!!!!!!!!!!!!!!!!!!!!!!!!!!  the urdf we use to calculate the finger coordinates use first palm-mcp, then mcp-pip which is different
+            # with current hand joint angles, so we need to change the order of joint angles
+            joint_angles = np.array(joint_angles)[[1,0,2,3,5,4,6,7,9,8,10,11,12,13,14,15]]
+
         index_coords, _ = self.kdl_solver.finger_forward_kinematics('index', list(joint_angles)[0:4])
         middle_coords, _ = self.kdl_solver.finger_forward_kinematics('middle', list(joint_angles)[4:8])
         ring_coords, _ = self.kdl_solver.finger_forward_kinematics('ring', list(joint_angles)[8:12])
@@ -157,23 +188,39 @@ class ActionExtractor(object):
         states = os.listdir(demo_path)
         states.sort(key = lambda f: int(''.join(filter(str.isdigit, f))))
 
-        demo_action_data = []
+        demo_action_data = {}
+        for action_type in self.extract_action_types:
+            demo_action_data[action_type] = []
 
-        first_state_data = get_pickle_data(os.path.join(demo_path, states[0]))
-        first_state_joint_angles = first_state_data['allegro_joint_positions']
-        prev_joint_coords = self._get_coords(first_state_joint_angles)
+        # first_state_data = get_pickle_data(os.path.join(demo_path, states[0]))
+        # first_state_joint_angles = first_state_data['hand_joint_positions'] 
+        # prev_joint_coords = self._get_coords(first_state_joint_angles)
 
         for idx in range(1, len(states)):
             state_data = get_pickle_data(os.path.join(demo_path, states[idx]))
-            state_joint_angles = state_data['allegro_joint_positions']
-            state_joint_coords = self._get_coords(state_joint_angles)
+            # state_joint_angles = state_data['hand_joint_positions']
+            # state_joint_coords = self._get_coords(state_joint_angles)
 
-            action = state_joint_coords - prev_joint_coords # action = s2 - s1
-            demo_action_data.append(action)
+            # action = state_joint_coords - prev_joint_coords # action = s2 - s1
+            # demo_action_data.append(action)
 
-            prev_joint_coords = state_joint_coords
+            # prev_joint_coords = state_joint_coords
+            for state_type in demo_action_data.keys():
+                if state_type == "arm_cmd_abs_joint":
+                    arm_cmd_abs_joint = state_data['arm_commanded_joint_position']
+                    demo_action_data[state_type].append(arm_cmd_abs_joint) 
+                elif state_type == "arm_abs_joint":
+                    arm_abs_joint = state_data['arm_joint_positions']
+                    demo_action_data[state_type].append(arm_abs_joint) 
+                elif state_type == "hand_cmd_abs_joint":
+                    hand_cmd_abs_joint = state_data['hand_commanded_joint_position']
+                    demo_action_data[state_type].append(hand_cmd_abs_joint)
+                elif state_type == "hand_abs_joint":
+                    hand_abs_joint = state_data['hand_joint_positions']
+                    demo_action_data[state_type].append(hand_abs_joint) 
 
-        demo_action_data = torch.tensor(np.array(demo_action_data)).squeeze()
+        for state_type in self.extract_action_types:
+             demo_action_data[state_type] = torch.tensor(np.array(demo_action_data[state_type])).squeeze()
 
         torch.save(demo_action_data, target_path)
 
