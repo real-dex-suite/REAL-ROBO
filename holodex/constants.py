@@ -12,7 +12,7 @@ ARM_TYPE = "Jaka"
 
 # Leap hand
 LEAP_JOINT_STATE_TOPIC = '/leaphand_node/joint_states'
-LEAP_COMMANDED_JOINT_STATE_TOPIC = '/leapHand/commanded_joint_states'
+LEAP_COMMANDED_JOINT_STATE_TOPIC = '/leaphand_node/hand_command_joint_states'
 LEAP_JOINTS_PER_FINGER = 4
 LEAP_JOINT_OFFSETS = {
     'index': 0,
@@ -26,6 +26,7 @@ LEAP_CMD_TYPE = 'allegro'
 
 # Jaka
 JAKA_JOINT_STATE_TOPIC = '/jaka/joint_states'
+JAKA_COMMANDED_JOINT_STATE_TOPIC = '/jaka/commanded_joint_states'
 JAKA_EE_POSE_TOPIC = '/jaka/ee_pose'
 
 JAKA_DOF = 6

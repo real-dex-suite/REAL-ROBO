@@ -274,8 +274,11 @@ class VRDexArmTeleOp(object):
                 desired_joint_angles = self._get_3d_thumb_angles(desired_joint_angles)
             else:
                 desired_joint_angles = self._get_2d_thumb_angles(desired_joint_angles)
-
-            desired_joint_angles = np.array(desired_joint_angles)[[1,0,2,3,5,4,6,7,9,8,10,11,12,13,14,15]] # the original hand order is 0,1, but in robot the order change to 1,0 for dexpilot, so for oculus we need to change back
+            
+            desired_joint_angles = np.array(desired_joint_angles)
+            if "LEAP" in HAND_TYPE.upper():
+                desired_joint_angles = desired_joint_angles[[1,0,2,3,5,4,6,7,9,8,10,11,12,13,14,15]] # the original hand order is 0,1, but in robot the order change to 1,0 for dexpilot, so for oculus we need to change back
+        
         elif RETARGET_TYPE == 'dexjoint':
             indices = self.retargeting.optimizer.target_link_human_indices
             origin_indices = indices[0, :]
@@ -337,8 +340,11 @@ class VRDexArmTeleOp(object):
                 desired_joint_angles = self._get_3d_thumb_angles(desired_joint_angles)
             else:
                 desired_joint_angles = self._get_2d_thumb_angles(desired_joint_angles)
+            
+            desired_joint_angles = np.array(desired_joint_angles)
 
-            desired_joint_angles = np.array(desired_joint_angles)[[1,0,2,3,5,4,6,7,9,8,10,11,12,13,14,15]] # the original hand order is 0,1, but in robot the order change to 1,0 for dexpilot, so for oculus we need to change back
+            if "LEAP" in HAND_TYPE.upper():
+                desired_joint_angles = desired_joint_angles[[1,0,2,3,5,4,6,7,9,8,10,11,12,13,14,15]] # the original hand order is 0,1, but in robot the order change to 1,0 for dexpilot, so for oculus we need to change back
             
             desired_joint_angles[-5:] = desired_thumb_angles
 

@@ -26,6 +26,7 @@ class LeapNode:
         self.cmd_allegro = rospy.Publisher("/leaphand_node/cmd_allegro", JointState, queue_size = 1) 
         self.cmd_leap = rospy.Publisher("/leaphand_node/cmd_leap", JointState, queue_size = 1)
         self.cmd_ones = rospy.Publisher("/leaphand_node/cmd_ones", JointState, queue_size = 1)
+        self.cmd_joint = rospy.Publisher("/leaphand_node/hand_command_joint_states", JointState, queue_size = 1) 
         
         self.angle_min, self.angle_max = lhu.LEAPsim_limits()
         self.vel_limit = vel_limit
@@ -45,6 +46,11 @@ class LeapNode:
     def set_allegro(self, pose, clip=True):
         if clip:
             pose = np.clip(pose, self.angle_min, self.angle_max)
+        
+        command_joint_state = JointState()
+        command_joint_state.position = pose.copy()
+        self.cmd_joint.publish(command_joint_state)
+
         # TODO vel limit weired, clean publish for diff func
         pose = lhu.allegro_to_LEAPhand(pose, zeros=False)
         self.prev_pos = self.curr_pos

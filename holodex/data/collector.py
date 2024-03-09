@@ -59,12 +59,16 @@ class DataCollector(object):
         self.arm_joint_state = None
         self.arm_ee_pose = None
         rospy.Subscriber(JAKA_JOINT_STATE_TOPIC, JointState, self._callback_arm_joint_state, queue_size = 1)
+        rospy.Subscriber(JAKA_COMMANDED_JOINT_STATE_TOPIC, JointState, self._callback_arm_commanded_joint_state, queue_size = 1)
         rospy.Subscriber(JAKA_EE_POSE_TOPIC, Float64MultiArray, self._callback_arm_ee_pose, queue_size = 1)
 
         self.frequency_timer = frequency_timer(RECORD_FPS)
 
     def _callback_arm_joint_state(self, data):
         self.arm_joint_state = data
+    
+    def _callback_arm_commanded_joint_state(self, data):
+        self.arm_commanded_joint_state = data
     
     def _callback_arm_ee_pose(self, data):
         self.arm_ee_pose = data
@@ -84,6 +88,7 @@ class DataCollector(object):
                 if self.hand.get_hand_position() is None:
                     print('Hand data not available!')
                     skip_loop = True
+                
                 if self.arm_joint_state is None or self.arm_ee_pose is None:
                     print('Arm data not available!')
                     skip_loop = True
@@ -116,6 +121,7 @@ class DataCollector(object):
                 # Arm data
                 state['arm_joint_positions'] = self.arm_joint_state.position
                 state['arm_ee_pose'] = self.arm_ee_pose.data
+                state['arm_commanded_joint_position'] = self.arm_commanded_joint_state.position
 
                 # Temporal information
                 state['time'] = time.time()
