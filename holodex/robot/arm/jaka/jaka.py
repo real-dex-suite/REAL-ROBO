@@ -7,7 +7,7 @@ from holodex.constants import JAKA_IP, JAKA_POSITIONS, JAKA_DOF, JAKA_JOINT_STAT
 from holodex.utils.network import JointStatePublisher, FloatArrayPublisher
 
 class JakaArm(object):
-    def __init__(self, servo_mode = True, teleop=False, safety_moving_trans = 100):
+    def __init__(self, servo_mode=True, teleop=False, safety_moving_trans = 100):
         # rospy.init_node('jaka_arm_controller')
 
         # Creating ROS Publishers
@@ -16,17 +16,21 @@ class JakaArm(object):
         self.ee_pose_publisher = FloatArrayPublisher(publisher_name=JAKA_EE_POSE_TOPIC)
 
         self.robot = jkrc.RC(JAKA_IP)
-        self.robot.login() 
+        self.robot.login()
 
+        # check login state
+        if self.robot.login() == (0,):
+            print("successfully connected to jaka robot")
+        else:
+            print("failed to connect to jaka robot")
+        
         # if has collision, recover from collision
         success, collision = self.robot.is_in_collision()
         if collision:
             self.robot.collision_recover()
             self.robot.enable_robot()
-
         self.robot.enable_robot()
         
-
         self.jaka_joint_state = None
         # TODO change to ros?
         # rospy.Subscriber(KINOVA_JOINT_STATE_TOPIC, JointState, self._callback_joint_state, queue_size = 1)
@@ -133,4 +137,4 @@ if __name__ == '__main__':
         # current_tcp_position[1]-=0.01
         print('target:', current_tcp_position)
         # jaka.move(current_tcp_position)
-        jaka.publish_state()
+        jaka.publish_state()  

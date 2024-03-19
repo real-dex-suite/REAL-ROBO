@@ -5,7 +5,6 @@ from PIL import Image
 import torch
 
 from holodex.utils.files import make_dir, get_pickle_data
-
 from holodex.constants import *
 # load module according to hand type
 hand_module = __import__("holodex.robot.hand")
@@ -114,7 +113,8 @@ class StateExtractor(object):
 
     def _get_coords(self, joint_angles):
         if "LEAP" in HAND_TYPE.upper():
-            # Highlight!!!!!!!!!!!!!!!!!!!!!!!!!!!!  the urdf we use to calculate the finger coordinates use first palm-mcp, then mcp-pip which is different
+            # Highlight!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+            # the urdf we use to calculate the finger coordinates use first palm-mcp, then mcp-pip which is different
             # with current hand joint angles, so we need to change the order of joint angles
             joint_angles = np.array(joint_angles)[[1,0,2,3,5,4,6,7,9,8,10,11,12,13,14,15]]
             

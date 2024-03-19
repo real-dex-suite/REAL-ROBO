@@ -105,7 +105,8 @@ class DataCollector(object):
 
                 if skip_loop:
                     continue
-            
+                
+                print('Valid Data', time.time())
                 state = dict()
 
                 for cam_num in range(self.num_cams):

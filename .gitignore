@@ -34,4 +34,15 @@ filtered_data/*
 extracted_data/*
 
 # Test data
-test/*
+test_image/*
+replay_data/*
+
+.idea
+
+
+venv/*
+difference_grid.png
+run.sh
+diff.zip
+
+*.zip

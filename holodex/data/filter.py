@@ -23,7 +23,9 @@ class FilterData(object):
         # Calculate finger coordinates based on joint angles
 
         if "LEAP" in HAND_TYPE.upper():
-            # Highlight!!!!!!!!!!!!!!!!!!!!!!!!!!!!  the urdf we use to calculate the finger coordinates use first palm-mcp, then mcp-pip which is different
+            # Highlight!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+            # the urdf we use to calculate the finger coordinates 
+            # use first palm-mcp, then mcp-pip which is different
             # with current hand joint angles, so we need to change the order of joint angles
             joint_angles = np.array(joint_angles)[[1,0,2,3,5,4,6,7,9,8,10,11,12,13,14,15]]
 
@@ -40,11 +42,13 @@ class FilterData(object):
         return self._get_coords(joint_angles)
     
     def _get_arm_ee_pose_from_state(self, state_data):
+        # Read end-effector pose from the state file
         ee_position = np.array(state_data['arm_ee_pose'][:3])
         ee_orientation = np.array(state_data['arm_ee_pose'][3:])
         return ee_position, ee_orientation
 
     def _get_robot_poses_from_state(self, demo_path, state_path):
+        # Read the state file and get the finger coordinates and end-effector pose
         state_path = os.path.join(demo_path, state_path)
         state_data = get_pickle_data(state_path)
 
@@ -67,25 +71,30 @@ class FilterData(object):
 
         filtered_state_idxs = []
 
+        # Get the initial state of the robot
         prev_index_coords, prev_middle_coords, prev_ring_coords, prev_thumb_coords, prev_arm_ee_pos, prev_arm_ee_ori = self._get_robot_poses_from_state(demo_path, states[0])
-        
+
         for idx in range(1, len(states)):
             index_coords, middle_coords, ring_coords, thumb_coords, arm_ee_pos, arm_ee_ori = self._get_robot_poses_from_state(demo_path, states[idx])
-            
+
             save_current_frame = False
 
+            # hand delta
             if index_coords is not None and middle_coords is not None and ring_coords is not None and thumb_coords is not None:    
                 delta_index = get_distance(prev_index_coords, index_coords)
                 delta_middle = get_distance(prev_middle_coords, middle_coords)
                 delta_ring = get_distance(prev_ring_coords, ring_coords)
                 delta_thumb = get_distance(prev_thumb_coords, thumb_coords)
                 hand_delta_total = delta_index + delta_middle + delta_ring + delta_thumb
+                
                 hand_delta_satisfied = True if hand_delta_total >= self.hand_delta else False
                 save_current_frame = hand_delta_satisfied
-                    
+            
+            # arm delta        
             if arm_ee_pos is not None and arm_ee_ori is not None:    
                 arm_delta = get_distance(prev_arm_ee_pos, arm_ee_pos)
                 arm_delta_total = arm_delta
+                
                 arm_delta_satisfied = True if arm_delta_total >= self.arm_delta else False
                 save_current_frame = arm_delta_satisfied
             
