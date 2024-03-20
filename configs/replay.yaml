@@ -1,0 +1,31 @@
+defaults:
+  - _self_
+  - robot_camera
+  - override hydra/hydra_logging: disabled  
+  - override hydra/job_logging: disabled  
+
+record_image: true
+
+replay_robot: true
+ 
+replay_arm: false
+replay_hand: false
+replay_arm_and_hand: True
+
+# hand_state_path: "extracted_data/filtered/actions/demonstration_1.pth"
+# arm_state_path: "extracted_data/filtered/arm/demonstration_1.pth"
+data_path: "/home/agibot/Projects/Real-Robo/recorded_data/demonstration_1"
+
+
+# replay image
+relpay_image_path: "/home/agibot/Projects/Real-Robo/replay_data/"
+target_path: "/home/agibot/Projects/Real-Robo/test_image"
+
+
+extract_replay_images: true
+image_size: 224
+num_cams: 1
+crop_sizes:
+  - [386, 144, 835, 685]
+  - [565, 55, 1195, 600]
+  - [180, 60, 645, 450]
