@@ -6,6 +6,9 @@ from math import pi as PI
 # Retarget type
 RETARGET_TYPE = "dexpilot"
 
+# dexpilot
+SMOOTH_FACTOR = 0.2
+
 # Robot type
 HAND_TYPE = "Leap"
 ARM_TYPE = "Jaka"

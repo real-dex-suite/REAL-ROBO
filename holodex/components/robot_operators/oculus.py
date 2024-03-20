@@ -73,6 +73,8 @@ class VRDexArmTeleOp(object):
             'ring': []
         }
 
+        self.prev_hand_joint_angles = self.robot.get_hand_position()
+
         if RETARGET_TYPE == 'dexpilot':
             from holodex.components.retargeting.retargeting_config import RetargetingConfig
 
@@ -424,6 +426,12 @@ class VRDexArmTeleOp(object):
 
         return new_arm_pose
     
+    def _filter(self, desired_hand_joint_angles):
+        desired_hand_joint_angles = desired_hand_joint_angles * SMOOTH_FACTOR + self.prev_hand_joint_angles * (1 - SMOOTH_FACTOR)
+        self.prev_hand_joint_angles = desired_hand_joint_angles
+        return desired_hand_joint_angles
+
+
     def motion(self, finger_configs):
         desired_cmd = []
 
@@ -433,6 +441,7 @@ class VRDexArmTeleOp(object):
 
         if HAND_TYPE is not None:
             desired_hand_joint_angles = self._retarget_hand(finger_configs)
+            desired_hand_joint_angles = self._filter(desired_hand_joint_angles)
             desired_cmd = np.concatenate([desired_cmd, desired_hand_joint_angles])
 
         return desired_cmd
