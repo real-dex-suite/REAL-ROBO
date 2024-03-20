@@ -19,7 +19,9 @@ class ReplayController(RobotController):
 
         # camera setup for image capture -> robot_camera.yaml
         # TODO: refactor this part to use the RealSenseRobotStream class
-        self.save_dir = configs.relpay_image_path # "/home/agibot/Projects/Real-Robo/replay_data"
+        self.save_dir = (
+            configs.relpay_image_path
+        )  # "/home/agibot/Projects/Real-Robo/replay_data"
         self.cam_serial_num = "211422061450"
         self.num_cams = 1
 
@@ -60,59 +62,44 @@ class ReplayController(RobotController):
                 self.move_arm(interpolated_arm_pos)
         print("Replay complete!")
 
-    # def replay_arm_and_hand_motion(self, n_interpolations: int = 30) -> None:
-    #     assert len(self.hand_joint_positions) == len(
-    #         self.arm_joint_positions
-    #     ), "Hand and arm data length mismatch"
-
-    #     for i in range(len(self.hand_joint_positions) - 1):
-    #         for j in range(10):
-    #             self.move_arm(self.arm_joint_positions[i])
-    #             self.move_hand(self.hand_joint_positions[i])
-
-    #         new_arm_pos = self.get_arm_position()
-    #         new_hand_pos = self.get_hand_position()
-    #         # compute difference between current and target position
-    #         arm_diff = np.abs(new_arm_pos - self.arm_joint_positions[i])
-    #         hand_diff = np.abs(new_hand_pos - self.hand_joint_positions[i])
-    #         print(f"Arm diff: {arm_diff}, Hand diff: {hand_diff}")
-    #         self.capture_save_images(i)
-    #     self.stop_camera_stream()
-    #     print("Replay complete!")
-
     def replay_arm_and_hand_motion(self, n_interpolations: int = 30) -> None:
         assert len(self.hand_joint_positions) == len(
             self.arm_joint_positions
         ), "Hand and arm data length mismatch"
 
-        for i in range(len(self.hand_joint_positions)-1):
+        for i in range(len(self.hand_joint_positions) - 1):
             # hand interpolation
             start_hand_pos = np.array(self.hand_joint_positions[i])
-            end_hand_pos = np.array(self.hand_joint_positions[i+1])
+            end_hand_pos = np.array(self.hand_joint_positions[i + 1])
 
             # arm interpolation
             start_arm_pos = np.array(self.arm_joint_positions[i])
-            end_arm_pos = np.array(self.arm_joint_positions[i+1])
-            
+            end_arm_pos = np.array(self.arm_joint_positions[i + 1])
+
             # make the robot move
             for step in range(1, n_interpolations + 1):
-                interpolated_hand_pos = start_hand_pos + (end_hand_pos - start_hand_pos)*step/n_interpolations
-                interpolated_arm_pos = start_arm_pos + (end_arm_pos - start_arm_pos)*step/n_interpolations
+                interpolated_hand_pos = (
+                    start_hand_pos
+                    + (end_hand_pos - start_hand_pos) * step / n_interpolations
+                )
+                interpolated_arm_pos = (
+                    start_arm_pos
+                    + (end_arm_pos - start_arm_pos) * step / n_interpolations
+                )
 
                 self.move_arm(interpolated_arm_pos)
                 self.move_hand(interpolated_hand_pos)
                 rospy.sleep(SLEEP_TIME)
 
-            
             new_arm_pos = self.get_arm_position()
             new_hand_pos = self.get_hand_position()
-            
+
             # compute difference between current and target position
-            arm_diff = np.abs(new_arm_pos - self.arm_joint_positions[i+1])
-            hand_diff = np.abs(new_hand_pos - self.hand_joint_positions[i+1])
+            arm_diff = np.abs(new_arm_pos - self.arm_joint_positions[i + 1])
+            hand_diff = np.abs(new_hand_pos - self.hand_joint_positions[i + 1])
             print(f"Arm diff: {arm_diff}, Hand diff: {hand_diff}")
 
-            self.capture_save_images(i+1)
+            self.capture_save_images(i + 1)
         self.stop_camera_stream()
         print("Replay complete!")
 
