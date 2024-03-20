@@ -72,6 +72,12 @@ class RobotController(object):
     
     def move_arm(self, input_angles):
         self.arm.move(input_angles)
+        rospy.sleep(0.001)
+
+    # uncomment if replay_arm_and_hand_motion is used
+    # TODO: refactor replay_arm_and_hand_motion to use move_arm and move_hand
+    # def replay_arm(self, joint_pos):
+    #     self.arm.servo_robot_move(joint_pos)
 
     def move_arm_and_hand(self, input_angles):
         assert self.arm is not None and self.hand is not None, "Arm and hand are not initialized"
