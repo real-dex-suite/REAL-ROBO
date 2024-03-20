@@ -108,10 +108,6 @@ class DataCollector(object):
                 
                 print('Valid Data', time.time())
                 state = dict()
-
-                for cam_num in range(self.num_cams):
-                    state['camera_{}_color_image'.format(cam_num + 1)] = self.color_image_subscribers[cam_num].get_image()
-                    # state['camera_{}_depth_image'.format(cam_num + 1)] = self.depth_image_subscribers[cam_num].get_image()
                 
                 # Hand data
                 state['hand_joint_positions'] = self.hand.get_hand_position() # follow orignal joint order, first mcp-pip, then palm-mcp
@@ -123,6 +119,10 @@ class DataCollector(object):
                 state['arm_joint_positions'] = self.arm_joint_state.position
                 state['arm_ee_pose'] = self.arm_ee_pose.data
                 state['arm_commanded_joint_position'] = self.arm_commanded_joint_state.position
+
+                for cam_num in range(self.num_cams):
+                    state['camera_{}_color_image'.format(cam_num + 1)] = self.color_image_subscribers[cam_num].get_image()
+                    # state['camera_{}_depth_image'.format(cam_num + 1)] = self.depth_image_subscribers[cam_num].get_image()
 
                 # Temporal information
                 state['time'] = time.time()

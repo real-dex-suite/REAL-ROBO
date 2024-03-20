@@ -23,8 +23,8 @@ JOINTS_PER_FINGER = eval(f'{hand_type.upper()}_JOINTS_PER_FINGER')
 JOINT_OFFSETS = eval(f'{hand_type.upper()}_JOINT_OFFSETS')
 
 class RobotController(object):
-    def __init__(self, teleop, arm_control_mode="ik", hand_control_mode="joint") -> None:
-        self.arm = Arm(teleop=teleop, control_mode=arm_control_mode, safety_moving_trans=JAKA_SAFE_MOVING_TRANS) if ARM_TYPE is not None else None
+    def __init__(self, teleop, servo_mode=True, arm_control_mode="ik", hand_control_mode="joint") -> None:
+        self.arm = Arm(servo_mode=servo_mode, teleop=teleop, control_mode=arm_control_mode, safety_moving_trans=JAKA_SAFE_MOVING_TRANS) if ARM_TYPE is not None else None
 
         self.hand = Hand() if HAND_TYPE is not None else None # TODO add different control mode for hand
         self.hand_KDLControl = KDLControl() if HAND_TYPE is not None else None

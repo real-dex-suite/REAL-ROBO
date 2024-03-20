@@ -12,7 +12,7 @@ import pyrealsense2 as rs
 
 class ReplayController(RobotController):
     def __init__(self, configs, hand_state=None, arm_state=None) -> None:
-        super().__init__(teleop=False, servo_mode=False, arm_control_mode="joint")
+        super().__init__(teleop=False, servo_mode=True, arm_control_mode="joint")
         self.configs = configs
         self.arm_joint_positions = arm_state
         self.hand_joint_positions = hand_state
@@ -80,52 +80,39 @@ class ReplayController(RobotController):
     #     self.stop_camera_stream()
     #     print("Replay complete!")
 
-    def replay_arm_and_hand_motion(self, n_interpolations: int = 50) -> None:
+    def replay_arm_and_hand_motion(self, n_interpolations: int = 30) -> None:
         assert len(self.hand_joint_positions) == len(
             self.arm_joint_positions
         ), "Hand and arm data length mismatch"
 
-        for i in range(len(self.hand_joint_positions) - 1):
-            if i!=90:
-                continue
+        for i in range(len(self.hand_joint_positions)-1):
             # hand interpolation
-            start_hand_pos = self.hand_joint_positions[i]
-            end_hand_pos = self.hand_joint_positions[i + 1]
+            start_hand_pos = np.array(self.hand_joint_positions[i])
+            end_hand_pos = np.array(self.hand_joint_positions[i+1])
 
             # arm interpolation
-            start_arm_pos = self.arm_joint_positions[i]
-            end_arm_pos = self.arm_joint_positions[i + 1]
+            start_arm_pos = np.array(self.arm_joint_positions[i])
+            end_arm_pos = np.array(self.arm_joint_positions[i+1])
+            
             # make the robot move
             for step in range(1, n_interpolations + 1):
-                interpolated_hand_pos, interpolated_arm_pos = [], []
+                interpolated_hand_pos = start_hand_pos + (end_hand_pos - start_hand_pos)*step/n_interpolations
+                interpolated_arm_pos = start_arm_pos + (end_arm_pos - start_arm_pos)*step/n_interpolations
 
-                for j in range(len(start_hand_pos)):
-                    interpolated_hand = (
-                        start_hand_pos[j]
-                        + (end_hand_pos[j] - start_hand_pos[j])
-                        * step
-                        / n_interpolations
-                    )
-                    interpolated_hand_pos.append(interpolated_hand)
-
-                for j in range(len(start_arm_pos)):
-                    interpolated_arm = (
-                        start_arm_pos[j]
-                        + (end_arm_pos[j] - start_arm_pos[j]) * step / n_interpolations
-                    )
-                    interpolated_arm_pos.append(interpolated_arm)
-
-                self.move_arm(self.arm_joint_positions[i])
+                self.move_arm(interpolated_arm_pos)
                 self.move_hand(interpolated_hand_pos)
+                rospy.sleep(SLEEP_TIME)
 
+            
             new_arm_pos = self.get_arm_position()
             new_hand_pos = self.get_hand_position()
+            
             # compute difference between current and target position
-            arm_diff = np.abs(new_arm_pos - self.arm_joint_positions[i])
-            hand_diff = np.abs(new_hand_pos - self.hand_joint_positions[i])
+            arm_diff = np.abs(new_arm_pos - self.arm_joint_positions[i+1])
+            hand_diff = np.abs(new_hand_pos - self.hand_joint_positions[i+1])
             print(f"Arm diff: {arm_diff}, Hand diff: {hand_diff}")
-            rospy.sleep(1.0)
-            self.capture_save_images(i)
+
+            self.capture_save_images(i+1)
         self.stop_camera_stream()
         print("Replay complete!")
 

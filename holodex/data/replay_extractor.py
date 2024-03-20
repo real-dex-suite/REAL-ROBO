@@ -18,6 +18,7 @@ class ColorImageExtractor(object):
 
         color_cam_image_paths = []
         for cam_num in range(self.num_cams):
+            # camera_1_color_image
             color_cam_image_path = os.path.join(target_path, f'camera_{cam_num + 1}_color_image')
             color_cam_image_paths.append(color_cam_image_path)
             make_dir(color_cam_image_path)
@@ -35,6 +36,5 @@ class ColorImageExtractor(object):
                 resized_image = cropped_image.resize((self.image_size, self.image_size), Image.ANTIALIAS)
                 save_path = os.path.join(color_cam_image_paths[cam_num], image_file)
                 resized_image.save(save_path)
-                # print(f"Saved image {cam_num + 1}")
 
         print(f"\nExtracted images saved in {target_path}")
