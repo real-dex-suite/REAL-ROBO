@@ -23,10 +23,10 @@ JOINTS_PER_FINGER = eval(f'{hand_type.upper()}_JOINTS_PER_FINGER')
 JOINT_OFFSETS = eval(f'{hand_type.upper()}_JOINT_OFFSETS')
 
 class RobotController(object):
-    def __init__(self, teleop) -> None:
-        self.arm = Arm(teleop=teleop, safety_moving_trans=JAKA_SAFE_MOVING_TRANS) if ARM_TYPE is not None else None
+    def __init__(self, teleop, arm_control_mode="ik", hand_control_mode="joint") -> None:
+        self.arm = Arm(teleop=teleop, control_mode=arm_control_mode, safety_moving_trans=JAKA_SAFE_MOVING_TRANS) if ARM_TYPE is not None else None
 
-        self.hand = Hand() if HAND_TYPE is not None else None
+        self.hand = Hand() if HAND_TYPE is not None else None # TODO add different control mode for hand
         self.hand_KDLControl = KDLControl() if HAND_TYPE is not None else None
         self.hand_JointControl = JointControl() if HAND_TYPE is not None else None
         self.joints_per_finger = JOINTS_PER_FINGER
@@ -72,12 +72,7 @@ class RobotController(object):
     
     def move_arm(self, input_angles):
         self.arm.move(input_angles)
-        rospy.sleep(0.001)
-
-    # uncomment if replay_arm_and_hand_motion is used
-    # TODO: refactor replay_arm_and_hand_motion to use move_arm and move_hand
-    # def replay_arm(self, joint_pos):
-    #     self.arm.servo_robot_move(joint_pos)
+        rospy.sleep(SLEEP_TIME)
 
     def move_arm_and_hand(self, input_angles):
         assert self.arm is not None and self.hand is not None, "Arm and hand are not initialized"

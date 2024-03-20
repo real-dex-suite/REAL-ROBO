@@ -7,7 +7,7 @@ from holodex.constants import JAKA_IP, JAKA_POSITIONS, JAKA_DOF, JAKA_JOINT_STAT
 from holodex.utils.network import JointStatePublisher, FloatArrayPublisher
 
 class JakaArm(object):
-    def __init__(self, servo_mode=True, teleop=False, safety_moving_trans = 100):
+    def __init__(self, servo_mode=True, control_mode="ik" ,teleop=False, safety_moving_trans = 100):
         # rospy.init_node('jaka_arm_controller')
 
         # Creating ROS Publishers
@@ -47,6 +47,10 @@ class JakaArm(object):
         self.joint_pos_limit = np.array([6.28, 2.09, 2.27, 6.28, 2.09, 6.28])
 
         self.servo_mode = servo_mode
+        self.control_mode = control_mode
+        if self.teleop:
+            assert self.control_mode == "ik"
+
         self.robot.servo_move_enable(self.servo_mode)
 
         self.home_robot()
@@ -119,17 +123,18 @@ class JakaArm(object):
         # TODO add pose command
         if self.servo_mode:
             self.robot.servo_move_enable(True)
-            input_cmd = self.compute_joint(input_cmd)
+            if self.control_mode == "ik":
+                input_cmd = self.compute_joint(input_cmd)
             if self.teleop:
                 input_cmd = self.limit_joint_vel(input_cmd)
                 input_cmd = self.limit_joint_pos(input_cmd)
             
-            self.publish_state(input_cmd) #TODO maybe change to use ros
+                self.publish_state(input_cmd) #TODO maybe change to use ros
 
             self.robot.servo_j(input_cmd, self.move_mode)
         else:
             self.robot.joint_move(input_cmd, self.move_mode, self.is_block, self.speed)
-
+        
 if __name__ == '__main__':
     jaka = JakaArm()
     current_tcp_position = jaka.get_tcp_position()
