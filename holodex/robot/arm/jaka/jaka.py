@@ -16,21 +16,18 @@ class JakaArm(object):
         self.ee_pose_publisher = FloatArrayPublisher(publisher_name=JAKA_EE_POSE_TOPIC)
 
         self.robot = jkrc.RC(JAKA_IP)
-        self.robot.login()
+        ret = self.robot.login()
+        print("Robot logging: ", ret)
 
-        # check login state
-        if self.robot.login() == (0,):
-            print("successfully connected to jaka robot")
-        else:
-            print("failed to connect to jaka robot")
-        
+        ret = self.robot.power_on()
+        print("Robot power on: ", ret)
         # if has collision, recover from collision
         success, collision = self.robot.is_in_collision()
         if collision:
             self.robot.collision_recover()
             self.robot.enable_robot()
-        self.robot.enable_robot()
-        
+        ret = self.robot.enable_robot()
+        print("Robot enable: ", ret)
         self.jaka_joint_state = None
         # TODO change to ros?
         # rospy.Subscriber(KINOVA_JOINT_STATE_TOPIC, JointState, self._callback_joint_state, queue_size = 1)
