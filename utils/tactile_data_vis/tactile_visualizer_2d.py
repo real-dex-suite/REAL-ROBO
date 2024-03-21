@@ -93,5 +93,5 @@ if __name__ == "__main__":
     # plot a single tactile data
     import pickle
     from holodex.utils.files import get_pickle_data
-    data = get_pickle_data("/home/agibot/Projects/Real-Robo/expert_dataset/recorded_data/demonstration_1/90")
+    data = get_pickle_data("/home/agibot/Projects/Real-Robo/expert_dataset/recorded_data/demonstration_1/118")
     tactile_visualizer.plot_once(data['tactile_data'])

@@ -10,6 +10,7 @@ from holodex.constants import *
 class Plot2DTACTILE(object):
     def __init__(self, sensor_info):
         self.totoal_force_limit = np.sqrt(FORCE_LIMIT**2 * 3)
+        self.plot_scale = 5
         self.sensor_info = sensor_info
         self.sensor_type = self.sensor_info['sensor_type']
         self.sensor_name = []
@@ -33,10 +34,10 @@ class Plot2DTACTILE(object):
             fig.cla()
             if self.sensor_type[fig_id] == 'IP':
                 total_force = np.sqrt(X[fig_id]**2 + Y[fig_id]**2 + Z[fig_id]**2) / self.totoal_force_limit
-                fig.scatter(PAXINI_IP_VIS_COORDS_2D[:,0], PAXINI_IP_VIS_COORDS_2D[:,1], c=color, marker='o', s=self.point_size*total_force)
+                fig.scatter(PAXINI_IP_VIS_COORDS_2D[:,0], PAXINI_IP_VIS_COORDS_2D[:,1], c=color, marker='o', s=self.point_size*total_force*self.plot_scale)
             elif self.sensor_type[fig_id] == 'DP':
                 total_force = np.sqrt(X[fig_id]**2 + Y[fig_id]**2 + Z[fig_id]**2) / self.totoal_force_limit
-                fig.scatter(PAXINI_DP_VIS_COORDS_2D[:,0], PAXINI_DP_VIS_COORDS_2D[:,1], c=color, marker='o', s=self.point_size*total_force)
+                fig.scatter(PAXINI_DP_VIS_COORDS_2D[:,0], PAXINI_DP_VIS_COORDS_2D[:,1], c=color, marker='o', s=self.point_size*total_force*self.plot_scale)
             fig.set_title(self.sensor_name[fig_id])
 
     def draw(self, X, Y, Z):
