@@ -6,6 +6,7 @@ from sensor_msgs.msg import JointState
 from holodex.utils.files import *
 from holodex.constants import *
 from holodex.utils.network import ImageSubscriber, frequency_timer, Float64MultiArray, TactileSubscriber
+from holodex.tactile.utils import fetch_paxini_info
 
 # load module according to hand type
 hand_module = __import__("holodex.robot.hand")
@@ -25,6 +26,8 @@ class DataCollector(object):
 
         # ROS Subscribers based on the number of tactile board used
         self.num_tactiles = num_tactiles
+        if self.num_tactiles > 0:
+            self.tactile_info, _, _, self.sensor_per_board = fetch_paxini_info()
         self.tactile_subscribers = []
         for tactile_num in range(self.num_tactiles):
             self.tactile_subscribers.append(
@@ -109,6 +112,14 @@ class DataCollector(object):
                 print('Valid Data', time.time())
                 state = dict()
                 
+                # tactile data
+                tactile_data = {}
+                for tactile_num in range(self.num_tactiles):
+                    raw_datas = np.array(self.tactile_subscribers[tactile_num].get_data()).reshape(self.sensor_per_board, POINT_PER_SENSOR, FORCE_DIM_PER_POINT)
+                    for (tactile_id, raw_data) in enumerate(raw_datas):
+                        tactile_data[self.tactile_info['id'][tactile_num + 1][tactile_id]] = raw_data
+                state['tactile_data'] = tactile_data
+
                 # Hand data
                 state['hand_joint_positions'] = self.hand.get_hand_position() # follow orignal joint order, first mcp-pip, then palm-mcp
                 state['hand_joint_velocity'] = self.hand.get_hand_velocity()
