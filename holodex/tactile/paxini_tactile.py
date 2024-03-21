@@ -44,9 +44,9 @@ class PaxiniTactileStream:
         self.pulp_name = PAXINI_FINGER_PART_NAMES['pulp'] # accoding to paxini
         
         self.start_tag = []
-        for group in PAXINI_GROUP_IDS: # read each group first
-            for finger in PAXINI_FINGER_IDS:    
-                self.start_tag.append(finger+group)
+        for group_id in PAXINI_GROUP_INFO.keys(): # read each group first
+            for finger_part_id in PAXINI_FINGER_PART_INFO.keys():    
+                self.start_tag.append(PAXINI_FINGER_PART_INFO[finger_part_id]+PAXINI_GROUP_INFO[group_id])
         
         assert self.start_tag == [b'\xaa\xee', b'\xcc\xee', b'\xaa\xff', b'\xcc\xff']
 

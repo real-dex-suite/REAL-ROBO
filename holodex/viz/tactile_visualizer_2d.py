@@ -34,38 +34,43 @@ class Tactile2DVisualizer(object):
     def fetch_paxini_info(self):    
         self.sensor_info = {}
 
-        self.start_tag = []
-        for group in PAXINI_GROUP_IDS: # read each group first
-            for finger in PAXINI_FINGER_IDS:    
-                self.start_tag.append(finger+group)
+        self.start_tags = []
+        for group_id in PAXINI_GROUP_INFO: # read each group first
+            for finger_part_id in PAXINI_FINGER_PART_INFO:    
+                self.start_tags.append(PAXINI_FINGER_PART_INFO[finger_part_id]+PAXINI_GROUP_INFO[group_id])
 
         # get finger name which has tactile
         self.sensor_info = {}
         self.sensor_info['id'] = {}
-        self.sensor_info['finger_num'] = 0
-        self.sensor_info['sensor_per_finger'] = len(PAXINI_FINGER_IDS)
+        self.sensor_info['finger_num'] = len(PAXINI_LEAPHAND)
+        self.sensor_info['sensor_per_finger'] = len(PAXINI_FINGER_PART_INFO)
         self.sensor_info['sensor_type'] = []
 
         self.serial_port_number = []
         for finger in PAXINI_LEAPHAND.keys():
-            self.sensor_info['finger_num'] += 1
-
             cur_serial_port_number = PAXINI_LEAPHAND[finger]['serial_port_number']
             self.serial_port_number.append(cur_serial_port_number)
-
-            cur_id = int(cur_serial_port_number[cur_serial_port_number.find("ACM")+3])+1
+        self.serial_port_number = list(set(self.serial_port_number))
+        self.serial_port_number.sort()  
+        
+        # for each port, port has to be consistent with defined, and same with collection and deploy
+        for serial_port_number in self.serial_port_number:
+            cur_id = int(serial_port_number[serial_port_number.find("ACM")+3])+1
             if cur_id not in self.sensor_info['id']:
                 self.sensor_info['id'][cur_id] = []
 
-            for part_name in PAXINI_FINGER_PART_NAMES.keys():
-                self.sensor_info['id'][cur_id].append(finger+'_'+part_name)
-                if 'tip' in part_name:
-                    self.sensor_info['sensor_type'].append('IP')
-                elif 'pulp' in part_name:
-                    self.sensor_info['sensor_type'].append('DP')
+            for start_tag in self.start_tags:
+                for finger in PAXINI_LEAPHAND:
+                    if PAXINI_LEAPHAND[finger]['serial_port_number'] == serial_port_number:
+                        current_group_id = PAXINI_LEAPHAND[finger]['group_id']
+                        for finger_part_id in PAXINI_FINGER_PART_INFO:
+                            if  PAXINI_FINGER_PART_INFO[finger_part_id]+PAXINI_GROUP_INFO[current_group_id] == start_tag:
+                                self.sensor_info['id'][cur_id].append(finger+'_'+finger_part_id)
+                                if 'tip' in finger_part_id:
+                                    self.sensor_info['sensor_type'].append('IP')
+                                elif 'pulp' in finger_part_id:
+                                    self.sensor_info['sensor_type'].append('DP')
     
-        self.serial_port_number = list(set(self.serial_port_number))
-
         self.tactile_topic = []
         self.raw_data = {}
         for cur_serial_port_number in self.serial_port_number:
@@ -73,7 +78,7 @@ class Tactile2DVisualizer(object):
             self.tactile_topic.append('/tactile_{}/raw_data'.format(idx+1))
             self.raw_data[idx+1] = None
 
-        self.sensor_per_board = len(PAXINI_FINGER_IDS) * len(PAXINI_GROUP_IDS)
+        self.sensor_per_board = len(PAXINI_FINGER_PART_INFO) * len(PAXINI_GROUP_INFO)
 
     def _callback_raw_data(self, raw_data):
         id = raw_data.layout.data_offset

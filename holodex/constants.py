@@ -77,11 +77,20 @@ CALIBRATION_FILES_PATH = path.join(path.dirname(holodex.__path__[0]), 'calibrati
 FORCE_LIMIT = 30
 POINT_PER_SENSOR = 15
 FORCE_DIM_PER_POINT = 3
-PAXINI_FINGER_IDS = [b'\xaa', b'\xcc']
-PAXINI_GROUP_IDS = [b'\xee', b'\xff']
 PAXINI_FINGER_PART_NAMES = {
     'tip': 'aa',
     'pulp': 'cc'
+}
+
+# this decide the order of reading tactile for each sensor board
+PAXINI_FINGER_PART_INFO = {
+    'tip' : b'\xaa',
+    'pulp' : b'\xcc'
+}
+
+PAXINI_GROUP_INFO = {
+    0 : b'\xee',
+    1 : b'\xff'
 }
 
 THUMB_TACTILE_INFO = {
