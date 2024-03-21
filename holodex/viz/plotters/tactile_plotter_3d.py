@@ -43,6 +43,7 @@ class Plot2DTACTILE(object):
             cur_serial_port_number = PAXINI_LEAPHAND[finger]['serial_port_number']
             self.serial_port_number.append(cur_serial_port_number)
         self.serial_port_number = list(set(self.serial_port_number))
+        self.serial_port_number.sort()  
         
         # for each port, port has to be consistent with defined, and same with collection and deploy
         for serial_port_number in self.serial_port_number:
