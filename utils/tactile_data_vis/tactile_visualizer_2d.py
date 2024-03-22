@@ -1,7 +1,7 @@
 import numpy as np
 
-from .tactile_plotter_2d import *
-from .tactile_constants import *
+from utils.tactile_data_vis.tactile_plotter_2d import *
+from utils.tactile_data_vis.tactile_constants import *
 
 class Tactile2DVisualizer(object):
     def __init__(self, tactile_type='paxini'):
@@ -93,5 +93,5 @@ if __name__ == "__main__":
     # plot a single tactile data
     import pickle
     from holodex.utils.files import get_pickle_data
-    data = get_pickle_data("/home/agibot/Projects/Real-Robo/expert_dataset/recorded_data/demonstration_1/118")
+    data = get_pickle_data("/home/agibot/Projects/Real-Robo/expert_dataset/recorded_data/demonstration_1/117")
     tactile_visualizer.plot_once(data['tactile_data'])
