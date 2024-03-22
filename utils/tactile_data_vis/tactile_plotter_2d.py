@@ -53,13 +53,16 @@ class Plot2DTACTILE(object):
         plt.pause(0.01)
         # plt.cla()
     
-    def draw_single(self, X, Y, Z):
+    def draw_single(self, X, Y, Z, save_img_path=None):
         # Setting the plot limits
         # self._set_limits()
 
         # Plotting the lines to visualize the hand
         self.draw_points(X, Y, Z)
-        plt.show()
+        if save_img_path is not None:
+            plt.savefig(save_img_path)
+        else:
+            plt.show()
 
 if __name__ == "__main__":
     plotter = Plot2DTACTILE(None)

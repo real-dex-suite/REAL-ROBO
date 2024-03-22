@@ -3,14 +3,73 @@ import numpy as np
 import cv2
 from PIL import Image
 import torch
+import yaml
 
 from holodex.utils.files import make_dir, get_pickle_data
 from holodex.constants import *
+from utils.tactile_data_vis.tactile_visualizer_2d import Tactile2DVisualizer
+
 # load module according to hand type
 hand_module = __import__("holodex.robot.hand")
 HandKDL_module_name = f'{HAND_TYPE}KDL'
 # get relevant classes
 HandKDL = getattr(hand_module.robot, HandKDL_module_name)
+
+class TactileExtractor(object):
+    def __init__(self, data_path, extract_tactile_types):
+        self.data_path = data_path
+        self.extract_tactile_types = extract_tactile_types
+        if "image" in extract_tactile_types:
+            with open("configs/teleop.yaml", "r") as file:
+                tactile_type = yaml.safe_load(file)['defaults'][2]['tactile']
+            self.tactile_visualizer = Tactile2DVisualizer(tactile_type)
+
+    def extract_demo(self, demo_path, demo_data_target_path=None, demo_image_target_path=None):
+        states = os.listdir(demo_path)
+        states.sort(key = lambda f: int(''.join(filter(str.isdigit, f))))
+
+        demo_tactile_data = {}
+        for tactile_type in self.extract_tactile_types:
+            if "image" not in tactile_type:
+                demo_tactile_data[tactile_type] = []
+
+        for state in states:
+            tactile_data = get_pickle_data(os.path.join(demo_path, state))["tactile_data"]
+
+            # example 
+            for tactile_type in self.extract_tactile_types:
+                if tactile_type == "image":
+                    self.tactile_visualizer.plot_once(tactile_data, save_img_path=os.path.join(demo_image_target_path, f'{state}.PNG'))
+                elif tactile_type == "raw_data":
+                    raw_data = []
+                    for sensor_name in tactile_data:
+                        raw_data.extend(tactile_data[sensor_name].reshape(-1).tolist())
+                    demo_tactile_data[tactile_type].append(raw_data)
+
+        if demo_data_target_path is not None:
+            for tactile_type in demo_tactile_data:
+                demo_tactile_data[tactile_type] = torch.tensor(np.array(demo_tactile_data[tactile_type])).squeeze()
+
+            torch.save(demo_tactile_data, demo_data_target_path)
+
+    def extract(self, target_path):
+        demo_list = os.listdir(self.data_path)
+        demo_list.sort(key=lambda f: int(''.join(filter(str.isdigit, f))))
+
+        for demo in demo_list:
+            demo_path = os.path.join(self.data_path, demo)
+            demo_image_target_path = None
+            demo_data_target_path = None
+             
+            for extrace_tactile_type in self.extract_tactile_types:
+                if "image" in extrace_tactile_type:
+                    demo_image_target_path = os.path.join(target_path, demo)
+                    make_dir(demo_image_target_path)
+                else:
+                    demo_data_target_path = os.path.join(target_path, f'{demo}.pth')
+
+            print(f"Extracting tactiles from {demo_path}")
+            self.extract_demo(demo_path, demo_data_target_path, demo_image_target_path)
 
 class ColorImageExtractor(object):
     def __init__(self, data_path, num_cams, image_size, crop_sizes = None):
@@ -192,19 +251,10 @@ class ActionExtractor(object):
         for action_type in self.extract_action_types:
             demo_action_data[action_type] = []
 
-        # first_state_data = get_pickle_data(os.path.join(demo_path, states[0]))
-        # first_state_joint_angles = first_state_data['hand_joint_positions'] 
-        # prev_joint_coords = self._get_coords(first_state_joint_angles)
-
         for idx in range(1, len(states)):
             state_data = get_pickle_data(os.path.join(demo_path, states[idx]))
-            # state_joint_angles = state_data['hand_joint_positions']
-            # state_joint_coords = self._get_coords(state_joint_angles)
 
-            # action = state_joint_coords - prev_joint_coords # action = s2 - s1
-            # demo_action_data.append(action)
-
-            # prev_joint_coords = state_joint_coords
+            # example 
             for state_type in demo_action_data.keys():
                 if state_type == "arm_cmd_abs_joint":
                     arm_cmd_abs_joint = state_data['arm_commanded_joint_position']

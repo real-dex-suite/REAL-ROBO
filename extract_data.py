@@ -2,6 +2,7 @@ import os
 import hydra
 from holodex.data import (
     FilterData, 
+    TactileExtractor,
     ColorImageExtractor, 
     DepthImageExtractor, 
     StateExtractor, 
@@ -46,6 +47,13 @@ def main(configs):
         arm_delta = configs['arm_min_action_distance']
         data_filter = FilterData(data_path = configs.storage_path, hand_delta = hand_delta, arm_delta = arm_delta)     
         data_filter.filter(configs.filter_path)
+
+    if configs.tactiles:
+        print("\nExtracting tactiles!")
+        extractor = TactileExtractor(configs.filter_path, extract_tactile_types=configs.tactile_data_types)
+        tactiles_path = os.path.join(configs.target_path, 'tactiles')
+        make_dir(tactiles_path)
+        extractor.extract(tactiles_path)
 
     if configs.color_images:
         print("\nExtracting color images!")

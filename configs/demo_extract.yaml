@@ -7,10 +7,18 @@ defaults:
 # Data to extract from the pickle files
 ssl_data: false
 sample: true
+tactiles: true
 color_images: true
 depth_images: false
 states: true
 actions: true
+
+# extract tactile data type
+tactile_data_types: [
+  "image",
+  # "raw_data"
+]
+# raw_data, image
 
 # extract state data type
 state_data_types: [
@@ -31,9 +39,9 @@ action_data_types: [
 # hand_coords, hand_abs_joint, hand_rel_joint
 
 # data paths
-storage_path: 'recorded_data/'
-filter_path: 'filtered_data/'
-target_path: 'extracted_data/'
+storage_path: 'expert_dataset/recorded_data/'
+filter_path: 'expert_dataset/filtered_data/'
+target_path: 'expert_dataset/extracted_data/'
 
 # Number of view images 
 num_cams: 2 #3

@@ -1,7 +1,7 @@
 import numpy as np
 
-from tactile_plotter_2d import *
-from tactile_constants import *
+from .tactile_plotter_2d import *
+from .tactile_constants import *
 
 class Tactile2DVisualizer(object):
     def __init__(self, tactile_type='paxini'):
@@ -56,14 +56,14 @@ class Tactile2DVisualizer(object):
                 assert sensor_name in raw_data.keys()
                 sensor_order.append(sensor_name)
                 
-        processed_data = np.zeros((tactile_visualizer.sensor_info['finger_num']* tactile_visualizer.sensor_info['sensor_per_finger'], POINT_PER_SENSOR, FORCE_DIM_PER_POINT))
+        processed_data = np.zeros((self.sensor_info['finger_num']* self.sensor_info['sensor_per_finger'], POINT_PER_SENSOR, FORCE_DIM_PER_POINT))
 
         for (sensor_index, sensor_name) in enumerate(sensor_order):
             processed_data[sensor_index,:,:] = raw_data[sensor_name]
 
         self.plotter2D.draw(processed_data[:,:,0], processed_data[:,:,1], processed_data[:,:,2])
 
-    def plot_once(self, raw_data):
+    def plot_once(self, raw_data, save_img_path=None):
         sensor_order = []
         for id in self.sensor_info['id']:
             sensor_names = self.sensor_info['id'][id]
@@ -71,12 +71,12 @@ class Tactile2DVisualizer(object):
                 assert sensor_name in raw_data.keys()
                 sensor_order.append(sensor_name)
                 
-        processed_data = np.zeros((tactile_visualizer.sensor_info['finger_num']* tactile_visualizer.sensor_info['sensor_per_finger'], POINT_PER_SENSOR, FORCE_DIM_PER_POINT))
+        processed_data = np.zeros((self.sensor_info['finger_num']* self.sensor_info['sensor_per_finger'], POINT_PER_SENSOR, FORCE_DIM_PER_POINT))
 
         for (sensor_index, sensor_name) in enumerate(sensor_order):
             processed_data[sensor_index,:,:] = raw_data[sensor_name]
 
-        self.plotter2D.draw_single(processed_data[:,:,0], processed_data[:,:,1], processed_data[:,:,2])
+        self.plotter2D.draw_single(processed_data[:,:,0], processed_data[:,:,1], processed_data[:,:,2], save_img_path=save_img_path)
 
 if __name__ == "__main__":
     tactile_visualizer = Tactile2DVisualizer('paxini')
