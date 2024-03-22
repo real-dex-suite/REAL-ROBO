@@ -92,7 +92,7 @@ class PaxiniTactileStream:
             self.serial_port.read_until(start_tag)
             received_data = self.serial_port.read_until(start_tag)
             received_data = received_data[-len(start_tag):] + received_data[:-len(start_tag)]
-            print(f"retry time: {retry_time}")
+            # print(f"retry time: {retry_time}")
             retry_time += 1
 
         sequence_len = len(received_data)
