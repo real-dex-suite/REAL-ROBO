@@ -111,14 +111,6 @@ class DataCollector(object):
                 
                 print('Valid Data', time.time())
                 state = dict()
-                
-                # tactile data
-                tactile_data = {}
-                for tactile_num in range(self.num_tactiles):
-                    raw_datas = np.array(self.tactile_subscribers[tactile_num].get_data()).reshape(self.sensor_per_board, POINT_PER_SENSOR, FORCE_DIM_PER_POINT)
-                    for (tactile_id, raw_data) in enumerate(raw_datas):
-                        tactile_data[self.tactile_info['id'][tactile_num + 1][tactile_id]] = raw_data
-                state['tactile_data'] = tactile_data
 
                 # Hand data
                 state['hand_joint_positions'] = self.hand.get_hand_position() # follow orignal joint order, first mcp-pip, then palm-mcp
@@ -131,9 +123,18 @@ class DataCollector(object):
                 state['arm_ee_pose'] = self.arm_ee_pose.data
                 state['arm_commanded_joint_position'] = self.arm_commanded_joint_state.position
 
+                # Image data
                 for cam_num in range(self.num_cams):
                     state['camera_{}_color_image'.format(cam_num + 1)] = self.color_image_subscribers[cam_num].get_image()
                     # state['camera_{}_depth_image'.format(cam_num + 1)] = self.depth_image_subscribers[cam_num].get_image()
+                
+                # tactile data
+                tactile_data = {}
+                for tactile_num in range(self.num_tactiles):
+                    raw_datas = np.array(self.tactile_subscribers[tactile_num].get_data()).reshape(self.sensor_per_board, POINT_PER_SENSOR, FORCE_DIM_PER_POINT)
+                    for (tactile_id, raw_data) in enumerate(raw_datas):
+                        tactile_data[self.tactile_info['id'][tactile_num + 1][tactile_id]] = raw_data
+                state['tactile_data'] = tactile_data
 
                 # Temporal information
                 state['time'] = time.time()

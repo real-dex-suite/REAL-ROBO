@@ -7,7 +7,7 @@ defaults:
 demo_num: 1
 
 # data paths
-storage_path: 'recorded_data/'
+storage_path: 'expert_dataset/recorded_data/'
 
 # Number of tactile sensor board
 num_tactiles: 2
