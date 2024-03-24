@@ -29,9 +29,7 @@ outputs/*
 *wandb/*
 
 # Data
-recorded_data*
-filtered_data*
-extracted_data*
+expert_dataset
 
 # Test data
 test_image/*
