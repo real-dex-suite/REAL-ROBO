@@ -60,6 +60,7 @@ class DataCollector(object):
 
         # ROS Subscriber to get the arm information
         self.arm_joint_state = None
+        self.arm_commanded_joint_state = None
         self.arm_ee_pose = None
         rospy.Subscriber(JAKA_JOINT_STATE_TOPIC, JointState, self._callback_arm_joint_state, queue_size = 1)
         rospy.Subscriber(JAKA_COMMANDED_JOINT_STATE_TOPIC, JointState, self._callback_arm_commanded_joint_state, queue_size = 1)
@@ -92,7 +93,7 @@ class DataCollector(object):
                     print('Hand data not available!')
                     skip_loop = True
                 
-                if self.arm_joint_state is None or self.arm_ee_pose is None:
+                if self.arm_joint_state is None or self.arm_ee_pose is None or self.arm_commanded_joint_state is None:
                     print('Arm data not available!')
                     skip_loop = True
 

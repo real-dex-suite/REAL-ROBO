@@ -16,7 +16,7 @@ actions: true
 # extract tactile data type
 tactile_data_types: [
   "image",
-  # "raw_data"
+  "raw_data"
 ]
 # raw_data, image
 # new type must contain image for image type, as it use for deciding the target path
