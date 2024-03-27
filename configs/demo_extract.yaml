@@ -25,6 +25,7 @@ tactile_data_types: [
 state_data_types: [
   "arm_abs_joint",
   "hand_abs_joint",
+  "arm_ee_pose",
   ]
 # arm_abs_ee, arm_rel_ee, arm_abs_joint, arm_rel_joint
 # hand_coords, hand_abs_joint, hand_rel_joint
@@ -32,6 +33,7 @@ state_data_types: [
 # extract action data type
 action_data_types: [
   "arm_cmd_abs_joint",
+  "arm_ee_pose",
   "arm_abs_joint",
   "hand_cmd_abs_joint",
   "hand_abs_joint",

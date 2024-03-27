@@ -101,7 +101,10 @@ class ColorImageExtractor(object):
                 for cam_num in range(self.num_cams):
                     color_image = Image.fromarray(color_images[cam_num])
                     color_image = color_image.crop(self.crop_sizes[cam_num])
-                    color_image = color_image.resize((self.image_size, self.image_size))
+                    if len(self.image_size) > 1:
+                        color_image = color_image.resize((self.image_size[0], self.image_size[1]))
+                    else:
+                        color_image = color_image.resize((self.image_size, self.image_size))
                     color_image = np.array(color_image)
                     cv2.imwrite(os.path.join(color_cam_image_paths[cam_num], f'{state}.PNG'), color_image)
 
@@ -147,7 +150,10 @@ class DepthImageExtractor(object):
                 for cam_num in range(self.num_cams):
                     depth_image = Image.fromarray(depth_images[cam_num])
                     depth_image = depth_image.crop(self.crop_sizes[cam_num])
-                    depth_image = depth_image.resize((self.image_size, self.image_size))
+                    if len(self.image_size) > 1:
+                        color_image = color_image.resize((self.image_size[0], self.image_size[1]))
+                    else:
+                        depth_image = depth_image.resize((self.image_size, self.image_size))
                     depth_image = np.array(depth_image)
                     np.save(os.path.join(depth_cam_image_paths[cam_num], f'{state}.npy'), depth_image)
 
@@ -193,12 +199,15 @@ class StateExtractor(object):
         for state_type in self.extract_state_types:
             demo_state_data[state_type] = []
 
-        for idx in range(len(states) - 1):
+        for idx in range(len(states)):
             state_data = get_pickle_data(os.path.join(demo_path, states[idx]))
             for state_type in demo_state_data.keys():   
                 if state_type == "arm_abs_joint":
                     arm_state_abs_joint = state_data['arm_joint_positions']
                     demo_state_data[state_type].append(arm_state_abs_joint)
+                if state_type == "arm_ee_pose":
+                    arm_ee_pose = state_data['arm_ee_pose']
+                    demo_state_data[state_type].append(arm_ee_pose)
                 if state_type == "hand_abs_joint":
                     hand_state_abs_joint = state_data['hand_joint_positions']
                     demo_state_data[state_type].append(hand_state_abs_joint)
@@ -231,7 +240,8 @@ class ActionExtractor(object):
 
     def _get_coords(self, joint_angles):
         if "LEAP" in HAND_TYPE.upper():
-            # Highlight!!!!!!!!!!!!!!!!!!!!!!!!!!!!  the urdf we use to calculate the finger coordinates use first palm-mcp, then mcp-pip which is different
+            # Highlight!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            # the urdf we use to calculate the finger coordinates use first palm-mcp, then mcp-pip which is different
             # with current hand joint angles, so we need to change the order of joint angles
             joint_angles = np.array(joint_angles)[[1,0,2,3,5,4,6,7,9,8,10,11,12,13,14,15]]
 
@@ -251,14 +261,23 @@ class ActionExtractor(object):
         for action_type in self.extract_action_types:
             demo_action_data[action_type] = []
 
-        for idx in range(1, len(states)):
+        # depends on what kind of actions, cmd action or delta should start from 0, abs joint should start from 1 
+        if "hand_cmd_abs_joint" in demo_action_data.keys() or "hand_delta_joint" in demo_action_data.keys():
+            start_idx = 0
+        elif "hand_abs_joint" in demo_action_data.keys():
+            start_idx = 1
+
+        for idx in range(start_idx, len(states)): 
             state_data = get_pickle_data(os.path.join(demo_path, states[idx]))
 
             # example 
             for state_type in demo_action_data.keys():
                 if state_type == "arm_cmd_abs_joint":
                     arm_cmd_abs_joint = state_data['arm_commanded_joint_position']
-                    demo_action_data[state_type].append(arm_cmd_abs_joint) 
+                    demo_action_data[state_type].append(arm_cmd_abs_joint)
+                elif state_type == "arm_ee_pose":
+                    arm_ee_pose = state_data['arm_ee_pose']
+                    demo_action_data[state_type].append(arm_ee_pose)
                 elif state_type == "arm_abs_joint":
                     arm_abs_joint = state_data['arm_joint_positions']
                     demo_action_data[state_type].append(arm_abs_joint) 
