@@ -90,6 +90,15 @@ class JakaArm(object):
         target_joint = current_joint + np.clip(target_joint - current_joint, -self.joint_vel_limit, self.joint_vel_limit)
         return target_joint
     
+    def compute_ik(self, current_joint, cart_pose):
+        joint_tuple = self.robot.kine_inverse(current_joint, cart_pose)
+        if len(joint_tuple) > 1:
+            return joint_tuple[1]
+        else:
+            print(joint_tuple)
+            print('Inverse kinematics failed, arm will not moving')
+            return current_joint
+        
     def compute_joint(self, cart_pose):
         current_joint = self.get_arm_position()
         joint_tuple = self.robot.kine_inverse(current_joint, cart_pose)
