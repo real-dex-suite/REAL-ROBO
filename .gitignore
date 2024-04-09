@@ -45,3 +45,7 @@ diff.zip
 
 *.zip
 /venv/
+configs/robot_camera.yaml
+configs/dataset/simple_grasping/filtered.yaml
+holodex/datasets/image.py
+holodex/utils/converter.py
