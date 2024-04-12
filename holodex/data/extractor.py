@@ -122,7 +122,7 @@ class ColorImageExtractor(object):
 
 
 class DepthImageExtractor(object):
-    def __init__(self, data_path, num_cams, image_size, crop_sizes = None):
+    def __init__(self, data_path, num_cams, image_size, crop_sizes = None, extract_depth_types = None):
         # TODO BUG uncomment if camera > 1
         # assert num_cams == len(crop_sizes)
         
@@ -130,6 +130,7 @@ class DepthImageExtractor(object):
         self.num_cams = num_cams
         self.image_size = image_size
         self.crop_sizes = crop_sizes
+        self.extract_depth_types = extract_depth_types
 
     def extract_demo(self, demo_path, target_path):
         states = os.listdir(demo_path)
@@ -151,11 +152,16 @@ class DepthImageExtractor(object):
                     depth_image = Image.fromarray(depth_images[cam_num])
                     depth_image = depth_image.crop(self.crop_sizes[cam_num])
                     if len(self.image_size) > 1:
-                        color_image = color_image.resize((self.image_size[0], self.image_size[1]))
+                        depth_image = depth_image.resize((self.image_size[0], self.image_size[1]))
                     else:
                         depth_image = depth_image.resize((self.image_size, self.image_size))
                     depth_image = np.array(depth_image)
-                    np.save(os.path.join(depth_cam_image_paths[cam_num], f'{state}.npy'), depth_image)
+
+                    for depth_type in self.extract_depth_types:
+                        if depth_type == "image":
+                            cv2.imwrite(os.path.join(depth_cam_image_paths[cam_num], f'{state}.PNG'), depth_image*255/np.max(depth_image))
+                        elif depth_type == "raw_data":
+                            np.save(os.path.join(depth_cam_image_paths[cam_num], f'{state}.npy'), depth_image)
 
     def extract(self, target_path):
         demo_list = os.listdir(self.data_path)

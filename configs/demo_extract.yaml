@@ -13,6 +13,12 @@ depth_images: false
 states: true
 actions: true
 
+# extract depth data type
+depth_data_types: [
+  "image",
+  "raw_data"
+]
+
 # extract tactile data type
 tactile_data_types: [
   "image",

@@ -64,7 +64,7 @@ def main(configs):
 
     if configs.depth_images:
         print("\nExtracting depth images!")
-        extractor = DepthImageExtractor(configs.filter_path, num_cams = configs.num_cams, image_size = configs.image_parameters.image_size, crop_sizes = configs.image_parameters.crop_sizes)
+        extractor = DepthImageExtractor(configs.filter_path, num_cams = configs.num_cams, image_size = configs.image_parameters.image_size, crop_sizes = configs.image_parameters.crop_sizes, extract_depth_types=configs.depth_data_types)
         images_path = os.path.join(configs.target_path, 'images')
         make_dir(images_path)
         extractor.extract(images_path)
