@@ -103,9 +103,10 @@ class DataCollector(object):
                         skip_loop = True
                 
                 # Comment out the depth image subscriber for now
-                # for depth_image_subscriber in self.depth_image_subscribers:
-                #     if depth_image_subscriber.get_image() is None:
-                #         skip_loop = True
+                for depth_image_subscriber in self.depth_image_subscribers:
+                    if depth_image_subscriber.get_image() is None:
+                        print('Depth image not available!')
+                        skip_loop = True
 
                 if skip_loop:
                     continue
@@ -124,10 +125,12 @@ class DataCollector(object):
                 state['arm_ee_pose'] = self.arm_ee_pose.data
                 state['arm_commanded_joint_position'] = self.arm_commanded_joint_state.position
 
+                #TODO: Arm Effort, Velocity
+
                 # Image data
                 for cam_num in range(self.num_cams):
                     state['camera_{}_color_image'.format(cam_num + 1)] = self.color_image_subscribers[cam_num].get_image()
-                    # state['camera_{}_depth_image'.format(cam_num + 1)] = self.depth_image_subscribers[cam_num].get_image()
+                    state['camera_{}_depth_image'.format(cam_num + 1)] = self.depth_image_subscribers[cam_num].get_image()
                 
                 # tactile data
                 tactile_data = {}
