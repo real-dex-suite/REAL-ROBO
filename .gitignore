@@ -49,3 +49,7 @@ configs/robot_camera.yaml
 configs/dataset/simple_grasping/filtered.yaml
 holodex/datasets/image.py
 holodex/utils/converter.py
+holodex/datasets/image.py
+train_bc.py
+deploy.py
+holodex/components/deployer/wrappers/BC.py

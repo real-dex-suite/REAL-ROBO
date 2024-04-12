@@ -76,7 +76,7 @@ class RobotController(object):
             input_angles = np.array(input_angles)[[1,0,2,3,5,4,6,7,9,8,10,11,12,13,14,15]]
         self.hand.move(input_angles)
     
-    def move_arm(self, input_angles):
+    def move_arm(self, input_angles: np.ndarray):
         self.arm.move(input_angles)
         rospy.sleep(SLEEP_TIME)
 
@@ -93,8 +93,9 @@ class RobotController(object):
                 self.move_hand(input_angles[self.arm.dof:])
         elif self.hand is not None:
             self.move_hand(input_angles)
+            rospy.sleep(SLEEP_TIME)
     
-    def servo_move(self, action, n_interpolations: int = 30):
+    def servo_move(self, action: dict, n_interpolations: int = 30):
         # hand interpolation
         if self.hand_control_mode == "joint":
             start_hand_pos = self.get_hand_position()
@@ -124,6 +125,40 @@ class RobotController(object):
             self.move_arm(interpolated_arm_pos)
             self.move_hand(interpolated_hand_pos)
             rospy.sleep(SLEEP_TIME)
+
+    def servo_move_test(self, action: dict, n_interpolations: int = 50):
+        # hand interpolation
+        start_hand_pos = self.get_hand_position()
+        start_arm_pos = self.get_arm_position()
+        
+        if self.hand_control_mode == "joint":
+            end_hand_pos = action['hand']
+
+        # arm interpolation
+        if self.arm_control_mode == "interpo_ik": 
+            start_arm_pos = self.get_arm_tcp_position()
+            current_joint = self.get_arm_position()
+            start_arm_pos = np.array(self.arm.compute_ik(current_joint, start_arm_pos))
+            end_arm_pos = np.array(self.arm.compute_ik(current_joint, action['arm']))
+        elif self.arm_control_mode == "joint":
+            end_arm_pos = action['arm']
+
+        # make the robot move
+        for step in range(1, n_interpolations + 1):
+            interpolated_hand_pos = (
+                start_hand_pos
+                + (end_hand_pos - start_hand_pos) * step / n_interpolations
+            )
+            interpolated_arm_pos = (
+                start_arm_pos
+                + (end_arm_pos - start_arm_pos) * step / n_interpolations
+            )
+
+            self.move_hand(interpolated_hand_pos)
+            self.move_arm(interpolated_arm_pos)
+            print("arm check")
+            rospy.sleep(0.05)
+
 
 if __name__ == "__main__":
     rospy.init_node("test")

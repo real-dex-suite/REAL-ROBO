@@ -2,6 +2,7 @@ import os.path as path
 import holodex
 import numpy as np
 from math import pi as PI
+import torch
 
 # Retarget type
 RETARGET_TYPE = "dexpilot"
@@ -24,6 +25,10 @@ LEAP_JOINT_OFFSETS = {
     'thumb': 12
 }
 # 16 degree 0 position
+# LEAP_HOME_POSITION = [ 0.07516766,  0.05522585, -0.01380324, -0.16873527,  0.13652682,
+#         0.10891509, -0.00459933, -0.19481301, -0.01687121,  0.34054637,
+#        -0.01687121, -0.18100715,  0.5215559 , -0.00459933,  0.96641064,
+#        -0.49854112]
 LEAP_HOME_POSITION = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
 LEAP_CMD_TYPE = 'allegro'
 
@@ -381,8 +386,25 @@ OCULUS_VIEW_LIMITS = {
 }
 
 # Other params
-VR_FREQ = 120 #60 original
+VR_FREQ = 60 #60 original
 
 LEFT_TO_RIGHT = np.array([1, 0, 0,
                           0, -1, 0,
                           0, 0, 1]).reshape(3, 3)
+
+# ARM_POSE_SCALE = 580
+# ARM_ORI_SCALE = np.pi
+# ARM_JOINT_LOWER_LIMIT = torch.tensor([-6.28, -2.09, -2.27, -6.28, -2.09, -6.28])
+# ARM_JOINT_UPPER_LIMIT = torch.tensor([6.28, 2.09, 2.27, 6.28, 2.09, 6.28])
+# HAND_JOINT_LOWER_LIMIT = torch.tensor([-1.047, -0.314, -0.506, -0.366, -1.047, -0.314, -0.506, -0.366, -1.047, -0.314, -0.506, -0.366, -0.349, -0.47 , -1.2  , -1.34 ])
+# HAND_JOINT_UPPER_LIMIT = torch.tensor([1.047, 2.23 , 1.885, 2.042, 1.047, 2.23 , 1.885, 2.042, 1.047, 2.23 , 1.885, 2.042, 2.094, 2.443, 1.9  , 1.88 ])
+
+ARM_POS_SCALE = 580
+ARM_ORI_SCALE = np.pi
+TACTILE_RAW_DATA_SCALE = 60
+ARM_JOINT_LOWER_LIMIT = torch.tensor([-6.28, -2.09, -2.27, -6.28, -2.09, -6.28])
+ARM_JOINT_UPPER_LIMIT = torch.tensor([6.28, 2.09, 2.27, 6.28, 2.09, 6.28])
+HAND_JOINT_LOWER_LIMIT = torch.tensor([-1.047, -0.314, -0.506, -0.366, -1.047, -0.314, -0.506, -0.366, -1.047, -0.314,
+                                       -0.506, -0.366, -0.349, -0.47, -1.2, -1.34])
+HAND_JOINT_UPPER_LIMIT = torch.tensor([1.047, 2.23, 1.885, 2.042, 1.047, 2.23, 1.885, 2.042, 1.047, 2.23, 1.885, 2.042,
+                                       2.094, 2.443, 1.9, 1.88])
