@@ -3,10 +3,14 @@ import numpy as np
 from PIL import Image as PILImage
 import torch
 from torchvision import transforms as T
-from holodex.robot import AllegroKDL, AllegroHand, KinovaArm
 from holodex.components.deployer.wrappers import *
 from holodex.utils.network import ImageSubscriber, frequency_timer
+from holodex.utils import converter
+from holodex.components.robot_operators.robot import RobotController
 from holodex.constants import *
+from scipy.spatial.transform import Rotation as R
+import rospy
+import threading
 
 class DexArmDeploy(object):
     def __init__(
@@ -51,7 +55,7 @@ class DexArmDeploy(object):
                 model_weights_path = self.configs['task']['bc']['model_weights'],
                 run_store_path = self.configs['task']['run_store_path'],
                 selected_view = self.cam_num,
-                transforms = transform
+                transform = transform
             )
     
         # Image subscriber initialization
@@ -61,14 +65,12 @@ class DexArmDeploy(object):
         )
 
         # Robot controller initialization
-        self.kdl_solver = AllegroKDL()
-        self.hand_robot = AllegroHand()
-        self.arm_robot = KinovaArm()
-
-        # Moving Arm to position
-        self.arm_robot.move(KINOVA_POSITIONS[self.configs.task.arm_position])
-        self.hand_robot.reset()
-
+        self.robot = RobotController(teleop = False, servo_mode = True, arm_control_mode = "joint")
+        print('Robot controller initialized!')
+        
+        # move the robot to the home position
+        self.robot.home_robot()
+ 
         if self.configs['run_loop']:
             self.frequency_timer = frequency_timer(self.configs.loop_rate)
 
@@ -83,48 +85,120 @@ class DexArmDeploy(object):
 
     def _get_transformed_image(self):
         return self._transform_image(self.robot_image_subscriber.get_image())
+    
+    def _get_hand_state(self):
+        return self.robot.get_hand_position()
+    
+    def _get_arm_state(self):
+        return self.robot.get_arm_tcp_position()
+     
+    def _predict_action(self, observation):
+        return self.model.get_action(observation)
 
+    def _postprocess_arm_action(self, pred_action, action_type):
+        """
+        Post-processes predicted arm action based on the specified type.
+
+        Args:
+            pred_action (np.array): Predicted action.
+            action_type (str): Type of action ('cartesian_pose' or 'joint').
+
+        Returns:
+            np.array: Processed action.
+        """
+        if action_type == "cartesian_pose":
+            arm_ee_pose = np.array(pred_action[:7])
+            processed_action = np.zeros(6)
+            arm_ee_pose[:3] /= ARM_POS_SCALE
+            temp = converter.from_quaternion_to_euler_angle(arm_ee_pose[3:])
+            processed_action[:3] = arm_ee_pose[:3]
+            processed_action[3:] = temp
+            return processed_action
+
+        elif action_type == "joint":
+            arm_joint = pred_action[:6]
+            processed_action = np.array(converter.unscale_transform(
+                arm_joint,
+                ARM_JOINT_LOWER_LIMIT,
+                ARM_JOINT_UPPER_LIMIT
+            ))
+            return processed_action
+        else:
+            raise ValueError("Invalid action type specified")
+
+    def _postprocess_hand_action(self, pred_action, action_type):
+        if action_type == "cartesian_pose": #TODO: quat, also have to consider the euler angle
+            hand_joint = np.array(pred_action[7:])
+
+        elif action_type == "joint":
+            hand_joint = pred_action[6:]
+        
+        hand_joint = np.array(converter.unscale_transform(
+            hand_joint,
+            HAND_JOINT_LOWER_LIMIT,
+            HAND_JOINT_UPPER_LIMIT
+        ))
+        return hand_joint
+
+    def _create_robot_action(self, pred_action):
+        arm_ee_pose = self._postprocess_arm_action(pred_action, 'joint')
+        hand_joint = self._postprocess_hand_action(pred_action, 'joint')
+        print("arm_ee_psoe", arm_ee_pose)
+        print("hand_joint", hand_joint)
+
+        return {
+            'arm': arm_ee_pose,
+            'hand': hand_joint
+        }
+
+    def _execute_action(self, action):
+        self.robot.servo_move_test(action)
+    
+       
     def solve(self):
-        sys.stdin = open(0) # To get inputs while spawning multiple processes
-
+        sys.stdin = open(0)  # To get inputs while spawning multiple processes
+        
         while True:
-            if self.robot_image_subscriber.get_image() is None:
+            robot_image = self.robot_image_subscriber.get_image()
+            if robot_image is None:
+                print('No image received!')
+                continue
+            
+            hand_position = self.robot.get_hand_position()
+            arm_position = self.robot.get_arm_tcp_position()
+            if hand_position is None:
+                print('No hand state received!')
+                continue
+            
+            if arm_position is None:
+                print('No arm state received!')
                 continue
 
-            if self.hand_robot.get_hand_position() is None:
-                continue
+            print('\n***********************************************')
+            
+            # if not self.configs['run_loop']:
+            #     register = input('\nPress a key to perform an action...')
 
-            print('\n***************************************************************')
-
-            if not self.configs['run_loop']:
-                register = input('\nPress a key to perform an action...')
-
-                if register == 'h':
-                    print('Reseting the Robot!')
-                    self.hand_robot.reset()
-                    continue
-
-            finger_tip_coords = self.hand_robot.get_fingertip_coords(self.hand_robot.get_hand_position())
-            print('\nCurrent joint state: {}'.format(finger_tip_coords))
-
+            #     if register == 'h':
+            #        print('Reseting the Robot!')
+            #         self.robot.home_robot()
+            #         continue
+            
+            # Get input - image
             transformed_image = self._get_transformed_image()
-
-            input_dict = dict(
-                key_press = register if not self.configs['run_loop'] else None,
-                image = transformed_image,
-                joint_state = finger_tip_coords
-            )
-
-            action = self.model.get_action(input_dict)
-            print('\nObtained action: {}'.format(action))
-
-            if not self.configs['absolute_actions']:
-                desired_finger_tip_coords = np.array(finger_tip_coords) + np.array(action)
-            else:
-                desired_finger_tip_coords = action
-
-            print('\nApplied joint state coord: {}'.format(desired_finger_tip_coords))
-            self.hand_robot.move_to_coords(desired_finger_tip_coords)
+            print("Image has been received and transformed")
+            
+            input_dict = {
+                'image': transformed_image,
+            }
+            
+            pred_action = self._predict_action(input_dict)        
+            postprocessed_action = self._create_robot_action(pred_action)
+            print(postprocessed_action)
+            self._execute_action(postprocessed_action)
+            
 
             if self.configs['run_loop']:
                 self.frequency_timer.sleep()
+
+   

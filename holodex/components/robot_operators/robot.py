@@ -157,7 +157,7 @@ class RobotController(object):
             self.move_hand(interpolated_hand_pos)
             self.move_arm(interpolated_arm_pos)
             print("arm check")
-            rospy.sleep(0.05)
+            rospy.sleep(0.04)
 
 
 if __name__ == "__main__":
