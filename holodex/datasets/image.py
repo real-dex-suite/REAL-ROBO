@@ -4,8 +4,9 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 from torchvision import transforms as T
-from holodex.constants import NUM_CAMS
+from holodex.constants import *
 from copy import deepcopy as copy
+from holodex.utils import converter
 
 class ImageDataset(Dataset):
     def __init__(
@@ -18,7 +19,7 @@ class ImageDataset(Dataset):
     ):
         self.selected_views = selected_views
         self.demos = demos_list
-        
+
         self.color_image, self.depth_image = False, False
         if image_type == 'color':
             self.color_image = True
@@ -46,7 +47,7 @@ class ImageDataset(Dataset):
                     self.transforms['depth_image'].append(T.Compose([
                         T.ToTensor()
                     ]))
- 
+
         self.state_offset = 0
 
     def _load_image_paths(self, images_path):
@@ -65,7 +66,7 @@ class ImageDataset(Dataset):
             if self.color_image:
                 color_image_names = os.listdir(os.path.join(demo_path, 'camera_{}_color_image'.format(self.selected_views[0])))
                 color_image_names.sort(key = lambda f: int(''.join(filter(str.isdigit, f))))
-                
+
             if self.depth_image:
                 depth_image_names = os.listdir(os.path.join(demo_path, 'camera_{}_depth_image'.format(self.selected_views[0])))
                 depth_image_names.sort(key = lambda f: int(''.join(filter(str.isdigit, f))))
@@ -76,7 +77,7 @@ class ImageDataset(Dataset):
                         os.path.join(demo_path, 'camera_{}_color_image'.format(cam_num), image_name) for image_name in color_image_names
                     ]
                     self.color_image_paths[idx].append(copy(demo_color_image_paths))
-                
+
                 if self.depth_image:
                     demo_depth_image_paths = [
                         os.path.join(demo_path, 'camera_{}_depth_image'.format(cam_num), image_name) for image_name in depth_image_names
@@ -127,15 +128,15 @@ class ImageDataset(Dataset):
 
 class ImageSSLDataset(ImageDataset):
     def __init__(
-        self, 
-        data_path, 
-        selected_views, 
-        image_type, 
+        self,
+        data_path,
+        selected_views,
+        image_type,
         demos_list = None,
         transforms = None
     ):
         super().__init__(data_path, selected_views, image_type, demos_list, transforms)
-    
+
         images_path = os.path.join(data_path, 'images')
         self._load_image_paths(images_path)
         self._get_trajectory_data()
@@ -164,28 +165,49 @@ class ImageSSLDataset(ImageDataset):
 
 class ImageActionDataset(ImageDataset):
     def __init__(
-        self, 
-        data_path, 
-        selected_views, 
-        image_type, 
+        self,
+        data_path,
+        selected_views,
+        image_type,
         absolute,
         demos_list = None,
         transforms = None
+
     ):
         super().__init__(data_path, selected_views, image_type, demos_list, transforms)
-    
+
         self.state_offset = 1
         images_path = os.path.join(data_path, 'images')
         self._load_image_paths(images_path)
         self._get_trajectory_data()
 
+        # TODO: modify the way we're handling the data when loading it back in the load_tensors function
         actions_path = os.path.join(data_path, 'actions')
-        self.actions = load_tensors(actions_path, self.demos)
+        # self.actions = load_tensors(actions_path, self.demos)
 
-        if absolute:
-            states_path = os.path.join(data_path, 'states')
-            states = load_tensors(states_path, self.demos)
-            self.actions = self.actions + states
+        self.actions = {}
+
+        for demo in self.demos:
+            demo_path = os.path.join(actions_path, f'{demo}.pth')
+            demo_actions = torch.load(demo_path)
+            for action_type, action_data in demo_actions.items():
+                if action_type not in self.actions:
+                    self.actions[action_type] = []
+                self.actions[action_type].append(action_data)
+
+        for action_type in self.actions:
+            self.actions[action_type] = torch.cat(self.actions[action_type], dim=0)
+
+        # if absolute:
+        #     states_path = os.path.join(data_path, 'states')
+        #     states = load_tensors(states_path, self.demos)
+        #     self.actions = self.actions + states
+
+        # if absolute:
+        #     states_path = os.path.join(data_path, 'states')
+        #     states = load_tensors(states_path, self.demos)
+        #     for key in self.actions:
+        #         self.actions[key] += states[key]
 
     def __getitem__(self, idx):
         traj_num, state_num = self._get_traj_state_idx(idx)
@@ -196,7 +218,8 @@ class ImageActionDataset(ImageDataset):
                 color_images.append(self._get_color_image(traj_num, state_num, cam_num))
 
             if not self.depth_image:
-                return color_images, self.actions[idx]
+                # return color_images, self.actions[idx] # temp comment
+                return color_images, {k: v[idx] for k, v in self.actions.items()}
 
         if self.depth_image:
             depth_images = []
@@ -208,21 +231,88 @@ class ImageActionDataset(ImageDataset):
 
         rgbd_images = [torch.cat([color_images[cam_num], depth_images[cam_num]], dim = 0) for cam_num in range(len(self.selected_views))]
         return rgbd_images, self.actions[idx]
+ 
+# def load_tensors(path, demos_list):
+#     if demos_list is None:
+#         tensor_names = os.listdir(path)
+#         tensor_names.sort(key = lambda f: int(''.join(filter(str.isdigit, f))))
+#         tensor_paths = [os.path.join(path, tensor_name) for tensor_name in tensor_names]
+#     else:
+#         demos_list.sort(key = lambda f: int(''.join(filter(str.isdigit, f))))
+#         tensor_paths = [os.path.join(path, '{}.pth'.format(tensor_name)) for tensor_name in demos_list]
+#
+#     tensor_array = []
+#     for tensor_path in tensor_paths:
+#         tensor_array.append(torch.load(tensor_path))
+#
+#     return torch.cat(tensor_array, dim=0)
 
 def load_tensors(path, demos_list):
+    input_type = "joint"
+    tensor_paths = get_tensor_paths(path, demos_list)
+    tensor_array = []
+
+    for tensor_path in tensor_paths:
+        data = torch.load(tensor_path)
+        processed_data = process_data(data, input_type)
+        tensor_array.append(processed_data)
+
+    return torch.cat(tensor_array, dim=0)
+
+
+def get_tensor_paths(path, demos_list):
+    """
+    Get the paths of tensor files based on the specified path and demos list.
+    """
     if demos_list is None:
         tensor_names = os.listdir(path)
-        tensor_names.sort(key = lambda f: int(''.join(filter(str.isdigit, f))))
+        tensor_names.sort(key=lambda f: int("".join(filter(str.isdigit, f))))
         tensor_paths = [os.path.join(path, tensor_name) for tensor_name in tensor_names]
     else:
-        demos_list.sort(key = lambda f: int(''.join(filter(str.isdigit, f))))
-        tensor_paths = [os.path.join(path, '{}.pth'.format(tensor_name)) for tensor_name in demos_list]            
+        demos_list.sort(key=lambda f: int("".join(filter(str.isdigit, f))))
+        tensor_paths = [os.path.join(path, f"{demo}.pth") for demo in demos_list]
+    return tensor_paths
 
-    tensor_array = []
-    for tensor_path in tensor_paths:
-        tensor_array.append(torch.load(tensor_path))
 
-    return torch.cat(tensor_array, dim = 0)
+def process_data(data, input_type):
+    arm_tensor, hand_tensor = data["arm_ee_pose"], data["hand_abs_joint"]
+    arm_joint = data["arm_abs_joint"]
+
+    processed_hand_abs_joint = converter.scale_transform(hand_tensor, HAND_JOINT_LOWER_LIMIT, HAND_JOINT_UPPER_LIMIT)
+
+    if input_type == "ee_pose":
+        processed_arm_data = process_arm_ee_pose(arm_tensor)
+    elif input_type == "joint":
+        processed_arm_data = arm_joint
+        processed_arm_data = converter.scale_transform(processed_arm_data, ARM_JOINT_LOWER_LIMIT, ARM_JOINT_UPPER_LIMIT)
+    else:
+        raise ValueError(f"Invalid input type: {input_type}. Choose either 'ee_pose' or 'joint'.")
+
+    return torch.cat([processed_arm_data, processed_hand_abs_joint], dim=1)
+
+
+def process_arm_ee_pose(arm_tensor):
+    """
+    Process the arm end-effector pose data based on the orientation type.
+    """
+    ORI_TYPE = "quat_pose"  # define the orientation type: euler_pose or quat_pose
+
+    if ORI_TYPE == "euler_pose":
+        processed_arm_ee_pose = converter.normalize_arm_ee_pose(arm_tensor)
+        return processed_arm_ee_pose
+    elif ORI_TYPE == "quat_pose":
+        arm_position = arm_tensor[:, :3] / ARM_POS_SCALE
+        arm_orientation_eulers = arm_tensor[:, 3:]
+        new_arm_pose = torch.zeros(arm_tensor.shape[0], 7)
+        new_arm_pose[:, :3] = arm_position
+        prev_quat = None
+        for idx, euler in enumerate(arm_orientation_eulers):
+            quat = torch.tensor(R.from_euler('xyz', euler.cpu().numpy(), degrees=False).as_quat(), device='cuda:0')
+            if idx != 0:
+                quat = converter.transform_quat(prev_quat, quat)
+            prev_quat = quat
+            new_arm_pose[idx, 3:] = quat
+        return new_arm_pose
 
 
 def get_image_dataset(
@@ -273,18 +363,18 @@ def get_image_dataset(
     if dataset_type == 'pretrain':
         return ImageSSLDataset(
             data_path = data_path,
-            selected_views = selected_views, 
+            selected_views = selected_views,
             image_type = image_type,
-            demos_list = demos_list, 
+            demos_list = demos_list,
             transforms = transforms
         )
     elif dataset_type == 'action':
         return ImageActionDataset(
-            data_path = data_path, 
-            selected_views = selected_views, 
+            data_path = data_path,
+            selected_views = selected_views,
             image_type = image_type,
-            demos_list = demos_list, 
-            absolute = absolute, 
+            demos_list = demos_list,
+            absolute = absolute,
             transforms = transforms
         )
     else:

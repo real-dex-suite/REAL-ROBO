@@ -4,6 +4,7 @@ from processes import get_camera_stream_processes, get_deploy_process
 
 @hydra.main(version_base = '1.2', config_path='configs', config_name='deploy')
 def main(configs):
+    
     robot_camera_processes, _ = get_camera_stream_processes(configs)
     deploy_process = get_deploy_process(configs)
 
@@ -14,6 +15,8 @@ def main(configs):
         time.sleep(2)
 
     # Deploy process
+
+
     deploy_process.start()
 
     # Joining all the processes
@@ -23,4 +26,7 @@ def main(configs):
     deploy_process.join()
 
 if __name__ == '__main__':
+    
     main()
+
+

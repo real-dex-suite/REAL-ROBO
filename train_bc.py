@@ -8,9 +8,9 @@ from holodex.utils.optimizers import *
 from torch.nn.functional import mse_loss
 from holodex.datasets import get_image_dataset
 from holodex.models import BehaviorCloning, BehaviorCloningRep
-from holodex.utils.models import create_fc
+from holodex.utils.models import create_fc, set_seed_everywhere
 from holodex.utils.logger import Logger
-from holodex.utils.files import make_dir, set_seed_everywhere
+from holodex.utils.files import make_dir
 from tqdm import tqdm
 
 class Workspace(object):
