@@ -2,7 +2,6 @@ robot_cam_serial_numbers:
   - "211422061450"
   - "207222071050"
   
-
 # Robot camera stream resolution
 resolution: [1280, 720]
 

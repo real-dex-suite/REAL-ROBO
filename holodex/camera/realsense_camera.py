@@ -8,7 +8,7 @@ from holodex.constants import *
 
 
 class RealSenseRobotStream(object):
-    def __init__(self, cam_serial_num, robot_cam_num, rotation_angle = 0, mode='rgb'):
+    def __init__(self, cam_serial_num, robot_cam_num, rotation_angle = 0, mode='rgbd'):
         self.mode = mode
 
         # Initializing ROS Node
@@ -47,10 +47,10 @@ class RealSenseRobotStream(object):
         cfg = pipeline.start(config)
         device = cfg.get_device()
 
-        if self.mode == 'rgbd':
-            # Setting the depth mode to high accuracy mode
-            depth_sensor = device.first_depth_sensor()
-            depth_sensor.set_option(rs.option.visual_preset, processing_preset) # High accuracy post-processing mode
+        # if self.mode == 'rgbd':
+        #     # Setting the depth mode to high accuracy mode
+        #     depth_sensor = device.first_depth_sensor()
+        #     depth_sensor.set_option(rs.option.visual_preset, processing_preset) # High accuracy post-processing mode
         self.realsense = pipeline
 
         # Obtaining the color intrinsics matrix for aligning the color and depth images
