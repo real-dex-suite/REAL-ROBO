@@ -1,6 +1,0 @@
-README.md
-setup.py
-Real_Robo.egg-info/PKG-INFO
-Real_Robo.egg-info/SOURCES.txt
-Real_Robo.egg-info/dependency_links.txt
-Real_Robo.egg-info/top_level.txt
