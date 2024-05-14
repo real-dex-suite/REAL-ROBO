@@ -51,3 +51,4 @@ test_load.py
 test_image.py
 holodex/data/tactile_representation.py
 utils/remove_data.py
+Real_Robo.egg-info/*
