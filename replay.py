@@ -15,8 +15,12 @@ def main(configs):
     rospy.init_node("replay_node", anonymous=True)
     if configs.replay_robot:
         data_processor = DataProcessor(configs)
-        arm_state_data, hand_state_data = data_processor.load_data()
+        # Load the data: "extracted" or "raw"
+        arm_state_data, hand_state_data = data_processor.load_data(
+            data_type="extracted"
+        )
         print("Data loaded successfully!")
+        print("Replaying robot motion...")
 
         replay_controller = ReplayController(
             configs, hand_state=hand_state_data, arm_state=arm_state_data
@@ -33,11 +37,14 @@ def main(configs):
         if configs.replay_arm_and_hand:
             replay_controller.replay_arm_and_hand_motion()
 
-    # TODO: two types of replay data, one with recorded data and one with the filtered data
+    print("............................................")
+    print("Don't stop now if you want to process the saved images.")
 
     if configs.extract_replay_images:
         extractor = ColorImageExtractor(configs)
         extractor.extract_images(configs.target_path)
+
+    print("All Done")
 
 
 if __name__ == "__main__":

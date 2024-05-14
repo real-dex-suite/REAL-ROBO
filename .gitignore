@@ -45,11 +45,9 @@ diff.zip
 
 *.zip
 /venv/
-configs/robot_camera.yaml
-configs/dataset/simple_grasping/filtered.yaml
-holodex/datasets/image.py
-holodex/utils/converter.py
-holodex/datasets/image.py
-train_bc.py
-deploy.py
-holodex/components/deployer/wrappers/BC.py
+
+utils/remove_data.py
+test_load.py
+test_image.py
+holodex/data/tactile_representation.py
+utils/remove_data.py

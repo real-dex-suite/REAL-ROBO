@@ -1,14 +1,19 @@
 defaults:
   - _self_
   - robot_camera
-  - task: planar_rotation
+  - tactile: paxini
+  - task: simple_grasp
   - override hydra/hydra_logging: disabled  
   - override hydra/job_logging: disabled  
 
 model: VINN
-absolute_actions: true
+absolute_actions: false
 
-data_path: extracted_data/
+encoder:
+  name: resnet18
+selected_view: 1
+
+data_path: expert_dataset/grasping_rich/extracted_data # 
 
 run_loop: false
-loop_frequency: 1 # 1 move per second
+loop_frequency: 15 # 1 move per second

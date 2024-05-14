@@ -8,6 +8,7 @@ from holodex.constants import SLEEP_TIME
 from holodex.components.robot_operators.robot import RobotController
 from holodex.robot.hand.leap.leap_kdl import LeapKDL
 import pyrealsense2 as rs
+import torch
 
 
 class ReplayController(RobotController):
@@ -29,6 +30,7 @@ class ReplayController(RobotController):
 
         self.pipeline = None
         self.start_camera_stream()
+        print("camera stream started")
 
     def replay_hand_motion(self, n: int = 20) -> None:
         for i in range(len(self.hand_joint_positions) - 1):
@@ -75,7 +77,7 @@ class ReplayController(RobotController):
             # arm interpolation
             start_arm_pos = np.array(self.arm_joint_positions[i])
             end_arm_pos = np.array(self.arm_joint_positions[i + 1])
-
+            # print(end_arm_pos)
             # make the robot move
             for step in range(1, n_interpolations + 1):
                 interpolated_hand_pos = (
@@ -93,11 +95,12 @@ class ReplayController(RobotController):
 
             new_arm_pos = self.get_arm_position()
             new_hand_pos = self.get_hand_position()
-
+            print("euler:", self.get_arm_tcp_position()[3:])
+            print("quaternion", self.arm.robot.rot_matrix_to_quaternion(self.arm.robot.rpy_to_rot_matrix(self.get_arm_tcp_position()[3:])[1])[1])
             # compute difference between current and target position
             arm_diff = np.abs(new_arm_pos - self.arm_joint_positions[i + 1])
             hand_diff = np.abs(new_hand_pos - self.hand_joint_positions[i + 1])
-            print(f"Arm diff: {arm_diff}, Hand diff: {hand_diff}")
+            # print(f"Arm diff: {arm_diff}, Hand diff: {hand_diff}")
 
             self.capture_save_images(i + 1)
         self.stop_camera_stream()
@@ -129,26 +132,45 @@ class ReplayController(RobotController):
 
 class DataProcessor(object):
     def __init__(self, configs) -> None:
-        self.arm_state_path = configs.data_path
-        self.hand_state_path = configs.data_path
+        self.data_path = configs.data_path
+        self.extract_path = configs.extract_path
         self.kdl_solver = LeapKDL()
 
-    # TODO 1: read data from the extracted data or filtered data
-    # TODO 2: optimize the saving format.
-    def load_data(self) -> Tuple[List[List[Any]], List[List[Any]]]:
-        """Loads arm and hand state data."""
+    def load_data(self, data_type: str) -> Tuple[List[List[Any]], List[List[Any]]]:
+        """Loads arm and hand data based on data_type."""
+        if data_type == "extracted":
+            return self._load_extracted_data()
+        elif data_type == "raw":
+            return self._load_raw_data()
+        else:
+            raise ValueError(
+                f"Invalid data type: {data_type}. Choose 'extracted' or 'raw'."
+            )
+
+    def _load_extracted_data(self) -> Tuple[List[List[Any]], List[List[Any]]]:
+        """Loads extracted arm and hand joint position data."""
+        if not os.path.exists(self.extract_path):
+            raise FileNotFoundError(f"File {self.extract_path} does not exist.")
+
+        data = torch.load(self.extract_path)
+        arm_positions = [pos.tolist() for pos in data["arm_abs_joint"]]
+        hand_positions = [pos.tolist() for pos in data["hand_abs_joint"]]
+
+        return arm_positions, hand_positions
+
+    def _load_raw_data(self) -> Tuple[List[List[Any]], List[List[Any]]]:
+        """Loads raw arm and hand state data."""
         arm_data, hand_data = [], []
-        demo_list = os.listdir(self.arm_state_path)
-        demo_list.sort(key=lambda f: int("".join(filter(str.isdigit, f))))
+        demo_list = sorted(
+            os.listdir(self.data_path),
+            key=lambda f: int("".join(filter(str.isdigit, f))),
+        )
 
         for file_name in demo_list:
-            file_path = os.path.join(self.arm_state_path, file_name)
+            file_path = os.path.join(self.data_path, file_name)
             state = np.load(file_path, allow_pickle=True)
 
-            arm_joint_position = list(state["arm_joint_positions"])
-            hand_joint_position = list(state["hand_joint_positions"])
-
-            arm_data.append(arm_joint_position)
-            hand_data.append(hand_joint_position)
+            arm_data.append(list(state["arm_joint_positions"]))
+            hand_data.append(list(state["hand_joint_positions"]))
 
         return arm_data, hand_data

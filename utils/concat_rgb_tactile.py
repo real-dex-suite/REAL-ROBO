@@ -6,7 +6,7 @@ from holodex.utils.files import *
 class ConcatRGBTactile:
     def __init__(
         self,
-        img_path,
+        img_paths,
         tactile_path,
         prefix1,
         prefix2,
@@ -16,8 +16,8 @@ class ConcatRGBTactile:
         target_size,
         concat_image_save_path,
     ) -> None:
-        self.folder1_path = img_path
-        self.folder2_path = tactile_path
+        self.img_paths = img_paths
+        self.tactile_path = tactile_path
         self.prefix1 = prefix1
         self.prefix2 = prefix2
         self.num_images = num_images
@@ -42,25 +42,34 @@ class ConcatRGBTactile:
         return images
 
     def concat_rgb_tactile(self, images1, images2):
-        assert len(images1) == len(images2)
-        if not images1 or not images2:
-            raise ValueError("One or both image lists are empty.")
+        assert len(images1[0]) == len(images2)
+        # if not images1 or not images2:
+        #     raise ValueError("One or both image lists are empty.")
 
-        num_images = min(len(images1), len(images2))
+        num_images = min(len(images1[0]), len(images2))
+
+        original_idx = []
+        # read the original idx name of t
 
         for i in range(num_images):
-            img1 = cv2.resize(images1[i], self.target_size)
-            img2 = cv2.resize(images2[i], self.target_size)
 
-            concat_img = np.hstack((img1, img2))
-            cv2.imwrite(os.path.join(self.concat_image_save_path, f"RGB-Tactile-{i+1}.PNG"), concat_img)
+            imgs = []
+            for img in images1:
+                imgs.append(cv2.resize(img[i], self.target_size))
+
+            img2 = cv2.resize(images2[i], self.target_size)
+            concat_img = np.hstack((*imgs, img2))
+            # TODO write with original idx
+            cv2.imwrite(os.path.join(self.concat_image_save_path, f"Image-Tactile-{i+1}.PNG"), concat_img)
 
     def run_comparison(self):
-        images1 = self.load_images(self.folder1_path, self.prefix1)
-        images2 = self.load_images(self.folder2_path, self.prefix2)
+        imgs = []
+        for img_path in self.img_paths:
+            imgs.append(self.load_images(img_path, self.prefix1))
+        tactile_img = self.load_images(self.tactile_path, self.prefix2)
 
-        if images1 and images2:
-            diff_grid = self.concat_rgb_tactile(images1, images2)
+        if len(imgs)>0 and tactile_img:
+            diff_grid = self.concat_rgb_tactile(imgs, tactile_img)
             cv2.waitKey(0)
             cv2.destroyAllWindows()
         else:
@@ -68,18 +77,22 @@ class ConcatRGBTactile:
 
 
 def main():
-    extracted_data_path = "/home/agibot/Projects/Real-Robo/expert_dataset/pouring/extracted_data/filtered"
-    ori_data_path = "/home/agibot/Projects/Real-Robo/expert_dataset/pouring/recorded_data"
+    extracted_data_path = "/home/agibot/Projects/Real-Robo/expert_dataset/pouring_rich/extracted_data/filtered"
+    ori_data_path = "/home/agibot/Projects/Real-Robo/expert_dataset/pouring_rich/recorded_data"
+    image_names = ["camera_1_color_image", "camera_2_color_image", "camera_1_depth_image", "camera_2_depth_image"]
 
     for demonstration in os.listdir(ori_data_path):
-        concat_image_save_path = os.path.join("/home/agibot/Projects/Real-Robo/expert_dataset/pouring/concat_image", demonstration)
+        concat_image_save_path = os.path.join("/home/agibot/Projects/Real-Robo/expert_dataset/pouring_rich/concat_image", demonstration)
         make_dir(concat_image_save_path)
 
-        img_path = os.path.join(extracted_data_path, "images", demonstration, "camera_1_color_image")
+        img_paths = []
+        for image_name in image_names:
+            img_paths.append(os.path.join(extracted_data_path, "images", demonstration, image_name))
+
         tactile_path = os.path.join(extracted_data_path, "tactiles", demonstration)
         num_image = len(os.listdir(tactile_path))
         comparer = ConcatRGBTactile(
-            img_path,
+            img_paths,
             tactile_path,
             prefix1="",
             prefix2="",

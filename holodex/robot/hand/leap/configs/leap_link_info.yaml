@@ -19,7 +19,7 @@ links_info:
     joint_max: 
       - 2.23
       - 1.047
-      - 1.885
+      - 1.3 #change 1.885 to 1.3 for temporal fix collision due to tactile can collide with part
       - 2.042
 
   # Middle link
@@ -35,7 +35,7 @@ links_info:
     joint_max: 
       - 2.23
       - 1.047
-      - 1.885
+      - 1.3 #change 1.885 to 1.3 for temporal fix collision due to tactile can collide with part
       - 2.042
   
   # Ring link
@@ -51,7 +51,7 @@ links_info:
     joint_max: 
       - 2.23
       - 1.047
-      - 1.885
+      - 1.3 #change 1.885 to 1.3 for temporal fix collision due to tactile can collide with part
       - 2.042
 
   # Thumb link

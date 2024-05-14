@@ -13,6 +13,7 @@ depth_images: false
 states: true
 actions: true
 
+
 # extract depth data type
 depth_data_types: [
   "image",
@@ -24,6 +25,16 @@ tactile_data_types: [
   "image",
   "raw_data"
 ]
+
+#TODO: refactor + integrate
+tactile_image: true
+tactile_img_representation: [
+  "single",
+  "pad",
+  "whole",
+  "none"
+]
+
 # raw_data, image
 # new type must contain image for image type, as it use for deciding the target path
 

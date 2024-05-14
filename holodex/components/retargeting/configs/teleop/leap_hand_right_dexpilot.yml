@@ -15,7 +15,7 @@ retargeting:
   # target_tip_link_human_indices: [4, 8, 12, 16]
   # target_dip_link_human_indices: []
   
-  scaling_factor: 1.6
+  scaling_factor: 1.0
 
   # A smaller alpha means stronger filtering, i.e. more smooth but also larger latency
   low_pass_alpha: 0.2

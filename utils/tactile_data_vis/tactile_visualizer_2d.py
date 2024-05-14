@@ -62,6 +62,10 @@ class Tactile2DVisualizer(object):
             processed_data[sensor_index,:,:] = raw_data[sensor_name]
 
         self.plotter2D.draw(processed_data[:,:,0], processed_data[:,:,1], processed_data[:,:,2])
+        
+    # TODO: tactile iamge for T-DEx
+    def tactile_image(self, raw_data):
+        pass
 
     def plot_once(self, raw_data, save_img_path=None):
         sensor_order = []

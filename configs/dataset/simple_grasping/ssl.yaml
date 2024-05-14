@@ -1,0 +1,83 @@
+name: Simple Grasping SSL
+
+dataset_path: ${data_path}/filtered
+
+complete_demos:
+  - demonstration_1
+  - demonstration_2
+  - demonstration_5
+  - demonstration_6
+  - demonstration_7
+  - demonstration_8
+  - demonstration_9
+  - demonstration_10
+  - demonstration_11
+  - demonstration_12
+  - demonstration_13
+  - demonstration_14
+  - demonstration_15
+  - demonstration_16
+  - demonstration_19
+  - demonstration_20
+  - demonstration_21
+  - demonstration_22
+  - demonstration_23
+  - demonstration_24
+  - demonstration_26
+  - demonstration_27
+  - demonstration_28
+  - demonstration_29
+  - demonstration_30
+
+train_demos:
+  - demonstration_1
+  - demonstration_2
+  - demonstration_5
+  - demonstration_6
+  - demonstration_7
+  - demonstration_8
+  - demonstration_9
+  - demonstration_10
+  - demonstration_11
+  - demonstration_12
+  - demonstration_13
+  - demonstration_14
+  - demonstration_15
+  - demonstration_16
+  - demonstration_19
+  - demonstration_20
+  - demonstration_21
+  - demonstration_22
+  - demonstration_23
+  - demonstration_24
+  - demonstration_26
+  - demonstration_27
+  - demonstration_28
+  - demonstration_29
+
+test_demos:
+  - demonstration_1
+  - demonstration_2
+  - demonstration_5
+  - demonstration_6
+  - demonstration_7
+  - demonstration_8
+  - demonstration_9
+  - demonstration_10
+  - demonstration_11
+  - demonstration_12
+  - demonstration_13
+  - demonstration_14
+  - demonstration_15
+  - demonstration_16
+  - demonstration_19
+  - demonstration_20
+  - demonstration_21
+  - demonstration_22
+  - demonstration_23
+  - demonstration_24
+  - demonstration_26
+  - demonstration_27
+  - demonstration_28
+  - demonstration_29
+  - demonstration_30

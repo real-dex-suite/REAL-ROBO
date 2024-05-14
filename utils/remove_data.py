@@ -1,9 +1,9 @@
 import os
 
-demonstration_path = "/home/agibot/Projects/Real-Robo/expert_dataset/pouring/recorded_data/demonstration_2"
+demonstration_path = "/home/agibot/Projects/Real-Robo/expert_dataset/grasping_rich/recorded_data/demonstration_30"
 
-start_idx = 7
-end_idx = 71
+start_idx = 6
+end_idx = 103
 
 for file in os.listdir(demonstration_path):
     file_path = os.path.join(demonstration_path, file)

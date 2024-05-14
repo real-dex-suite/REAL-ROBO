@@ -1,10 +1,10 @@
 defaults:
   - _self_
   - encoder: resnet18
-  - dataset: planar_rotation/clipped_trajectory
-  - image_parameters: planar_rotation
+  - dataset: simple_grasping/filtered
+  - image_parameters: template
 
-data_path: extracted_data/
+data_path: extracted_data
 
 encoder_gradient: false # True for full BC and false for BC Rep
 
@@ -19,7 +19,7 @@ encoder_weights_path: null
 # Predictor
 predictor:
   input_dim: ${encoder.output_size}
-  output_dim: 12
+  output_dim: 22
   hidden_dims: [1024, 2024, 512, 512]
   use_batchnorm: true
   dropout: null
@@ -43,7 +43,7 @@ optimizer: Adam
 # Logging
 log_path: training_logs
 project_name: behavior-cloning
-wandb: true
+wandb: false
 tb: true
 
 # Checkpointing

@@ -159,6 +159,7 @@ class DepthImageExtractor(object):
 
                     for depth_type in self.extract_depth_types:
                         if depth_type == "image":
+                            depth_image = np.clip(depth_image, 0, 1024)
                             cv2.imwrite(os.path.join(depth_cam_image_paths[cam_num], f'{state}.PNG'), depth_image*255/np.max(depth_image))
                         elif depth_type == "raw_data":
                             np.save(os.path.join(depth_cam_image_paths[cam_num], f'{state}.npy'), depth_image)

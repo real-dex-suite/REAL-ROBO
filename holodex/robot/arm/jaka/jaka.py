@@ -50,7 +50,7 @@ class JakaArm(object):
 
         self.robot.servo_move_enable(self.servo_mode)
 
-        self.home_robot()
+        # self.home_robot()
 
     def _callback_joint_state(self):
         self.jaka_joint_state = self.robot.get_joint_position()[1]
@@ -131,6 +131,8 @@ class JakaArm(object):
             self.robot.servo_move_enable(True)
             if self.control_mode == "ik":
                 input_cmd = self.compute_joint(input_cmd)
+                input_cmd = self.limit_joint_vel(input_cmd)
+                input_cmd = self.limit_joint_pos(input_cmd)
             if self.teleop:
                 input_cmd = self.limit_joint_vel(input_cmd)
                 input_cmd = self.limit_joint_pos(input_cmd)

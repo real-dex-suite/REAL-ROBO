@@ -23,7 +23,7 @@ JOINTS_PER_FINGER = eval(f'{hand_type.upper()}_JOINTS_PER_FINGER')
 JOINT_OFFSETS = eval(f'{hand_type.upper()}_JOINT_OFFSETS')
 
 class RobotController(object):
-    def __init__(self, teleop, servo_mode=True, arm_control_mode="ik", hand_control_mode="joint") -> None:
+    def __init__(self, teleop, servo_mode=True, arm_control_mode="ik", hand_control_mode="joint", home=True) -> None:
         self.arm = Arm(servo_mode=servo_mode, teleop=teleop, control_mode=arm_control_mode, safety_moving_trans=JAKA_SAFE_MOVING_TRANS) if ARM_TYPE is not None else None
 
         self.arm_control_mode = arm_control_mode
@@ -35,8 +35,11 @@ class RobotController(object):
         self.joints_per_finger = JOINTS_PER_FINGER
         self.joint_offsets = JOINT_OFFSETS
         self.teleop = teleop
-
-        self.home_robot()
+        
+        self.home = home
+        if self.home is True:
+            self.home_robot()
+        # self.home_robot()
     
     def home_robot(self):
         if ARM_TYPE is not None:
@@ -126,7 +129,7 @@ class RobotController(object):
             self.move_hand(interpolated_hand_pos)
             rospy.sleep(SLEEP_TIME)
 
-    def servo_move_test(self, action: dict, n_interpolations: int = 50):
+    def servo_move_test(self, action: dict, n_interpolations: int = 80):
         # hand interpolation
         start_hand_pos = self.get_hand_position()
         start_arm_pos = self.get_arm_position()
@@ -157,7 +160,7 @@ class RobotController(object):
             self.move_hand(interpolated_hand_pos)
             self.move_arm(interpolated_arm_pos)
             print("arm check")
-            rospy.sleep(0.04)
+            rospy.sleep(0.008) #hz
 
 
 if __name__ == "__main__":

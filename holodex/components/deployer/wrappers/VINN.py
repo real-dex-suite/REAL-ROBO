@@ -88,8 +88,8 @@ class DeployVINN(object):
 
     def get_nn_action(self, input_dict):
         representation = self._process_image_representation(input_dict['image'])
-        nn_actions, nn_idxs = self.nn_extractor.get_k_nearest_neighbors(representation, 10)
-        
+        nn_actions, nn_idxs = self.nn_extractor.get_k_nearest_neighbors(representation, 10) #10 
+         
         # Appending the item in the buffer and choosing the idx
         choosen_idx = self.buffer.choose(nn_idxs)
         choosen_nn_idx, applied_action = nn_idxs[choosen_idx].item(), nn_actions[choosen_idx]

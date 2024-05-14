@@ -14,7 +14,9 @@ replay_arm_and_hand: True
 
 # hand_state_path: "extracted_data/filtered/actions/demonstration_1.pth"
 # arm_state_path: "extracted_data/filtered/arm/demonstration_1.pth"
-data_path: "/home/agibot/Projects/Real-Robo/recorded_data/demonstration_1"
+data_path: "expert_dataset/pouring_rich/recorded_data/demonstration_1"
+
+extract_path: "expert_dataset/pouring_rich/extracted_data/filtered/actions/demonstration_1.pth"
 
 
 # replay image

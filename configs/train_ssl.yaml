@@ -2,11 +2,11 @@ defaults:
   - _self_
   - ssl_method: byol
   - encoder: resnet18
-  - dataset: planar_rotation/ssl
-  - image_parameters: planar_rotation
+  - dataset: simple_grasping/ssl
+  - image_parameters: template
 
 # Directory settings
-data_path: extracted_data/
+data_path: expert_dataset/ssl_data
 
 # Encoder initialization
 encoder_weights_path: null
@@ -18,7 +18,7 @@ selected_view: 1
 # Training Settings
 device: 0
 epochs: 1
-num_workers: 12
+num_workers: 4
 
 # Hyperparameters
 lr: 2e-1

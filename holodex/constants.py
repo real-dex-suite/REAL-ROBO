@@ -42,7 +42,7 @@ JAKA_POSITIONS = {
     'home':[-PI/2,-PI*2.2/180,-PI*90/180,0,-PI*90/180,-PI*124.5/180]
     # 'home': [-PI*128/180, -PI*15/180, -PI*95/180, PI*8/180, -PI*65/180, -PI*168/180]
 }
-JAKA_IP = "192.168.90.71"
+JAKA_IP = "192.168.130.95"
 JAKA_SAFE_MOVING_TRANS = 50
 SLEEP_TIME = 0.008
 
@@ -391,13 +391,6 @@ VR_FREQ = 60 #60 original
 LEFT_TO_RIGHT = np.array([1, 0, 0,
                           0, -1, 0,
                           0, 0, 1]).reshape(3, 3)
-
-# ARM_POSE_SCALE = 580
-# ARM_ORI_SCALE = np.pi
-# ARM_JOINT_LOWER_LIMIT = torch.tensor([-6.28, -2.09, -2.27, -6.28, -2.09, -6.28])
-# ARM_JOINT_UPPER_LIMIT = torch.tensor([6.28, 2.09, 2.27, 6.28, 2.09, 6.28])
-# HAND_JOINT_LOWER_LIMIT = torch.tensor([-1.047, -0.314, -0.506, -0.366, -1.047, -0.314, -0.506, -0.366, -1.047, -0.314, -0.506, -0.366, -0.349, -0.47 , -1.2  , -1.34 ])
-# HAND_JOINT_UPPER_LIMIT = torch.tensor([1.047, 2.23 , 1.885, 2.042, 1.047, 2.23 , 1.885, 2.042, 1.047, 2.23 , 1.885, 2.042, 2.094, 2.443, 1.9  , 1.88 ])
 
 ARM_POS_SCALE = 580
 ARM_ORI_SCALE = np.pi

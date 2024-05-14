@@ -10,6 +10,7 @@ from holodex.data import (
 )
 
 from holodex.utils.files import *
+from holodex.tactile_data.tactile_image import TactileImage
 
 
 @hydra.main(version_base = '1.2', config_path='configs', config_name='demo_extract')
@@ -54,7 +55,18 @@ def main(configs):
         tactiles_path = os.path.join(configs.target_path, 'tactiles')
         make_dir(tactiles_path)
         extractor.extract(tactiles_path)
-
+        
+        # TODO:t-dex
+        if configs.tactile_image:
+            print("\nExtracting tactile image representations!")
+            tactile_image = TactileImage()
+            if tactile_image:
+                tactile_image.get_tactile_img(configs.tactile_img_representation, configs.target_path+"/tactiles", configs.target_path+"/tactiles")
+            else:
+                print("Failed to initialize TactileImage object.")
+        else:
+            print("Tactile image extraction is disabled.")
+        
     if configs.color_images:
         print("\nExtracting color images!")
         extractor = ColorImageExtractor(configs.filter_path, num_cams = configs.num_cams, image_size = configs.image_parameters.image_size, crop_sizes = configs.image_parameters.crop_sizes)
