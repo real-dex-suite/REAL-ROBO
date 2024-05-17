@@ -46,6 +46,7 @@ class RealSenseRobotStream(object):
         # Starting the pipeline
         cfg = pipeline.start(config)
         device = cfg.get_device()
+        device.hardware_reset()
 
         # if self.mode == 'rgbd':
         #     # Setting the depth mode to high accuracy mode

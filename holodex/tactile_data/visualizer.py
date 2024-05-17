@@ -162,7 +162,7 @@ class TactileVisualizer:
     def img_to_video(self):
         pass
     
-    def visualize_tactile_data(self, tactile_data, figsize=(10, 10)):
+    def visualize_tactile_data(self, tactile_data, figsize=(5, 5)):
         self.layout = "3x3"
         self.figsize = figsize
         self.fig.set_size_inches(figsize)

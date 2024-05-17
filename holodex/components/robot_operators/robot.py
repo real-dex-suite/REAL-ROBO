@@ -36,9 +36,9 @@ class RobotController(object):
         self.joint_offsets = JOINT_OFFSETS
         self.teleop = teleop
         
-        self.home = home
-        if self.home is True:
-            self.home_robot()
+        # self.home = home
+        # if self.home is True:
+        #     self.home_robot()
         # self.home_robot()
     
     def home_robot(self):
@@ -129,12 +129,10 @@ class RobotController(object):
             self.move_hand(interpolated_hand_pos)
             rospy.sleep(SLEEP_TIME)
 
-    def servo_move_test(self, action: dict, n_interpolations: int = 80):
+    def servo_move_test(self, action: dict, n_interpolations: int = 30):
         # hand interpolation
-        start_hand_pos = self.get_hand_position()
-        start_arm_pos = self.get_arm_position()
-        
         if self.hand_control_mode == "joint":
+            start_hand_pos = self.get_hand_position()
             end_hand_pos = action['hand']
 
         # arm interpolation
@@ -144,6 +142,7 @@ class RobotController(object):
             start_arm_pos = np.array(self.arm.compute_ik(current_joint, start_arm_pos))
             end_arm_pos = np.array(self.arm.compute_ik(current_joint, action['arm']))
         elif self.arm_control_mode == "joint":
+            start_arm_pos = self.get_arm_position()
             end_arm_pos = action['arm']
 
         # make the robot move
@@ -157,10 +156,11 @@ class RobotController(object):
                 + (end_arm_pos - start_arm_pos) * step / n_interpolations
             )
 
-            self.move_hand(interpolated_hand_pos)
             self.move_arm(interpolated_arm_pos)
-            print("arm check")
-            rospy.sleep(0.008) #hz
+            self.move_hand(interpolated_hand_pos)
+            rospy.sleep(0.1)
+
+
 
 
 if __name__ == "__main__":
