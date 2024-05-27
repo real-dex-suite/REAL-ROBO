@@ -50,7 +50,7 @@ class JakaArm(object):
 
         self.robot.servo_move_enable(self.servo_mode)
 
-        # self.home_robot()
+        self.home_robot()
 
     def _callback_joint_state(self):
         self.jaka_joint_state = self.robot.get_joint_position()[1]

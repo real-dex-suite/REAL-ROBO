@@ -278,7 +278,7 @@
     <parent link="pip"/>
     <child link="dip"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="0.95" velocity="8.48" lower="-0.506" upper="1.3"/> <!-- temporal fix because can collide with part and cause tactile false read -->
+    <limit effort="0.95" velocity="8.48" lower="-0.506" upper="1.885"/> <!-- temporal fix because can collide with part and cause tactile false read -->
     <joint_properties friction="0.0"/>
   </joint>
   <joint name="3" type="revolute">
@@ -472,7 +472,7 @@
     <parent link="pip_2"/>
     <child link="dip_2"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="0.95" velocity="8.48" lower="-0.506" upper="1.3"/> <!-- temporal fix because can collide with part and cause tactile false read -->
+    <limit effort="0.95" velocity="8.48" lower="-0.506" upper="1.885"/> <!-- temporal fix because can collide with part and cause tactile false read -->
     <joint_properties friction="0.0"/>
   </joint>
   <joint name="7" type="revolute">
@@ -665,7 +665,7 @@
     <parent link="pip_3"/>
     <child link="dip_3"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="0.95" velocity="8.48" lower="-0.506" upper="1.3"/> <!-- temporal fix because can collide with part and cause tactile false read -->
+    <limit effort="0.95" velocity="8.48" lower="-0.506" upper="1.885"/> <!-- temporal fix because can collide with part and cause tactile false read -->
     <joint_properties friction="0.0"/>
   </joint>
   <joint name="11" type="revolute">
