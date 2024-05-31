@@ -1,7 +1,7 @@
 type: VR
 
 # Host address
-host: 192.168.130.198
+host: 192.168.130.115
 keypoint_stream_port: 8087
 
 # Streaming robot camera

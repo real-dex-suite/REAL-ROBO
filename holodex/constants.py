@@ -79,6 +79,7 @@ KINOVA_POSITIONS = {
 CALIBRATION_FILES_PATH = path.join(path.dirname(holodex.__path__[0]), 'calibration_files')
 
 # Paxixni Tactile parameters
+Z_TYPE = 'right' # wrong or right
 FORCE_LIMIT = 30
 POINT_PER_SENSOR = 15
 FORCE_DIM_PER_POINT = 3

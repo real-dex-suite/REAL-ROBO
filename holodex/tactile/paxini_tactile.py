@@ -156,25 +156,41 @@ class PaxiniTactileStream:
 
         return received_data
 
+    def split_data(self, tactile_data):
+        data = tactile_data[self.force_data_start_index:self.force_data_start_index+self.data_chunk_size]
+        fx, fy, fz = data[0::3], data[1::3], data[2::3]
+        return [fx, fy, fz]
+    
     def process_data(self, tactile_data):
         if self.read_type == "all":
             sequence_len = len(tactile_data)
-            format_string = f"<{sequence_len}b"
-            integer_values = struct.unpack(format_string, tactile_data)
-            integer_lists = list(integer_values)
-            integer_lists = np.array(integer_lists).reshape(
-                self.sensor_number, self.full_data_chunk_size
-            )
-            data_lists = [
-                np.array(
-                    integer_list[
-                        self.force_data_start_index : self.force_data_start_index
-                        + self.data_chunk_size
-                    ]
-                ).reshape(self.point_per_sensor, self.force_dim_per_point)
-                for integer_list in integer_lists
-            ]
-            # assert (np.array(np.array(data_lists).reshape(-1))<6).all()
+            if Z_TYPE == 'wrong':
+                format_string = f"<{sequence_len}b"
+                integer_values = struct.unpack(format_string, tactile_data)
+                integer_lists = list(integer_values)
+                integer_lists = np.array(integer_lists).reshape(
+                    self.sensor_number, self.full_data_chunk_size
+                )
+                data_lists = [
+                    np.array(
+                        integer_list[
+                            self.force_data_start_index : self.force_data_start_index
+                            + self.data_chunk_size
+                        ]
+                    ).reshape(self.point_per_sensor, self.force_dim_per_point)
+                    for integer_list in integer_lists
+                ]
+            elif Z_TYPE == 'right':
+                data = []
+                # decode force of z direction, spilt fx, fy ,fz
+                for i in range(len(self.start_tag)):
+                    tactile_data_each = tactile_data[i*self.full_data_chunk_size:(i+1)*self.full_data_chunk_size]
+                    tactile_data_each = self.split_data(tactile_data_each)
+                    tactile_data_each[0], tactile_data_each[1] = struct.unpack(f'<{len(tactile_data_each[0])}b', bytes(tactile_data_each[0])), struct.unpack(f'<{len(tactile_data_each[1])}b', bytes(tactile_data_each[1]))
+                    tactile_data_each[2] = struct.unpack(f'<{len(tactile_data_each[2])}B', bytes(tactile_data_each[2]))
+                    data.append(tactile_data_each)
+                data_lists = np.array(data)
+                data_lists = np.transpose(data, (0, 2, 1))
             return data_lists
         elif self.read_type == "each":
             sequence_len = len(tactile_data[0])
