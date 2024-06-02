@@ -282,7 +282,7 @@
     <joint_properties friction="0.0"/>
   </joint>
   <joint name="3" type="revolute">
-    <origin xyz="0 -0.0361 0.0002" rpy="0 0 0"/>
+    <origin xyz="0 -0.0461 0.0002" rpy="0 0 0"/>
     <parent link="dip"/>
     <child link="fingertip"/>
     <axis xyz="0 0 -1"/>
@@ -476,7 +476,7 @@
     <joint_properties friction="0.0"/>
   </joint>
   <joint name="7" type="revolute">
-    <origin xyz="0 -0.0361 0.0002" rpy="0 0 0"/>
+    <origin xyz="0 -0.0461 0.0002" rpy="0 0 0"/>
     <parent link="dip_2"/>
     <child link="fingertip_2"/>
     <axis xyz="0 0 -1"/>
@@ -669,7 +669,7 @@
     <joint_properties friction="0.0"/>
   </joint>
   <joint name="11" type="revolute">
-    <origin xyz="0 -0.03609 0.0002" rpy="0 0 0"/>
+    <origin xyz="0 -0.04609 0.0002" rpy="0 0 0"/>
     <parent link="dip_3"/>
     <child link="fingertip_3"/>
     <axis xyz="0 0 -1"/>
