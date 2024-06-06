@@ -2,7 +2,7 @@ defaults:
   - _self_
   - robot_camera
   - tactile: paxini
-  - task: simple_grasp
+  - task: bottle_opening
   - override hydra/hydra_logging: disabled  
   - override hydra/job_logging: disabled  
 
@@ -13,7 +13,7 @@ encoder:
   name: resnet18
 selected_view: 1
 
-data_path: expert_dataset/grasping_rich/extracted_data # 
+data_path: expert_dataset/openbottle_filtered_img/extracted_data # 
 
 run_loop: false
 loop_frequency: 15 # 1 move per second

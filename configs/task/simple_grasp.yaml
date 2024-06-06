@@ -15,7 +15,7 @@ vinn:
   data_path: ${task.dataset.dataset_path}
   demos_list: ${task.dataset.complete_demos}
 
-  nn_buffer_limit: 50 #20
+  nn_buffer_limit: 20 #20
 
   encoder_weights_path: model_weights/BYOL - ResNet18 RGB Encoder - View 1 - Simple Grasping SSL_epoch_240.pt
   absolute_actions: ${absolute_actions}
