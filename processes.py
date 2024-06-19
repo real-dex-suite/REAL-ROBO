@@ -82,6 +82,11 @@ def vr_teleop(detector_config):
     teleop = VRDexArmTeleOp()
     teleop.move(detector_config['finger_configs'])
 
+def hamer_teleop(detector_config):
+    notify_process_start("Starting Teleoperation Process")
+    teleop = HamerDexArmTeleOp()
+    teleop.move(detector_config['finger_configs'])
+
 def deploy_model(configs):
     if configs.model not in ['VINN', 'BC']:
         raise NotImplementedError("{} not implemented".format(configs.model))
@@ -159,6 +164,14 @@ def get_detector_processes(teleop_configs):
             
         if teleop_configs.tracker['visualize_left_graphs']:
             plotter_processes.append(Process(target = plot_oculus_left_hand))
+    
+    elif teleop_configs.tracker.type == 'HAMER':
+        detection_process = None # outside for now
+        keypoint_transform_processes = [Process(target = keypoint_transform, args = ('HAMER', ))]
+        
+        plotter_processes = []
+        if teleop_configs.tracker['visualize_graphs']:
+            plotter_processes.append(Process(target = plot_3d, args = (teleop_configs.tracker.type, ))),
 
     else:
         raise NotImplementedError("No such detector exists!")
@@ -172,6 +185,8 @@ def get_teleop_process(teleop_configs):
         teleop_process = Process(target = lp_teleop, args = (teleop_configs, ))
     elif teleop_configs.tracker.type == 'VR':
         teleop_process = Process(target = vr_teleop, args = (teleop_configs, ))
+    elif teleop_configs.tracker.type == 'HAMER':
+        teleop_process = Process(target = hamer_teleop, args = (teleop_configs, ))
 
     return teleop_process
 

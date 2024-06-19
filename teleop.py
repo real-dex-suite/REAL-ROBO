@@ -23,9 +23,9 @@ def main(configs):
     for process in robot_camera_stream_processes:
         process.start()
 
-    # # Detection processes
-    detection_process.start()
-    time.sleep(2)
+    if configs.tracker.type != 'HAMER': # only for temporal
+        # # Detection processes
+        detection_process.start()
 
     for process in keypoint_transform_processes:
         process.start()
@@ -48,7 +48,8 @@ def main(configs):
     for process in robot_camera_stream_processes:
         process.join()
 
-    detection_process.join()
+    if configs.tracker.type != 'HAMER': # only for temporal
+        detection_process.join()
 
     for process in keypoint_transform_processes:
         process.join()

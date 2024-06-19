@@ -36,9 +36,9 @@ class RobotController(object):
         self.joint_offsets = JOINT_OFFSETS
         self.teleop = teleop
         
-        # self.home = home
-        # if self.home is True:
-        #     self.home_robot()
+        self.home = home
+        if self.home is True:
+            self.home_robot()
         # self.home_robot()
     
     def home_robot(self):
@@ -158,7 +158,7 @@ class RobotController(object):
 
             self.move_arm(interpolated_arm_pos)
             self.move_hand(interpolated_hand_pos)
-            rospy.sleep(0.1)
+            rospy.sleep(0.08)
 
 
 
@@ -166,9 +166,9 @@ class RobotController(object):
 if __name__ == "__main__":
     rospy.init_node("test")
     robot = RobotController(teleop=False)
-    robot.home_robot()
+    # robot.home_robot()
     # robot.reset_robot()
-    # arm_position = robot.get_arm_position()
+    arm_position = robot.get_arm_position()
     # hand_position = robot.get_hand_position()
     # hand_position[1] += 1.57
     # robot.move_hand(hand_position)

@@ -8,7 +8,7 @@ import torch
 RETARGET_TYPE = "dexpilot"
 
 # dexpilot
-SMOOTH_FACTOR = 0.5
+SMOOTH_FACTOR = 0.5 # 0.99 
 
 # Robot type
 HAND_TYPE = "Leap"
@@ -39,7 +39,8 @@ JAKA_EE_POSE_TOPIC = '/jaka/ee_pose'
 
 JAKA_DOF = 6
 JAKA_POSITIONS = {
-    'home':[-PI/2,-PI*2.2/180,-PI*90/180,0,-PI*90/180,-PI*124.5/180]
+    'home':[-1.5707487, 0.24192421, -1.4037328, 0.02739489, -1.8208425, -2.1729174] # TODO: change to the \pi
+    # 'home':[-PI/2,-PI*2.2/180,-PI*90/180,0,-PI*90/180,-PI*124.5/180]
     # 'home': [-PI*128/180, -PI*15/180, -PI*95/180, PI*8/180, -PI*65/180, -PI*168/180]
 }
 JAKA_IP = "192.168.130.95"
@@ -402,3 +403,18 @@ HAND_JOINT_LOWER_LIMIT = torch.tensor([-1.047, -0.314, -0.506, -0.366, -1.047, -
                                        -0.506, -0.366, -0.349, -0.47, -1.2, -1.34])
 HAND_JOINT_UPPER_LIMIT = torch.tensor([1.047, 2.23, 1.885, 2.042, 1.047, 2.23, 1.885, 2.042, 1.047, 2.23, 1.885, 2.042,
                                        2.094, 2.443, 1.9, 1.88])
+
+
+# Hamer detector
+# ROS Topics names
+HAMER_HAND_KEYPOINT_TOPIC = "/hamer/hand_keypoints"
+HAMER_ARM_KEYPOINT_TOPIC = "/hamer/hand_keypoints"
+HAMER_HAND_TRANSFORM_COORDS_TOPIC = "/hamer/transformed_hand_keypoints"
+HAMER_ARM_TRANSFORM_COORDS_TOPIC = "/hamer/transformed_arm_keypoints"
+
+# Joint information
+HAMER_NUM_KEYPOINTS = 21
+HAMER_ARM_NUM_KEYPOINTS = 3
+
+# Other params
+HAMER_FREQ = 30

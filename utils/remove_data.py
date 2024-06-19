@@ -1,13 +1,19 @@
 import os
+import shutil
+task_name = "openbottle_v1"
+demonstration_number = 30
+demonstration_path = f"/home/agibot/Projects/Real-Robo/expert_dataset/{task_name}/recorded_data/demonstration_{demonstration_number}"
+target_path = demonstration_path.replace(task_name, f'{task_name}_refined')
 
-demonstration_path = "/home/agibot/Projects/Real-Robo/expert_dataset/grasping_rich/recorded_data/demonstration_30"
+start_idx = 5
+end_idx = 88
 
-start_idx = 6
-end_idx = 103
+os.makedirs(target_path, exist_ok=True)
 
 for file in os.listdir(demonstration_path):
     file_path = os.path.join(demonstration_path, file)
-    
-    if int(file) < start_idx or int(file) > end_idx:
-        # print(file)
-        os.remove(file_path)
+    target_file_path = os.path.join(target_path, file)
+    if start_idx <= int(file) <= end_idx:
+        shutil.copy(file_path, target_file_path)
+        print(f"Copying {file_path} to {target_file_path}")
+        

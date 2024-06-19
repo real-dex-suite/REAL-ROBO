@@ -59,3 +59,34 @@ def fetch_paxini_info():
     sensor_per_board = len(PAXINI_FINGER_PART_INFO) * len(PAXINI_GROUP_INFO)
 
     return sensor_info, tactile_topic, raw_data, sensor_per_board
+
+
+if __name__ == "__main__":
+    from holodex.utils.network import TactileSubscriber
+
+    # ROS Subscribers based on the number of tactile board used
+    num_tactiles = 2
+    if num_tactiles > 0:
+        tactile_info, _, _, sensor_per_board = fetch_paxini_info()
+    
+    tactile_subscribers = []
+    for tactile_num in range(num_tactiles):
+        tactile_subscribers.append(
+            TactileSubscriber(
+                tactile_num = tactile_num + 1
+            )
+        )
+    
+    while True:
+        skip_loop = False
+        for tactile_subscriber in tactile_subscribers:
+            print(tactile_subscriber)
+            if tactile_subscriber.get_data() is None:
+                print('Tactile data not available!')
+                skip_loop = True
+            else:
+                print('Tactile data available!')
+                
+        if skip_loop:
+            continue
+        
