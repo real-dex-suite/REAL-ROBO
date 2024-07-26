@@ -85,10 +85,15 @@ class DeployVINN(object):
         processed_image = self.transform(input_image).float().unsqueeze(0)
         representation = self.encoder(processed_image).squeeze().detach()
         return representation
+    
+    def _process_tactile_representation(self, tactile_values):
+        pass
+    
+    
 
     def get_nn_action(self, input_dict):
         representation = self._process_image_representation(input_dict['image'])
-        nn_actions, nn_idxs = self.nn_extractor.get_k_nearest_neighbors(representation, 5) #10 
+        nn_actions, nn_idxs = self.nn_extractor.get_k_nearest_neighbors(representation, 10) #10 
          
         # Appending the item in the buffer and choosing the idx
         choosen_idx = self.buffer.choose(nn_idxs)

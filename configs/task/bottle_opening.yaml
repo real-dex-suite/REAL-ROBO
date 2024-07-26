@@ -1,8 +1,8 @@
 defaults:
   - _self_
-  - /dataset: bottle_opening/filtered
+  - /dataset: bottle_opening/ssl
   - /encoder: resnet18
-  - /image_parameters: bottle_opening
+  - /image_parameters: template
 
 arm_position: bottle
 selected_view: 1
@@ -15,9 +15,9 @@ vinn:
   data_path: ${task.dataset.dataset_path}
   demos_list: ${task.dataset.complete_demos}
 
-  nn_buffer_limit: 10
+  nn_buffer_limit: 5
 
-  encoder_weights_path: model_weights/BYOL - ${encoder.name} - View ${selected_view} - Bottle Opening SSL/BYOL - ${encoder.name} - View ${selected_view} - Bottle Opening SSL_best.pt
+  encoder_weights_path: /home/agibot/Projects/Real-Robo/model_weights/openbottle.pt
   absolute_actions: ${absolute_actions}
 
 bc:

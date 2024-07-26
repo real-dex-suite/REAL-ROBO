@@ -23,10 +23,11 @@ complete_demos:
   - demonstration_18
   - demonstration_19
   - demonstration_20
+  - demonstration_21
   - demonstration_22
+  - demonstration_23
   - demonstration_24
   - demonstration_25
-  - demonstration_26
   - demonstration_27
   - demonstration_28
   - demonstration_29
@@ -53,10 +54,11 @@ train_demos:
   - demonstration_18
   - demonstration_19
   - demonstration_20
+  - demonstration_21
   - demonstration_22
+  - demonstration_23
   - demonstration_24
   - demonstration_25
-  - demonstration_26
   - demonstration_27
   - demonstration_28
   - demonstration_29
@@ -83,10 +85,11 @@ test_demos:
   - demonstration_18
   - demonstration_19
   - demonstration_20
+  - demonstration_21
   - demonstration_22
+  - demonstration_23
   - demonstration_24
   - demonstration_25
-  - demonstration_26
   - demonstration_27
   - demonstration_28
   - demonstration_29

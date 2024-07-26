@@ -45,10 +45,15 @@ class TactileExtractor(object):
                     for sensor_name in tactile_data:
                         raw_data.extend(tactile_data[sensor_name].reshape(-1).tolist())
                     demo_tactile_data[tactile_type].append(raw_data)
+                elif tactile_type == "dict_raw_data":
+                    demo_tactile_data[tactile_type].append(tactile_data)
 
         if demo_data_target_path is not None:
             for tactile_type in demo_tactile_data:
-                demo_tactile_data[tactile_type] = torch.tensor(np.array(demo_tactile_data[tactile_type])).squeeze()
+                if tactile_type == 'dict_raw_data':
+                    demo_tactile_data[tactile_type] = demo_tactile_data[tactile_type]
+                else:
+                    demo_tactile_data[tactile_type] = torch.tensor(np.array(demo_tactile_data[tactile_type])).squeeze()
 
             torch.save(demo_tactile_data, demo_data_target_path)
 
@@ -72,7 +77,7 @@ class TactileExtractor(object):
             self.extract_demo(demo_path, demo_data_target_path, demo_image_target_path)
 
 class ColorImageExtractor(object):
-    def __init__(self, data_path, num_cams, image_size, crop_sizes = None):
+    def __init__(self, data_path, num_cams, image_size, crop_sizes = None, crop_image = True):
         # TODO BUG: if set num_cam to 1 in demo_extract, size not match
         # uncomment if camera > 1
         # assert num_cams == len(crop_sizes)
@@ -81,6 +86,7 @@ class ColorImageExtractor(object):
         self.num_cams = num_cams
         self.image_size = image_size
         self.crop_sizes = crop_sizes
+        self.crop_image = crop_image
 
     def extract_demo(self, demo_path, target_path):
         states = os.listdir(demo_path)
@@ -100,11 +106,12 @@ class ColorImageExtractor(object):
             if self.crop_sizes is not None:
                 for cam_num in range(self.num_cams):
                     color_image = Image.fromarray(color_images[cam_num])
-                    color_image = color_image.crop(self.crop_sizes[cam_num])
-                    if len(self.image_size) > 1:
-                        color_image = color_image.resize((self.image_size[0], self.image_size[1]))
-                    else:
-                        color_image = color_image.resize((self.image_size, self.image_size))
+                    if self.crop_image:
+                        color_image = color_image.crop(self.crop_sizes[cam_num])
+                        if len(self.image_size) > 1:
+                            color_image = color_image.resize((self.image_size[0], self.image_size[1]))
+                        else:
+                            color_image = color_image.resize((self.image_size, self.image_size))
                     color_image = np.array(color_image)
                     cv2.imwrite(os.path.join(color_cam_image_paths[cam_num], f'{state}.PNG'), color_image)
 

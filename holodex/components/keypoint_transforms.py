@@ -5,7 +5,7 @@ from std_msgs.msg import Float64MultiArray
 from holodex.utils.network import FloatArrayPublisher, frequency_timer
 from holodex.utils.vec_ops import *
 from holodex.constants import *
-import time
+
 
 class TransformHandCoords(object):
     def __init__(self, detector_type, moving_average_limit = 1):
