@@ -86,6 +86,7 @@ if __name__ == "__main__":
                 skip_loop = True
             else:
                 print('Tactile data available!')
+                print(tactile_subscriber.get_data())
                 
         if skip_loop:
             continue

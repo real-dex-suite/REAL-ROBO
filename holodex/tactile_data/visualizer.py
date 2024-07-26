@@ -120,7 +120,6 @@ class TactileVisualizer:
         self.fig.canvas.flush_events()
         plt.pause(0.001)
         
-    # TODO
     def get_single_tactile_repre_pattern(self, tactile_data):
         tactile_data = torch.tensor(tactile_data, dtype=torch.float64)
         # (8,5,3,3) -> (360,)

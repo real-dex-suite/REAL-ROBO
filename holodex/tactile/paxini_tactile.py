@@ -217,6 +217,7 @@ class PaxiniTactileStream:
         read_step = 0
         processed_data_list = None
 
+        # if self.id == 1:
         while self.wrong_data_flag and read_step < 1:
             self.wrong_data_flag = False
             self.open()
@@ -240,6 +241,8 @@ class PaxiniTactileStream:
 
             self.close()
             read_step += 1
+        # else:
+        #     processed_data_list = np.zeros((self.sensor_number, self.point_per_sensor, self.force_dim_per_point))
 
         return processed_data_list
 
@@ -260,7 +263,7 @@ class PaxiniTactileStream:
 
 if __name__ == "__main__":
     tactile = PaxiniTactileStream(
-        serial_port_number="/dev/ttyACM0", tactile_num=1, baudrate=460800
+        serial_port_number="/dev/ttyACM1", tactile_num=2, baudrate=460800
     )
     # tactile.stream()
     import time

@@ -14,10 +14,12 @@ replay_arm_and_hand: True
 
 # hand_state_path: "extracted_data/filtered/actions/demonstration_1.pth"
 # arm_state_path: "extracted_data/filtered/arm/demonstration_1.pth"
-data_path: "expert_dataset/openbottle/recorded_data/demonstration_2"
+data_path: "expert_dataset/openbottle_filtered_img/recorded_data/demonstration_1"
 
-extract_path: "expert_dataset/openbottle/extracted_data/filtered/actions/demonstration_2.pth"
+extract_path: "expert_dataset/openbottle_filtered_img/extracted_data/filtered/actions/demonstration_1.pth"
 
+
+# add a option witout camera
 
 # replay image
 relpay_image_path: "/home/agibot/Projects/Real-Robo/replay_data/"
