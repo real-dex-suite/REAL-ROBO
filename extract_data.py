@@ -46,7 +46,7 @@ def main(configs):
         # configs/demo_extract.yaml.
         hand_delta = configs['hand_min_action_distance']
         arm_delta = configs['arm_min_action_distance']
-        data_filter = FilterData(data_path = configs.storage_path, hand_delta = hand_delta, arm_delta = arm_delta)     
+        data_filter = FilterData(data_path = configs.storage_path, hand_delta = hand_delta, arm_delta = arm_delta, play_data = configs.play_data)     
         data_filter.filter(configs.filter_path)
 
     if configs.tactiles:
@@ -69,7 +69,7 @@ def main(configs):
         
     if configs.color_images:
         print("\nExtracting color images!")
-        extractor = ColorImageExtractor(configs.filter_path, num_cams = configs.num_cams, image_size = configs.image_parameters.image_size, crop_sizes = configs.image_parameters.crop_sizes)
+        extractor = ColorImageExtractor(configs.filter_path, num_cams = configs.num_cams, image_size = configs.image_parameters.image_size, crop_sizes = configs.image_parameters.crop_sizes, crop_image=configs.crop_image)
         images_path = os.path.join(configs.target_path, 'images')
         make_dir(images_path)
         extractor.extract(images_path)

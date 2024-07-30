@@ -5,6 +5,7 @@ defaults:
   - override hydra/job_logging: disabled  
 
 # Data to extract from the pickle files
+play_data: false
 ssl_data: false
 sample: true
 tactiles: true
@@ -12,7 +13,7 @@ color_images: true
 depth_images: false
 states: true
 actions: true
-
+crop_image: true
 
 # extract depth data type
 depth_data_types: [
@@ -23,7 +24,8 @@ depth_data_types: [
 # extract tactile data type
 tactile_data_types: [
   "image",
-  "raw_data"
+  "raw_data",
+  "dict_raw_data,"
 ]
 
 #TODO: refactor + integrate

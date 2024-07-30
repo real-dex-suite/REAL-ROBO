@@ -4,6 +4,7 @@ import cv2
 from PIL import Image
 import torch
 import yaml
+import struct
 
 from holodex.utils.files import make_dir, get_pickle_data
 from holodex.constants import *
@@ -43,6 +44,12 @@ class TactileExtractor(object):
                 elif tactile_type == "raw_data":
                     raw_data = []
                     for sensor_name in tactile_data:
+                        # # only for old data
+                        # raw_sensor_data = tactile_data[sensor_name]
+                        # unsign_z_data = self.conver_sign_to_unsigned(raw_sensor_data[:,2])
+                        # raw_sensor_data[:,2] = unsign_z_data
+                        # reshaped_data = raw_sensor_data.reshape(-1).tolist()
+                        # raw_data.extend(reshaped_data)
                         raw_data.extend(tactile_data[sensor_name].reshape(-1).tolist())
                     demo_tactile_data[tactile_type].append(raw_data)
                 elif tactile_type == "dict_raw_data":
@@ -56,6 +63,13 @@ class TactileExtractor(object):
                     demo_tactile_data[tactile_type] = torch.tensor(np.array(demo_tactile_data[tactile_type])).squeeze()
 
             torch.save(demo_tactile_data, demo_data_target_path)
+        
+    def conver_sign_to_unsigned(self, data):
+        # conver data to int
+        data = [int(d) for d in data]
+        original_bytes = struct.pack(f'<{len(data)}b', *data)
+        unsigned_integers = list(struct.unpack(f'<{len(original_bytes)}B', original_bytes))
+        return unsigned_integers
 
     def extract(self, target_path):
         demo_list = os.listdir(self.data_path)
