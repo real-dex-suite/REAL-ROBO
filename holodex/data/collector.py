@@ -7,6 +7,7 @@ from holodex.utils.files import *
 from holodex.constants import *
 from holodex.utils.network import ImageSubscriber, frequency_timer, Float64MultiArray, TactileSubscriber
 from holodex.tactile.utils import fetch_paxini_info
+from termcolor import cprint
 
 # load module according to hand type
 hand_module = __import__("holodex.robot.hand")
@@ -86,32 +87,33 @@ class DataCollector(object):
                 # Checking for broken data streams
                 for tactile_subscriber in self.tactile_subscribers:
                     if tactile_subscriber.get_data() is None:
-                        print('Tactile data not available!')
+                        cprint('Tactile data not available!', 'red')
                         skip_loop = True
 
                 if self.hand.get_hand_position() is None:
-                    print('Hand data not available!')
+                    cprint('Hand data not available!', 'red')
                     skip_loop = True
                 
                 if self.arm_joint_state is None or self.arm_ee_pose is None or self.arm_commanded_joint_state is None:
-                    print('Arm data not available!')
+                    cprint('Arm data not available!', 'red')
                     skip_loop = True
 
                 for color_image_subscriber in self.color_image_subscribers:
                     if color_image_subscriber.get_image() is None:
-                        print('Color image not available!')
+                        cprint('Color image not available!', 'red')
                         skip_loop = True
                 
                 # Comment out the depth image subscriber for now
                 for depth_image_subscriber in self.depth_image_subscribers:
                     if depth_image_subscriber.get_image() is None:
-                        print('Depth image not available!')
+                        cprint('Depth image not available!', 'red')
                         skip_loop = True
 
                 if skip_loop:
                     continue
                 
-                print('Valid Data', time.time())
+                #print('Valid Data', time.time())
+                cprint(f'Valid Data at {time.time()}', 'green', 'on_black', attrs=['bold'])
                 state = dict()
 
                 # Hand data
@@ -152,5 +154,5 @@ class DataCollector(object):
                 self.frequency_timer.sleep()
         
         except KeyboardInterrupt:
-            print('Finished recording! Data can be found in {}'.format(self.storage_path))
+            cprint('Finished recording! Data can be found in {}'.format(self.storage_path), 'green')
             sys.exit(0)

@@ -52,3 +52,9 @@ test_image.py
 holodex/data/tactile_representation.py
 utils/remove_data.py
 Real_Robo.egg-info/*
+configs/replay.yaml
+configs/deploy.yaml
+configs/replay.yaml
+configs/dataset/bottle_opening/ssl.yaml
+configs/replay.yaml
+configs/task/bottle_opening.yaml

@@ -8,6 +8,11 @@ from copy import deepcopy as copy
 from scipy.spatial.transform import Rotation as R
 
 from .robot import RobotController
+from pykalman import KalmanFilter
+from scipy.interpolate import CubicSpline
+from scipy.special import comb
+from scipy.spatial.transform import Slerp
+from termcolor import cprint
 
 # load constants according to hand type
 hand_type = HAND_TYPE.lower()
@@ -55,16 +60,20 @@ class HamerDexArmTeleOp(object):
 
         # Storing the transformed hand coordinates
         self.hand_coords = None
+        
 
         rospy.Subscriber(HAMER_HAND_TRANSFORM_COORDS_TOPIC, Float64MultiArray, self._callback_hand_coords, queue_size = 1)
         rospy.Subscriber(HAMER_ARM_TRANSFORM_COORDS_TOPIC, Float64MultiArray, self._callback_arm_coords, queue_size = 1)
+        rospy.Subscriber(JAKA_EE_POSE_TOPIC, Float64MultiArray, self._callback_arm_ee_pose, queue_size = 1)
 
         # Initializing the robot controller
         self.robot = RobotController(teleop = True)
+
+        self.arm_ee_pose = self.robot.arm.get_tcp_position()
+
         # Initializing the solvers
         self.fingertip_solver = self.robot.hand_KDLControl
         self.finger_joint_solver = self.robot.hand_JointControl
-        
         # Initialzing the moving average queues
         self.moving_average_queues = {
             'thumb': [],
@@ -95,6 +104,9 @@ class HamerDexArmTeleOp(object):
     def _callback_arm_coords(self, coords):
         self.arm_coords = np.array(list(coords.data)).reshape(HAMER_ARM_NUM_KEYPOINTS, 3)
 
+    def _callback_arm_ee_pose(self, data):
+        self.arm_ee_pose = np.array(data.data)          
+
     def _retarget_hand(self, finger_configs):
         if RETARGET_TYPE == 'dexpilot':
             indices = self.retargeting.optimizer.target_link_human_indices
@@ -106,89 +118,119 @@ class HamerDexArmTeleOp(object):
         return desired_joint_angles
     
     def vr_to_robot(self, armpoints):
-        # wrist_position = np.dot(VR_TO_ROBOT,np.dot(LEFT_TO_RIGHT, armpoints[0]))
-        # index_knuckle_coord = np.dot(VR_TO_ROBOT,np.dot(LEFT_TO_RIGHT, armpoints[1]))
-        # pinky_knuckle_coord = np.dot(VR_TO_ROBOT,np.dot(LEFT_TO_RIGHT, armpoints[2]))
-        # important! do not count use coordinate in world space!
-        # armpoints[:,0]*=1.5
-        # armpoints[:,1]*=1.5
-        # armpoints[:,2]/=15
-        armpoints[0] = np.average(armpoints, axis=0) # use mean as palm center position
-        wrist_position = armpoints[0]
-        index_knuckle_coord = armpoints[1] - armpoints[0]
-        pinky_knuckle_coord = armpoints[2] - armpoints[0]
+        # translation_vector = np.average(armpoints * np.array([1.5, 1.5, 1/15]), axis=0)
+        # print(armpoints)
+        scaled_points = armpoints * np.array([1, 1, 1/30])
+        timestamps = np.arange(len(scaled_points))
+
+        cs_x = CubicSpline(timestamps, scaled_points[:, 0])
+        cs_y = CubicSpline(timestamps, scaled_points[:, 1])
+        cs_z = CubicSpline(timestamps, scaled_points[:, 2])
         
-        palm_normal = normalize_vector(np.cross(index_knuckle_coord, pinky_knuckle_coord))   # Current Z
-        palm_direction = normalize_vector(index_knuckle_coord + pinky_knuckle_coord)  # Current Y 
-        cross_product = normalize_vector(np.cross(palm_direction, palm_normal))                # Current X
-        # print(f'index_knuckle_coord: {index_knuckle_coord}, pinky_knuckle_coord: {pinky_knuckle_coord}')
-        # print(f'palm_normal: {palm_normal}, palm_direction: {palm_direction}')
-        return wrist_position, cross_product, palm_direction, palm_normal
-    
+        dense_timestamps = np.linspace(0, len(scaled_points) - 1, num=len(scaled_points)*2)
+        interpolated_points = np.column_stack((cs_x(dense_timestamps),
+                                            cs_y(dense_timestamps),
+                                            cs_z(dense_timestamps)))
+        
+        translation_vector = np.average(interpolated_points, axis=0)
+        rotation_vectors = armpoints - np.average(armpoints, axis=0)
+
+        # print("rotation_vectors: ", rotation_vectors)
+
+        # rotation_vectors = self._arm_filter(rotation_vectors, 'low_pass')
+        index_knuckle_coord = rotation_vectors[1]
+        pinky_knuckle_coord = rotation_vectors[2]
+
+        palm_normal = normalize_vector(np.cross(index_knuckle_coord, pinky_knuckle_coord))
+        palm_direction = normalize_vector(index_knuckle_coord + pinky_knuckle_coord)
+        cross_product = normalize_vector(np.cross(palm_direction, palm_normal))
+
+        # print("----------------------")
+        # print(translation_vector, cross_product, palm_direction, palm_normal)
+
+        return translation_vector, cross_product, palm_direction, palm_normal
+
+    def _compute_transformation(self, init_hand_transformation, hand2vr_transformation):
+        new_hand2init_hand = init_hand_transformation @ hand2vr_transformation
+        init_flange2base = self.init_arm_transformation_matrix
+        init_leap2base = init_flange2base @ self.leap2flange
+        new_ee_transformation_matrix = init_leap2base @ new_hand2init_hand @ np.linalg.inv(self.leap2flange)
+
+        return new_ee_transformation_matrix
+
+    def _get_transformation(self, points_in_hand_space, points_in_vr_space):
+        vr2init_hand_transformation, _, _ = best_fit_transform(self.init_points_in_vr_space, points_in_hand_space)
+        hand2vr_transformation, _, _ = best_fit_transform(points_in_hand_space, points_in_vr_space)
+
+        return vr2init_hand_transformation, hand2vr_transformation
 
     def _retarget_base(self):
+        # Get the scaled hand center and direction vectors
         hand_center, hand_x, hand_y, hand_z = self.vr_to_robot(self.arm_coords)
+        # Define points in hand space
         points_in_hand_space = np.array([
             [0.0, 0.0, 0.0],
             [1.0, 0.0, 0.0],
             [0.0, 1.0, 0.0],
             [0.0, 0.0, 1.0]
         ])
-        points_in_vr_sapce = np.array([
+
+        points_in_vr_space = np.array([
             hand_center,
             hand_center + hand_x,
             hand_center + hand_y,
             hand_center + hand_z
         ])
-        
-        # print('init_points_in_vr_space', init_points_in_vr_space)
-        # print('points_in_vr_sapce', points_in_vr_sapce)
 
-        vr2init_hand_transformation, init_vr2hand_rotation, init_vr2hand_translation = best_fit_transform(self.init_points_in_vr_space, points_in_hand_space)
-        
-        hand2vr_transformation, vr2hand_rotation, vr2hand_translation = best_fit_transform(points_in_hand_space, points_in_vr_sapce)
+        vr2init_hand_transformation, hand2vr_transformation = self._get_transformation(points_in_hand_space, points_in_vr_space)
 
-        new_hand2init_hand = vr2init_hand_transformation @ hand2vr_transformation        
-        init_flange2base = self.init_arm_transformation_matrix
-        init_leap2base = init_flange2base @ self.leap2flange
-        new_ee_transformation_matrix = init_leap2base @ new_hand2init_hand @ np.linalg.inv(self.leap2flange)
+        # Extract translation and rotation parts
+        composed_translation = self._compute_transformation(vr2init_hand_transformation, hand2vr_transformation)[:3, 3]
+        composed_rotation = self._compute_transformation(vr2init_hand_transformation, hand2vr_transformation)[:3, :3]
 
-        # print('new_hand2init_hand:', '\n', new_hand2init_hand)
-        # print('init_leap2base', '\n', init_leap2base)
-        # print('new_ee_transformation_matrix', '\n', new_ee_transformation_matrix)
-        # print('leap2flange', leap2flange)
-        # print(hand_palm_direction, hand_palm_normal)
-        # hand_wrist_rel_pos = hand_wrist_position-self.init_hand_wrist_position
-        # points = np.array([hand_wrist_rel_pos, hand_wrist_rel_pos+hand_palm_normal, hand_wrist_rel_pos+hand_palm_direction])
-        # transfomation, rotation, translation = best_fit_transform(self.init_points, points)  
 
-        # points_tran = np.ones((self.init_points.shape[0],4))
-        # points_tran[:,:3] = self.init_points
-        # print(((transfomation@points_tran.T).T)[:,:3]-points, R.from_matrix(rotation).as_euler('xyz'), translation)
-        # convert rotation vector to rotation matrix
-        # new_hand2init_hand = np.linalg.inv(transfomation)
-
-        # new_ee_transformation_matrix = (self.init_arm_transformation_matrix @ (self.fake_to_ee_transformation_matrix@transfomation)) @ np.linalg.inv(self.fake_to_ee_transformation_matrix)
-
-        composed_translation = new_ee_transformation_matrix[:3,3]
-        composed_rotation = new_ee_transformation_matrix[:3,:3]
-
-        # convert rotation matrix to rotation vector
-        composed_rotation = R.from_matrix(composed_rotation).as_euler('xyz')
-        new_arm_pose = self.robot.arm.get_tcp_position()
-        new_arm_pose[:3] = composed_translation*1000
-        new_arm_pose[3:6] = composed_rotation
-        
-        # print('current_arm_pose', self.robot.arm.get_tcp_position())
-        # print('new_arm_pose', new_arm_pose)
-
-        return new_arm_pose
+        composed_rotation_quat = R.from_matrix(composed_rotation).as_quat()
+        # print("composed_rotation_quat: ", composed_rotation_quat)
     
+        # omposed_rotation = R.from_matrix(composed_rotation).as_euler('xyz')
+        current_arm_pose = self.arm_ee_pose
+
+        exponential_smoothing = 0.2  # Smoothing factor (adjust as needed)
+        if not hasattr(self, 'previous_filtered_translation'):
+            self.previous_filtered_translation = current_arm_pose[:3]
+
+
+        current_filtered_translation = ((1.0 - exponential_smoothing) * self.previous_filtered_translation) + (exponential_smoothing * composed_translation)
+        self.previous_filtered_translation = current_filtered_translation
+
+        # use Slrp to smooth the rotation
+        alpha = 0.2
+        if not hasattr(self, 'previous_filtered_rotation'):
+            self.previous_filtered_rotation = R.from_euler('xyz', current_arm_pose[3:6]).as_quat()
+        previous_rotation = R.from_quat(self.previous_filtered_rotation)
+        composed_rotation = R.from_quat(composed_rotation_quat)
+    
+        key_times = [0, 1]  # Time keyframes for the start and end
+        key_rotations = R.from_quat([previous_rotation.as_quat(), composed_rotation.as_quat()])
+
+        # Create Slerp interpolator with keyframes
+        slerp = Slerp(key_times, key_rotations)
+        smoothed_rotation = slerp(alpha).as_quat()
+        self.previous_filtered_rotation = smoothed_rotation
+        smoothed_rotation_euler = R.from_quat(smoothed_rotation).as_euler('xyz')
+     
+        
+        current_arm_pose[:3] =  composed_translation*1000
+        current_arm_pose [3:6] = smoothed_rotation_euler
+
+    
+
+        return current_arm_pose
+        
     def _filter(self, desired_hand_joint_angles):
         desired_hand_joint_angles = desired_hand_joint_angles * SMOOTH_FACTOR + self.prev_hand_joint_angles * (1 - SMOOTH_FACTOR)
         self.prev_hand_joint_angles = desired_hand_joint_angles
         return desired_hand_joint_angles
-
 
     def motion(self, finger_configs):
         desired_cmd = []
@@ -206,17 +248,18 @@ class HamerDexArmTeleOp(object):
 
     def _calibrate_vr_arm_bounds(self):
         inital_frame_number = 1 # set to 50 will cause collision
+        frame_number =0
+
         initial_hand_centers = []
         initial_hand_xs = []
         initial_hand_ys = []
         initial_hand_zs = []
 
         initial_arm_poss = []
-        inital_arm_rots = []
-        frame_number =0
+        initial_arm_rots = []
 
         while frame_number < inital_frame_number:
-            print('calibration initial pose, id: ', frame_number)
+            # print('calibration initial pose, id: ', frame_number)
             hand_center, hand_x, hand_y, hand_z = self.vr_to_robot(self.arm_coords)
             initial_hand_centers.append(hand_center)
             initial_hand_xs.append(hand_x)
@@ -224,7 +267,7 @@ class HamerDexArmTeleOp(object):
             initial_hand_zs.append(hand_z)
             
             initial_arm_poss.append(np.array(self.robot.arm.get_tcp_position()[:3])/1000)
-            inital_arm_rots.append(np.array(self.robot.arm.get_tcp_position()[3:6]))
+            initial_arm_rots.append(np.array(self.robot.arm.get_tcp_position()[3:6]))
 
             frame_number += 1
         
@@ -241,7 +284,7 @@ class HamerDexArmTeleOp(object):
         ])
 
         self.init_arm_pos = np.mean(initial_arm_poss,axis=0)
-        self.init_arm_rot = np.mean(inital_arm_rots,axis=0)
+        self.init_arm_rot = np.mean(initial_arm_rots,axis=0)
         self.init_arm_transformation_matrix = np.eye(4)
         self.init_arm_transformation_matrix[:3,:3] = R.from_euler('xyz', self.init_arm_rot).as_matrix()
         self.init_arm_transformation_matrix[:3,3] = self.init_arm_pos.reshape(3)
@@ -249,7 +292,7 @@ class HamerDexArmTeleOp(object):
 
     def move(self, finger_configs):
         print("\n******************************************************************************")
-        print("     Controller initiated. ")
+        cprint("[   ok   ]     Controller initiated. ", 'green', attrs=['bold'])
         print("******************************************************************************\n")
         print("Start controlling the robot hand using the Hamer Framework.\n")
 

@@ -9,6 +9,7 @@ import struct
 from holodex.utils.files import make_dir, get_pickle_data
 from holodex.constants import *
 from utils.tactile_data_vis.tactile_visualizer_2d import Tactile2DVisualizer
+from termcolor import cprint
 
 # load module according to hand type
 hand_module = __import__("holodex.robot.hand")
@@ -138,12 +139,12 @@ class ColorImageExtractor(object):
             demo_target_path = os.path.join(target_path, demo)
             make_dir(demo_target_path)
 
-            print(f"\nExtracting images from {demo_path}")
+            print(f"Extracting images from {demo_path}")
             self.extract_demo(demo_path, demo_target_path)
 
 
 class DepthImageExtractor(object):
-    def __init__(self, data_path, num_cams, image_size, crop_sizes = None, extract_depth_types = None):
+    def __init__(self, data_path, num_cams, image_size, crop_sizes = None, extract_depth_types = None, crop_image = True):
         # TODO BUG uncomment if camera > 1
         # assert num_cams == len(crop_sizes)
         
@@ -151,6 +152,7 @@ class DepthImageExtractor(object):
         self.num_cams = num_cams
         self.image_size = image_size
         self.crop_sizes = crop_sizes
+        self.crop_image = crop_image
         self.extract_depth_types = extract_depth_types
 
     def extract_demo(self, demo_path, target_path):
@@ -171,11 +173,12 @@ class DepthImageExtractor(object):
             if self.crop_sizes is not None:
                 for cam_num in range(self.num_cams):
                     depth_image = Image.fromarray(depth_images[cam_num])
-                    depth_image = depth_image.crop(self.crop_sizes[cam_num])
-                    if len(self.image_size) > 1:
-                        depth_image = depth_image.resize((self.image_size[0], self.image_size[1]))
-                    else:
-                        depth_image = depth_image.resize((self.image_size, self.image_size))
+                    if self.crop_image:
+                        depth_image = depth_image.crop(self.crop_sizes[cam_num])
+                        if len(self.image_size) > 1:
+                            depth_image = depth_image.resize((self.image_size[0], self.image_size[1]))
+                        else:
+                            depth_image = depth_image.resize((self.image_size, self.image_size))
                     depth_image = np.array(depth_image)
 
                     for depth_type in self.extract_depth_types:
@@ -194,7 +197,7 @@ class DepthImageExtractor(object):
             demo_target_path = os.path.join(target_path, demo)
             make_dir(demo_target_path)
 
-            print(f"\nExtracting images from {demo_path}")
+            print(f"Extracting images from {demo_path}")
             self.extract_demo(demo_path, demo_target_path)
 
 
