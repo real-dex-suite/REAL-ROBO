@@ -2,7 +2,7 @@ type: paxini
 
 serial_port_number:
  # from small to large
- - "/dev/ttyACM0"
- - "/dev/ttyACM1"
+ - "/dev/ttyUSB0"
+ - "/dev/ttyUSB1"
 
 baudrate: 460800

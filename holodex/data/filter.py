@@ -12,10 +12,13 @@ HandKDL_module_name = f'{HAND_TYPE}KDL'
 HandKDL = getattr(hand_module.robot, HandKDL_module_name)
 
 class FilterData(object):
-    def __init__(self, data_path, hand_delta = None, arm_delta = None) -> None:
+    def __init__(self, data_path, hand_delta = None, arm_delta = None, tactile_delta = None, play_data=False, last_frame_save_number=0) -> None:
         self.hand_delta = hand_delta # Threshold for filtering
         self.arm_delta = arm_delta # Threshold for filtering
+        self.tactile_delta = tactile_delta # Threshold for filtering
         self.data_path = data_path           
+        self.play_data = play_data
+        self.last_frame_save_number = last_frame_save_number
 
         self.kdl_solver = HandKDL() # # Solver for forward kinematics
         
@@ -64,6 +67,21 @@ class FilterData(object):
 
         return index_coords, middle_coords, ring_coords, thumb_coords, arm_ee_position, arm_ee_orientation
 
+    def _get_tactile_from_state(self, demo_path, state_path):
+        # Read the state file and get the tactile data
+        state_path = os.path.join(demo_path, state_path)
+        state_data = get_pickle_data(state_path)
+
+        if "tactile_data" in state_data.keys():
+            tactile_data = state_data['tactile_data']
+            raw_data = []
+            for sensor_name in tactile_data:
+                raw_data.extend(tactile_data[sensor_name].reshape(-1).tolist())
+        else:
+            raw_data = None
+
+        return np.array(raw_data)
+
     def filter_demo(self, demo_path, target_path):
         # Filter a single demonstration and store the filtered data in the target path
         states = os.listdir(demo_path)
@@ -73,18 +91,21 @@ class FilterData(object):
 
         # Get the initial state of the robot
         prev_index_coords, prev_middle_coords, prev_ring_coords, prev_thumb_coords, prev_arm_ee_pos, prev_arm_ee_ori = self._get_robot_poses_from_state(demo_path, states[0])
+        prev_tactile = self._get_tactile_from_state(demo_path, states[0])
 
         for idx in range(1, len(states)):
             index_coords, middle_coords, ring_coords, thumb_coords, arm_ee_pos, arm_ee_ori = self._get_robot_poses_from_state(demo_path, states[idx])
+            tactile = self._get_tactile_from_state(demo_path, states[idx])
+            
 
             save_current_frame = False
-
+            
             # hand delta
             if index_coords is not None and middle_coords is not None and ring_coords is not None and thumb_coords is not None:    
-                delta_index = get_distance(prev_index_coords, index_coords)
-                delta_middle = get_distance(prev_middle_coords, middle_coords)
-                delta_ring = get_distance(prev_ring_coords, ring_coords)
-                delta_thumb = get_distance(prev_thumb_coords, thumb_coords)
+                delta_index = get_distance(prev_index_coords, index_coords)*100
+                delta_middle = get_distance(prev_middle_coords, middle_coords)*100
+                delta_ring = get_distance(prev_ring_coords, ring_coords)*100
+                delta_thumb = get_distance(prev_thumb_coords, thumb_coords)*100
                 hand_delta_total = delta_index + delta_middle + delta_ring + delta_thumb
                 
                 hand_delta_satisfied = True if hand_delta_total >= self.hand_delta else False
@@ -92,19 +113,42 @@ class FilterData(object):
             
             # arm delta        
             if arm_ee_pos is not None and arm_ee_ori is not None:    
-                arm_delta = get_distance(prev_arm_ee_pos, arm_ee_pos)
+                arm_delta = get_distance(prev_arm_ee_pos, arm_ee_pos)/10
                 arm_delta_total = arm_delta
                 
                 arm_delta_satisfied = True if arm_delta_total >= self.arm_delta else False
                 save_current_frame = arm_delta_satisfied
             
+            # tactile delta
+            if tactile is not None:
+                tactile_delta = get_distance(tactile, prev_tactile)
+                tactile_delta_satisfied = True if tactile_delta >= self.tactile_delta else False
+                save_current_frame = tactile_delta_satisfied
+                # tactile_delta_satisfied = True
+            
             if index_coords is not None and arm_ee_pos is not None:
                 save_current_frame = hand_delta_satisfied and arm_delta_satisfied
+            
+            if tactile is not None and self.tactile_delta > 0:
+                save_current_frame = save_current_frame or tactile_delta_satisfied
+            
+            if self.play_data:
+                save_current_frame = (hand_delta_total+arm_delta_total) >= self.hand_delta + self.arm_delta
+                if tactile is not None and self.tactile_delta > 0:
+                    save_current_frame = save_current_frame or tactile_delta_satisfied
+
+            # for last five frames, must save
+            if idx >= len(states) - self.last_frame_save_number:
+                save_current_frame = True
+
+            # if np.max(np.abs(tactile)) > 50:
+            #     save_current_frame = False
 
             if save_current_frame:
                 filtered_state_idxs.append(idx)
                 prev_index_coords, prev_middle_coords, prev_ring_coords, prev_thumb_coords = index_coords, middle_coords, ring_coords, thumb_coords
                 prev_arm_ee_pos, prev_arm_ee_ori = arm_ee_pos, arm_ee_ori
+                prev_tactile = tactile
 
         for counter, idx in enumerate(filtered_state_idxs):
             state_data = get_pickle_data(os.path.join(demo_path, states[idx]))

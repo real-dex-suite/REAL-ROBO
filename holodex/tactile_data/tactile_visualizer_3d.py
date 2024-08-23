@@ -32,7 +32,7 @@ class Tactile3DVisualizer(object):
         }
 
         for serial_port_number in SERIAL_PORT_NUMBERS:
-            cur_id = int(serial_port_number[serial_port_number.find("ACM") + 3]) + 1
+            cur_id = int(serial_port_number[serial_port_number.find("USB") + 3]) + 1
             if cur_id not in sensor_info["id"]:
                 sensor_info["id"][cur_id] = []
 

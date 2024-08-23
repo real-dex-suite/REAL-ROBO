@@ -8,7 +8,7 @@ import torch
 RETARGET_TYPE = "dexpilot"
 
 # dexpilot
-SMOOTH_FACTOR = 0.5 # 0.99 
+SMOOTH_FACTOR = 0.4 # 0.99 
 
 # Robot type
 HAND_TYPE = "Leap"
@@ -30,6 +30,14 @@ LEAP_JOINT_OFFSETS = {
 #        -0.01687121, -0.18100715,  0.5215559 , -0.00459933,  0.96641064,
 #        -0.49854112]
 LEAP_HOME_POSITION = [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
+# LEAP_HOME_POSITION =  [0.0399,  0.0905,  0.0184, -0.0491,  0.0874,  0.1427, -0.0322, -0.3620,
+#         -0.0920,  0.2332, -0.0337, -0.3605,  0.0690,  0.0077,  1.3821, -0.3237]
+
+# stacking: [ 0.1933, -0.0752,  0.0077, -0.1135,  0.2040, -0.0629, -0.1074, -0.3620,
+        #  0.0844,  0.0215, -0.1565, -0.3605,  0.2991,  0.0245,  1.1167, -0.7363]
+
+# openbottle: [ 0.0399,  0.0905,  0.0184, -0.0491,  0.0874,  0.1427, -0.0322, -0.3620,
+        # -0.0920,  0.2332, -0.0337, -0.3605,  0.0690,  0.0077,  1.3821, -0.3237]
 LEAP_CMD_TYPE = 'allegro'
 
 # Jaka
@@ -39,10 +47,13 @@ JAKA_EE_POSE_TOPIC = '/jaka/ee_pose'
 
 JAKA_DOF = 6
 JAKA_POSITIONS = {
-    'home':[-1.5707487, 0.24192421, -1.4037328, 0.02739489, -1.8208425, -2.1729174] # TODO: change to the \pi
+    'home':[-1.5707487, 0.24192421, -1.4037328, 0.02739489, -1.8208425, -2.1729174], # TODO: change to the \pi
     # 'home':[-PI/2,-PI*2.2/180,-PI*90/180,0,-PI*90/180,-PI*124.5/180]
     # 'home': [-PI*128/180, -PI*15/180, -PI*95/180, PI*8/180, -PI*65/180, -PI*168/180]
+    'tcp_home':[-1.76120603, -168.23593329,  316.56867048,   -2.99596886,   -0.06904709, -2.5355691]
+    # 'openbox':[-1.76120603, -168.23593329,  150.56867048,   -2.99596886,   -0.06904709, -2.5355691]
 }
+
 JAKA_IP = "192.168.130.95"
 JAKA_SAFE_MOVING_TRANS = 50
 SLEEP_TIME = 0.008
@@ -85,14 +96,14 @@ FORCE_LIMIT = 30
 POINT_PER_SENSOR = 15
 FORCE_DIM_PER_POINT = 3
 PAXINI_FINGER_PART_NAMES = {
-    'tip': 'aa',
-    'pulp': 'cc'
+    'tip': 'cc',
+    'pulp': 'aa'
 }
 
 # this decide the order of reading tactile for each sensor board
 PAXINI_FINGER_PART_INFO = {
-    'tip' : b'\xaa',
-    'pulp' : b'\xcc'
+    'tip' : b'\xcc',
+    'pulp' : b'\xaa'
 }
 
 PAXINI_GROUP_INFO = {
@@ -101,19 +112,19 @@ PAXINI_GROUP_INFO = {
 }
 
 THUMB_TACTILE_INFO = {
-    'serial_port_number': "/dev/ttyACM0",
+    'serial_port_number': "/dev/ttyUSB0",
     'group_id': 0,
 }
 INDEX_TACTILE_INFO = {
-    'serial_port_number': "/dev/ttyACM0",
+    'serial_port_number': "/dev/ttyUSB0",
     'group_id': 1,
 }
 MIDDLE_TACTILE_INFO = {
-    'serial_port_number': "/dev/ttyACM1",
+    'serial_port_number': "/dev/ttyUSB1",
     'group_id': 0,
 }
 RING_TACTILE_INFO = {
-    'serial_port_number': "/dev/ttyACM1",
+    'serial_port_number': "/dev/ttyUSB1",
     'group_id': 1,
 }
 
@@ -408,9 +419,11 @@ HAND_JOINT_UPPER_LIMIT = torch.tensor([1.047, 2.23, 1.885, 2.042, 1.047, 2.23, 1
 # Hamer detector
 # ROS Topics names
 HAMER_HAND_KEYPOINT_TOPIC = "/hamer/hand_keypoints"
-HAMER_ARM_KEYPOINT_TOPIC = "/hamer/hand_keypoints"
+HAMER_ARM_KEYPOINT_TOPIC = "/hamer/arm_keypoints"
 HAMER_HAND_TRANSFORM_COORDS_TOPIC = "/hamer/transformed_hand_keypoints"
 HAMER_ARM_TRANSFORM_COORDS_TOPIC = "/hamer/transformed_arm_keypoints"
+
+IMU_ROT_TOPIC = "/hamer/imu_rpy"
 
 # Joint information
 HAMER_NUM_KEYPOINTS = 21

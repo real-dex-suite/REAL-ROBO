@@ -6,16 +6,16 @@ FORCE_LIMIT = 30
 POINT_PER_SENSOR = 15
 FORCE_DIM_PER_POINT = 3
 PAXINI_FINGER_PART_NAMES = {
-    'tip': 'aa',
-    'pulp': 'cc'
+    'tip': 'cc',
+    'pulp': 'aa'
 }
 
 BAUDRATE = 460800
 
 # this decide the order of reading tactile for each sensor board
 PAXINI_FINGER_PART_INFO = {
-    'tip' : b'\xaa',
-    'pulp' : b'\xcc'
+    'tip' : b'\xcc',
+    'pulp' : b'\xaa'
 }
 
 PAXINI_GROUP_INFO = {
@@ -23,22 +23,22 @@ PAXINI_GROUP_INFO = {
     1 : b'\xff'
 }
 
-SERIAL_PORT_NUMBERS = ["/dev/ttyACM0", "/dev/ttyACM1"]
+SERIAL_PORT_NUMBERS = ["/dev/ttyUSB0", "/dev/ttyUSB1"]
 
 THUMB_TACTILE_INFO = {
-    'serial_port_number': "/dev/ttyACM0",
+    'serial_port_number': "/dev/ttyUSB0",
     'group_id': 0,
 }
 INDEX_TACTILE_INFO = {
-    'serial_port_number': "/dev/ttyACM0",
+    'serial_port_number': "/dev/ttyUSB0",
     'group_id': 1,
 }
 MIDDLE_TACTILE_INFO = {
-    'serial_port_number': "/dev/ttyACM1",
+    'serial_port_number': "/dev/ttyUSB1",
     'group_id': 0,
 }
 RING_TACTILE_INFO = {
-    'serial_port_number': "/dev/ttyACM1",
+    'serial_port_number': "/dev/ttyUSB1",
     'group_id': 1,
 }
 

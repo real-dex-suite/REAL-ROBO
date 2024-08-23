@@ -87,7 +87,9 @@ class PaxiniTactileStream:
                     + PAXINI_GROUP_INFO[group_id]
                 )
 
-        assert self.start_tag == [b"\xaa\xee", b"\xcc\xee", b"\xaa\xff", b"\xcc\xff"]
+        # assert self.start_tag == [b"\xaa\xee", b"\xcc\xee", b"\xaa\xff", b"\xcc\xff"]
+
+        self.raw_data_tag = [b'\xaa\xee', b'\xcc\xee', b'\xaa\xff', b'\xcc\xff']
 
         self.sensor_number = len(self.start_tag)
 
@@ -126,6 +128,7 @@ class PaxiniTactileStream:
             )
 
     def read_all_sensors(self, start_tag):
+        # the order of raw data is following: [b'\xaa\xee', b'\xcc\xee', b'\xaa\xff', b'\xcc\xff']
         self.wrong_data_flag = False
         self.serial_port.read_until(start_tag)
         received_data = self.serial_port.read_until(start_tag)
@@ -181,16 +184,21 @@ class PaxiniTactileStream:
                     for integer_list in integer_lists
                 ]
             elif Z_TYPE == 'right':
-                data = []
+                data = {}
                 # decode force of z direction, spilt fx, fy ,fz
-                for i in range(len(self.start_tag)):
+                for i in range(len(self.raw_data_tag)):
                     tactile_data_each = tactile_data[i*self.full_data_chunk_size:(i+1)*self.full_data_chunk_size]
                     tactile_data_each = self.split_data(tactile_data_each)
                     tactile_data_each[0], tactile_data_each[1] = struct.unpack(f'<{len(tactile_data_each[0])}b', bytes(tactile_data_each[0])), struct.unpack(f'<{len(tactile_data_each[1])}b', bytes(tactile_data_each[1]))
                     tactile_data_each[2] = struct.unpack(f'<{len(tactile_data_each[2])}B', bytes(tactile_data_each[2]))
-                    data.append(tactile_data_each)
-                data_lists = np.array(data)
-                data_lists = np.transpose(data, (0, 2, 1))
+                    data[self.raw_data_tag[i]] = tactile_data_each
+                
+                reorder_data = []
+                for tag in self.start_tag:
+                    reorder_data.append(data[tag])
+
+                data_lists = np.array(reorder_data)
+                data_lists = np.transpose(reorder_data, (0, 2, 1))
             return data_lists
         elif self.read_type == "each":
             sequence_len = len(tactile_data[0])
@@ -224,9 +232,9 @@ class PaxiniTactileStream:
             self.flushInput()
 
             if self.read_type == "all":
-                raw_data_list = self.read_all_sensors(self.start_tag[0])
+                raw_data_list = self.read_all_sensors(self.raw_data_tag[0])
             elif self.read_type == "each":
-                raw_data_list = list(map(self.read_each_sensor, self.start_tag))
+                raw_data_list = list(map(self.read_each_sensor, self.raw_data_tag))
 
             if not self.wrong_data_flag:
                 if self.read_type == "all":
@@ -263,14 +271,19 @@ class PaxiniTactileStream:
 
 if __name__ == "__main__":
     tactile = PaxiniTactileStream(
-        serial_port_number="/dev/ttyACM1", tactile_num=2, baudrate=460800
+        serial_port_number="/dev/ttyUSB0", tactile_num=1, baudrate=460800
     )
     # tactile.stream()
     import time
 
     while True:
+
+        
         st = time.time()
         tactile_data = tactile.get_data()
         print(time.time() - st)
+        # print(tactile_data)
         if tactile_data is None:
             print(tactile_data)
+        # else:
+        #     print(tactile_data.shape)

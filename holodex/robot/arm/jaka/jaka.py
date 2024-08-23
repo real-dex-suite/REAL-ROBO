@@ -5,9 +5,10 @@ from sensor_msgs.msg import JointState
 from jkrc import jkrc
 from holodex.constants import JAKA_IP, JAKA_POSITIONS, JAKA_DOF, JAKA_JOINT_STATE_TOPIC, JAKA_COMMANDED_JOINT_STATE_TOPIC, JAKA_EE_POSE_TOPIC
 from holodex.utils.network import JointStatePublisher, FloatArrayPublisher
+import random
 
 class JakaArm(object):
-    def __init__(self, servo_mode=True, control_mode="ik" ,teleop=False, safety_moving_trans = 100):
+    def __init__(self, servo_mode=True, control_mode="ik" ,teleop=False, safety_moving_trans = 100, random_jaka_home = False):
         # rospy.init_node('jaka_arm_controller')
 
         # Creating ROS Publishers
@@ -50,7 +51,9 @@ class JakaArm(object):
 
         self.robot.servo_move_enable(self.servo_mode)
 
-        self.home_robot()
+        self.random_jaka_home = random_jaka_home
+
+        # self.home_robot()
 
     def _callback_joint_state(self):
         self.jaka_joint_state = self.robot.get_joint_position()[1]
@@ -62,13 +65,24 @@ class JakaArm(object):
         return np.array(self.jaka_joint_state, dtype = np.float32)
     
     def get_tcp_position(self):
-        return np.array(self.robot.get_tcp_position()[1])
+        output = self.robot.get_tcp_position()
+        if len(output) == 1:
+            print(output)
+        return np.array(output[1])
     
     def set_tcp_position(self, input_pose):
         self.robot.linear_move_extend(input_pose, self.move_mode, self.is_block, self.speed, self.acc, self.tol)
 
     def home_robot(self):
-        self.move_joint(JAKA_POSITIONS['home'])
+        # self.move_joint(JAKA_POSITIONS['home'])
+        tcp_home = JAKA_POSITIONS['tcp_home']
+        if self.random_jaka_home:
+            tcp_home[0] += random.uniform(-40, 40)
+            tcp_home[1] += random.uniform(-40, 0)
+            tcp_home[2] += random.uniform(-10, 10)
+
+        home_joint = self.compute_joint(tcp_home)
+        self.move_joint(home_joint)
 
     def reset(self):
         self.move_joint(JAKA_POSITIONS['home'])

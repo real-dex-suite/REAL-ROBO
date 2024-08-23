@@ -30,7 +30,7 @@ class Tactile2DVisualizer(object):
 
         # for each port, port has to be consistent with defined, and same with collection and deploy
         for serial_port_number in SERIAL_PORT_NUMBERS:
-            cur_id = int(serial_port_number[serial_port_number.find("ACM")+3])+1
+            cur_id = int(serial_port_number[serial_port_number.find("USB")+3])+1
             if cur_id not in sensor_info['id']:
                 sensor_info['id'][cur_id] = []
 
@@ -85,8 +85,8 @@ class Tactile2DVisualizer(object):
 if __name__ == "__main__":
     tactile_visualizer = Tactile2DVisualizer('paxini')
     # based on SERIAL_PORT_NUMBERS
-    # stream_1 = PaxiniTactileStream('/dev/ttyACM0', 1)
-    # stream_2 = PaxiniTactileStream('/dev/ttyACM1', 2)
+    # stream_1 = PaxiniTactileStream('/dev/ttyUSB0', 1)
+    # stream_2 = PaxiniTactileStream('/dev/ttyUSB1', 2)
     # while True:
     #     raw_data_1 = stream_1.get_data()
     #     raw_data_2 = stream_2.get_data()

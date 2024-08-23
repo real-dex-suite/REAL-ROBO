@@ -47,7 +47,7 @@ class Plot2DTACTILE(object):
         
         # for each port, port has to be consistent with defined, and same with collection and deploy
         for serial_port_number in self.serial_port_number:
-            cur_id = int(serial_port_number[serial_port_number.find("ACM")+3])+1
+            cur_id = int(serial_port_number[serial_port_number.find("USB")+3])+1
             if cur_id not in self.sensor_info['id']:
                 self.sensor_info['id'][cur_id] = []
 
@@ -66,7 +66,7 @@ class Plot2DTACTILE(object):
         self.tactile_topic = []
         self.raw_data = {}
         for cur_serial_port_number in self.serial_port_number:
-            idx = int(cur_serial_port_number[cur_serial_port_number.find("ACM")+3])
+            idx = int(cur_serial_port_number[cur_serial_port_number.find("USB")+3])
             self.tactile_topic.append('/tactile_{}/raw_data'.format(idx+1))
             self.raw_data[idx+1] = None
 

@@ -10,8 +10,7 @@
 # pyrealsense2 is required.
 # Please see instructions in https://github.com/IntelRealSense/librealsense/tree/master/wrappers/python
 import pyrealsense2 as rs
-
-import pyrealsense2 as rs
+from ipdb import set_trace
 
 def get_profiles(serial_number=None):
     ctx = rs.context()
@@ -43,7 +42,7 @@ def get_profiles(serial_number=None):
                     fps = v_profile.fps()
 
                     video_type = stream_type.split('.')[-1]
-                    #print(f'  {video_type}: width={w}, height={h}, fps={fps}, fmt={fmt}')
+                    print(f'  {video_type}: width={w}, height={h}, fps={fps}, fmt={fmt}')
 
                     if video_type == 'color':
                         color_profiles.append((w, h, fps, fmt))
@@ -53,5 +52,6 @@ def get_profiles(serial_number=None):
     return color_profiles, depth_profiles
 
 
-# color_profiles, depth_profiles = get_profiles("f1231617")
+# color_profiles, depth_profiles = get_profiles("f1230963")
+# # # print and seperate line for each profile
 # print(color_profiles[26])

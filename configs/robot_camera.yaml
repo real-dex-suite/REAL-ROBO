@@ -1,8 +1,11 @@
 robot_cam_serial_numbers:
-  - "211422061450"
-  - "207222071050"
-  
+  - "211422061450"         # 435i
+  # - "207222071050"
+  # - "f1231617"            # L515 -> must donwload pyrealsense2 2.54.2.xxxx
+  - "f1230963"
 # Robot camera stream resolution
+
+
 resolution: [1280, 720]
 
 # Visualize image streams

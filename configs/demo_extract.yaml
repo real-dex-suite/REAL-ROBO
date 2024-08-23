@@ -74,8 +74,11 @@ num_cams: 2 #3
 # configs/demo_extract.yaml.
 hand_min_action_distance: 0 # cm
 arm_min_action_distance: 0 # cm
+tactile_min_force_distance: 0 # unit # different with hand and arm,  tactile distance is used to filter the tactile data higher than the value, to keep contact data
 
 hand_distance_unit: cm
 arm_distance_unit: cm
+
+last_frame_save_number: 0
 
 

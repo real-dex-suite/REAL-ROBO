@@ -27,7 +27,7 @@ def fetch_paxini_info():
 
     # for each port, port has to be consistent with defined, and same with collection and deploy
     for serial_port_number in serial_port_numbers:
-        cur_id = int(serial_port_number[serial_port_number.find("ACM") + 3]) + 1
+        cur_id = int(serial_port_number[serial_port_number.find("USB") + 3]) + 1
         if cur_id not in sensor_info["id"]:
             sensor_info["id"][cur_id] = []
 
@@ -52,7 +52,7 @@ def fetch_paxini_info():
     tactile_topic = []
     raw_data = {}
     for cur_serial_port_number in serial_port_numbers:
-        idx = int(cur_serial_port_number[cur_serial_port_number.find("ACM") + 3])
+        idx = int(cur_serial_port_number[cur_serial_port_number.find("USB") + 3])
         tactile_topic.append("/tactile_{}/raw_data".format(idx + 1))
         raw_data[idx + 1] = None
 
