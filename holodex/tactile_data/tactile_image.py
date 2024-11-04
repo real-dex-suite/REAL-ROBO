@@ -139,7 +139,7 @@ class TactileImage:
             dim=1,
         )
 
-        print(tactile_image)
+        # print(tactile_image)
 
         if self.shuffle_type == "whole":
             copy_tactile_image = copy(tactile_image)
@@ -245,6 +245,7 @@ class TactileImage:
 
 
 def tactile_scale_transform(image):
+    print(TACTILE_PLAY_DATA_CLAMP_MIN, TACTILE_PLAY_DATA_CLAMP_MAX)
     image = (image - TACTILE_PLAY_DATA_CLAMP_MIN) / (
         TACTILE_PLAY_DATA_CLAMP_MAX - TACTILE_PLAY_DATA_CLAMP_MIN
     )
@@ -258,8 +259,8 @@ def tactile_clamp_transform(image):
     return image
 
 
-TACTILE_PLAY_DATA_CLAMP_MIN = -60
-TACTILE_PLAY_DATA_CLAMP_MAX = 60
+TACTILE_PLAY_DATA_CLAMP_MIN = -50
+TACTILE_PLAY_DATA_CLAMP_MAX = 50
 tactile_image_size = 224
 
 

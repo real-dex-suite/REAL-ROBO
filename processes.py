@@ -6,11 +6,13 @@ from holodex.viz.visualizer_3d import OculusLeftHandDirVisualizer
 from holodex.camera.realsense_camera import RealSenseRobotStream
 from holodex.camera.camera_streamer import RobotCameraStreamer
 from holodex.tactile.paxini_tactile import PaxiniTactileStream
+from holodex.tactile_data.viewer import TactileDataViewer
+from termcolor import cprint
 
 def notify_process_start(notification_statement):
-    print("***************************************************************")
-    print("     {}".format(notification_statement))
-    print("***************************************************************")
+    cprint("***************************************************************", "green")
+    cprint("     {}".format(notification_statement), "green")
+    cprint("***************************************************************", "green")
 
 def start_paxini_tactile_stream(serial_port, tactile_num, baudrate):
     notify_process_start("Starting Paxini Tactile Stream Process")
@@ -100,7 +102,7 @@ def get_tactile_stream_processes(configs):
     if configs['tactile']['type'] == 'paxini':
         if len(configs['tactile']['serial_port_number']) > 0:
             for idx, serial_port_number in enumerate(configs['tactile']['serial_port_number']):
-                tactile_num = int(serial_port_number[serial_port_number.find("ACM")+3])
+                tactile_num = int(serial_port_number[serial_port_number.find("USB")+3])
                 tactile_processes.append(
                     Process(target = start_paxini_tactile_stream, args = (serial_port_number, tactile_num+1, configs['tactile']['baudrate']))
                 )
@@ -114,6 +116,7 @@ def get_camera_stream_processes(configs):
         robot_camera_processes.append(
             Process(target = start_robot_cam_stream, args = (cam_serial_num, idx + 1, ))
         )
+        print("cam_serial_num: ", cam_serial_num)
 
     if 'tracker' in configs.keys(): # Since we use this for deployment as well
         if configs.tracker.type == 'VR':
@@ -193,3 +196,12 @@ def get_teleop_process(teleop_configs):
 def get_deploy_process(configs):
     deploy_process = Process(target = deploy_model, args = (configs, ))
     return deploy_process
+
+def start_tactile_visualizer():
+    viewer = TactileDataViewer("2D")
+    viewer.run()
+
+def get_tactile_visualizer_process():
+    notify_process_start("Starting Tactile Visualizer")
+    tactile_visualizer_process = Process(target = start_tactile_visualizer)
+    return tactile_visualizer_process

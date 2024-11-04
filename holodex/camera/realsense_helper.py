@@ -52,6 +52,5 @@ def get_profiles(serial_number=None):
     return color_profiles, depth_profiles
 
 
-# color_profiles, depth_profiles = get_profiles("f1230963")
+color_profiles, depth_profiles = get_profiles("f1230963")
 # # # print and seperate line for each profile
-# print(color_profiles[26])

@@ -426,7 +426,7 @@ class DexPilotAllegroOptimizer(Optimizer):
         # Update weight vector
         normal_weight = np.ones(len_proj, dtype=np.float32) * 1
         high_weight = np.array([200] * len_s1 + [400] * len_s2, dtype=np.float32)
-        weight = np.where(self.projected, high_weight, normal_weight)
+        weight = np.where(self.projected, high_weight, normal_weight)*0
 
         # We change the weight to 10 instead of 1 here, for vector originate from wrist to fingertips
         # This ensures better intuitive mapping due wrong pose detection

@@ -7,11 +7,12 @@ from holodex.constants import *
 from copy import deepcopy as copy
 from scipy.spatial.transform import Rotation as R
 
+from scipy.spatial.transform import Slerp
 from .robot import RobotController
 from pykalman import KalmanFilter
 from scipy.interpolate import CubicSpline
 from scipy.special import comb
-from scipy.spatial.transform import Slerp
+
 from termcolor import cprint
 
 # load constants according to hand type
@@ -60,21 +61,28 @@ class HamerDexArmTeleOp(object):
 
         # Storing the transformed hand coordinates
         self.hand_coords = None
-        
 
         rospy.Subscriber(HAMER_HAND_TRANSFORM_COORDS_TOPIC, Float64MultiArray, self._callback_hand_coords, queue_size = 1)
-        rospy.Subscriber(HAMER_ARM_TRANSFORM_COORDS_TOPIC, Float64MultiArray, self._callback_arm_coords, queue_size = 1)
-        rospy.Subscriber(JAKA_EE_POSE_TOPIC, Float64MultiArray, self._callback_arm_ee_pose, queue_size = 1)
+        rospy.Subscriber("/hamer/aruco_pose", Float64MultiArray, self._callback_aruco_pose, queue_size = 1)
 
         # Initializing the robot controller
         self.robot = RobotController(teleop = True)
-
-        self.arm_ee_pose = self.robot.arm.get_tcp_position()
-
         # Initializing the solvers
         self.fingertip_solver = self.robot.hand_KDLControl
         self.finger_joint_solver = self.robot.hand_JointControl
-
+        # smoothing factor
+        self.window_size = 50
+        self.translation_history = []
+        process_noise_cov = np.eye(3) * 1e-2
+        measurement_noise_cov = np.eye(3) * 1e-1
+        self.kf = KalmanFilter(
+            transition_matrices=np.eye(3),
+            observation_matrices=np.eye(3),
+            transition_covariance=process_noise_cov,
+            observation_covariance=measurement_noise_cov
+        )
+        self.state_mean = None
+        self.state_covariance = None
         self.translation_state = None
         # Initialzing the moving average queues
         self.moving_average_queues = {
@@ -103,11 +111,8 @@ class HamerDexArmTeleOp(object):
     def _callback_hand_coords(self, coords):
         self.hand_coords = np.array(list(coords.data)).reshape(HAMER_NUM_KEYPOINTS, 3)
     
-    def _callback_arm_coords(self, coords):
-        self.arm_coords = np.array(list(coords.data)).reshape(HAMER_ARM_NUM_KEYPOINTS, 3)
-    
-    def _callback_arm_ee_pose(self, data):
-        self.arm_ee_pose = np.array(data.data)          
+    def _callback_aruco_pose(self, msg):
+        self.arm_coords = np.array(list(msg.data)).reshape(4, 3)
 
     def _retarget_hand(self, finger_configs):
         if RETARGET_TYPE == 'dexpilot':
@@ -119,13 +124,30 @@ class HamerDexArmTeleOp(object):
 
         return desired_joint_angles
     
-    # Low-pass filter function to smooth translation values
+    def _compute_transformation(self, init_hand_transformation, hand2vr_transformation):
+        new_hand2init_hand = init_hand_transformation @ hand2vr_transformation
+        init_flange2base = self.init_arm_transformation_matrix
+        init_leap2base = init_flange2base @ self.leap2flange
+        new_ee_transformation_matrix = init_leap2base @ new_hand2init_hand @ np.linalg.inv(self.leap2flange)
+
+        return new_ee_transformation_matrix
+
+    def _get_transformation(self, points_in_hand_space, points_in_vr_space):
+        vr2init_hand_transformation, _, _ = best_fit_transform(self.init_points_in_vr_space, points_in_hand_space)
+        hand2vr_transformation, _, _ = best_fit_transform(points_in_hand_space, points_in_vr_space)
+
+        return vr2init_hand_transformation, hand2vr_transformation
+    
     def _low_pass_filter(self, new_value, state, alpha=0.4):
         if state is None:
             state = new_value
         else:
             state = alpha * new_value + (1 - alpha) * state
         return state
+
+    def _stable_translation(self, new_translation, alpha=0.4):
+        self.translation_state = self._low_pass_filter(new_translation, self.translation_state, alpha)
+        return self.translation_state
 
     def _kalman_filter(self, observation):
         if self.state_mean is None:
@@ -141,10 +163,6 @@ class HamerDexArmTeleOp(object):
         )
 
         return self.state_mean
-
-    def _stable_translation(self, new_translation, alpha=0.4):
-        self.translation_state = self._low_pass_filter(new_translation, self.translation_state, alpha)
-        return self.translation_state
     
     def _arm_filter(self, translation, filter_type):
         if filter_type == 'low_pass':
@@ -154,57 +172,32 @@ class HamerDexArmTeleOp(object):
         else:
             raise ValueError(f"Unsupported filter type: {filter_type}")
         
-    def vr_to_robot(self, armpoints):
-        # translation_vector = np.average(armpoints * np.array([1.5, 1.5, 1/15]), axis=0)
-        # print(armpoints)
-        scaled_points = armpoints * np.array([1, 1, 1/30])
-        timestamps = np.arange(len(scaled_points))
-
-        cs_x = CubicSpline(timestamps, scaled_points[:, 0])
-        cs_y = CubicSpline(timestamps, scaled_points[:, 1])
-        cs_z = CubicSpline(timestamps, scaled_points[:, 2])
+    def _bezier_curve(self, points, num_samples=100):
+        num_points = len(points)
+        t = np.linspace(0, 1, num_samples)
         
-        dense_timestamps = np.linspace(0, len(scaled_points) - 1, num=len(scaled_points)*2)
-        interpolated_points = np.column_stack((cs_x(dense_timestamps),
-                                            cs_y(dense_timestamps),
-                                            cs_z(dense_timestamps)))
-        
-        translation_vector = np.average(interpolated_points, axis=0)
-        rotation_vectors = armpoints - np.average(armpoints, axis=0)
+        curve = np.zeros((num_samples, 3))
+        for i in range(num_samples):
+            for j in range(num_points):
+                # B(t) = Sum((n choose k) * (1-t)^(n-k) * t^k * P_k)
+                curve[i] += comb(num_points - 1, j) * (1 - t[i])**(num_points - 1 - j) * t[i]**j * points[j]
 
-        # print("rotation_vectors: ", rotation_vectors)
-
-
-        rotation_vectors = self._arm_filter(rotation_vectors, 'low_pass')
-        index_knuckle_coord = rotation_vectors[1]
-        pinky_knuckle_coord = rotation_vectors[2]
-
-        palm_normal = normalize_vector(np.cross(index_knuckle_coord, pinky_knuckle_coord))
-        palm_direction = normalize_vector(index_knuckle_coord + pinky_knuckle_coord)
-        cross_product = normalize_vector(np.cross(palm_direction, palm_normal))
-
-        # print("----------------------")
-        # print(translation_vector, cross_product, palm_direction, palm_normal)
-
-        return translation_vector, cross_product, palm_direction, palm_normal
-
-    def _compute_transformation(self, init_hand_transformation, hand2vr_transformation):
-        new_hand2init_hand = init_hand_transformation @ hand2vr_transformation
-        init_flange2base = self.init_arm_transformation_matrix
-        init_leap2base = init_flange2base @ self.leap2flange
-        new_ee_transformation_matrix = init_leap2base @ new_hand2init_hand @ np.linalg.inv(self.leap2flange)
-
-        return new_ee_transformation_matrix
-
-    def _get_transformation(self, points_in_hand_space, points_in_vr_space):
-        vr2init_hand_transformation, _, _ = best_fit_transform(self.init_points_in_vr_space, points_in_hand_space)
-        hand2vr_transformation, _, _ = best_fit_transform(points_in_hand_space, points_in_vr_space)
-
-        return vr2init_hand_transformation, hand2vr_transformation
+        return curve
+    #exponential_smoothing_for_orientation = 0.2 # 0.25 #0.1
+    # exponential_smoothing_for_position = 0.2 #0.5 #0.1
 
     def _retarget_base(self):
-        # Get the scaled hand center and direction vectors
-        hand_center, hand_x, hand_y, hand_z = self.vr_to_robot(self.arm_coords)
+        if self.arm_coords is None:
+            raise ValueError("arm_coords not set")
+
+        # Get the aruco pose from arm_coords
+        print("arm coords: ", self.arm_coords)
+        print(self.arm_coords[0])
+        hand_center = self.arm_coords[0]
+        hand_x = self.arm_coords[1]
+        hand_y = self.arm_coords[2]
+        hand_z = self.arm_coords[3]
+
         # Define points in hand space
         points_in_hand_space = np.array([
             [0.0, 0.0, 0.0],
@@ -225,15 +218,12 @@ class HamerDexArmTeleOp(object):
         # Extract translation and rotation parts
         composed_translation = self._compute_transformation(vr2init_hand_transformation, hand2vr_transformation)[:3, 3]
         composed_rotation = self._compute_transformation(vr2init_hand_transformation, hand2vr_transformation)[:3, :3]
+        composed_rotation = R.from_matrix(composed_rotation).as_euler('xyz')
 
+        # Get the current arm TCP position
+        current_arm_pose = self.robot.arm.get_tcp_position()
 
-        composed_rotation_quat = R.from_matrix(composed_rotation).as_quat()
-        # print("composed_rotation_quat: ", composed_rotation_quat)
-    
-        # omposed_rotation = R.from_matrix(composed_rotation).as_euler('xyz')
-        current_arm_pose = self.arm_ee_pose
-
-        exponential_smoothing = 0.2  # Smoothing factor (adjust as needed)
+        exponential_smoothing = 0.25  # Smoothing factor (adjust as needed)
         if not hasattr(self, 'previous_filtered_translation'):
             self.previous_filtered_translation = current_arm_pose[:3]
 
@@ -241,35 +231,20 @@ class HamerDexArmTeleOp(object):
         current_filtered_translation = ((1.0 - exponential_smoothing) * self.previous_filtered_translation) + (exponential_smoothing * composed_translation)
         self.previous_filtered_translation = current_filtered_translation
 
-        # use Slrp to smooth the rotation
-        alpha = 0.2
+        exponential_smoothing_for_position = 0.3
         if not hasattr(self, 'previous_filtered_rotation'):
-            self.previous_filtered_rotation = R.from_euler('xyz', current_arm_pose[3:6]).as_quat()
-        previous_rotation = R.from_quat(self.previous_filtered_rotation)
-        composed_rotation = R.from_quat(composed_rotation_quat)
-    
-        key_times = [0, 1]  # Time keyframes for the start and end
-        key_rotations = R.from_quat([previous_rotation.as_quat(), composed_rotation.as_quat()])
+            self.previous_filtered_rotation = current_arm_pose[3:6]
+        current_filtered_rotation = ((1.0 - exponential_smoothing_for_position) * self.previous_filtered_rotation) + (exponential_smoothing_for_position * composed_rotation)
+        self.previous_filtered_rotation = current_filtered_rotation
 
-        # Create Slerp interpolator with keyframes
-        slerp = Slerp(key_times, key_rotations)
-        smoothed_rotation = slerp(alpha).as_quat()
-        self.previous_filtered_rotation = smoothed_rotation
-        smoothed_rotation_euler = R.from_quat(smoothed_rotation).as_euler('xyz')
-     
         
         current_arm_pose[:3] =  composed_translation*1000
-        current_arm_pose [3:6] = smoothed_rotation_euler
-
-    
-
-        return current_arm_pose
         
-    def _filter(self, desired_hand_joint_angles):
-        desired_hand_joint_angles = desired_hand_joint_angles * SMOOTH_FACTOR + self.prev_hand_joint_angles * (1 - SMOOTH_FACTOR)
-        self.prev_hand_joint_angles = desired_hand_joint_angles
-        return desired_hand_joint_angles
-
+        
+        current_arm_pose [3:6] = composed_rotation
+  
+        return current_arm_pose
+    
     def motion(self, finger_configs):
         desired_cmd = []
 
@@ -277,15 +252,15 @@ class HamerDexArmTeleOp(object):
             desired_arm_pose = self._retarget_base()
             desired_cmd = np.concatenate([desired_cmd, desired_arm_pose])
 
-        if HAND_TYPE is not None:
-            desired_hand_joint_angles = self._retarget_hand(finger_configs)
-            desired_hand_joint_angles = self._filter(desired_hand_joint_angles)
-            desired_cmd = np.concatenate([desired_cmd, desired_hand_joint_angles])
+        # if HAND_TYPE is not None:
+        #     desired_hand_joint_angles = self._retarget_hand(finger_configs)
+        #     desired_hand_joint_angles = self._filter(desired_hand_joint_angles)
+        #     desired_cmd = np.concatenate([desired_cmd, desired_hand_joint_angles])
 
         return desired_cmd
 
     def _calibrate_vr_arm_bounds(self):
-        inital_frame_number = 1 # set to 50 will cause collision
+        inital_frame_number = 5 # set to 50 will cause collision
         frame_number =0
 
         initial_hand_centers = []
@@ -297,8 +272,13 @@ class HamerDexArmTeleOp(object):
         initial_arm_rots = []
 
         while frame_number < inital_frame_number:
-            # print('calibration initial pose, id: ', frame_number)
-            hand_center, hand_x, hand_y, hand_z = self.vr_to_robot(self.arm_coords)
+            print('calibration initial pose, id: ', frame_number)
+            # hand_center, hand_x, hand_y, hand_z = self.vr_to_robot(self.arm_coords)
+            hand_center = self.arm_coords[0]
+            hand_x = self.arm_coords[1]
+            hand_y = self.arm_coords[2]
+            hand_z = self.arm_coords[3]
+            
             initial_hand_centers.append(hand_center)
             initial_hand_xs.append(hand_x)
             initial_hand_ys.append(hand_y)
@@ -335,9 +315,13 @@ class HamerDexArmTeleOp(object):
         print("Start controlling the robot hand using the Hamer Framework.\n")
 
         while True:
-            if self.hand_coords is not None and self.robot.get_hand_position() is not None:
+            #if self.hand_coords is not None and self.robot.get_hand_position() is not None:
                 # Obtaining the desired angles
+            if  self.robot.get_hand_position() is not None:
+                print("1")
                 desired_joint_angles = self.motion(finger_configs)
-                # print("Desired joint angles: ", desired_joint_angles)
+                print("current joint angles: ", self.robot.get_arm_tcp_position())
+                print("desired joint angles: ", desired_joint_angles)
+
                 # Move the hand based on the desired angles
                 self.robot.move(desired_joint_angles)

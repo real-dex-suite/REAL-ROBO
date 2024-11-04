@@ -43,31 +43,32 @@ class RealSenseRobotStream(object):
         pipeline = rs.pipeline()
         config.enable_device(self.cam_serial_num)
 
-
         # Enabling camera streams
-        if self.cam_serial_num == "211422061450": # D435
+        if self.cam_serial_num == "211422061450": # D415
             config.enable_stream(rs.stream.color, WIDTH, HEIGHT, rs.format.bgr8, CAM_FPS)
             if self.mode == 'rgbd':
                 config.enable_stream(rs.stream.depth, WIDTH, HEIGHT,rs.format.z16, CAM_FPS)
 
-        if self.cam_serial_num == "f1231617": # L515
-            color_profiles, depth_profiles = get_profiles(self.cam_serial_num)
-
-            w, h, fps, fmt = color_profiles[26]
-            config.enable_stream(rs.stream.color, w, h, fmt, fps)
+        if self.cam_serial_num == "f1230963": # L515
+            # color_profiles, depth_profiles = get_profiles(self.cam_serial_num)
+            # w, h, fps, fmt = color_profiles[26]
+            # config.enable_stream(rs.stream.color, w, h, fmt, fps)
+            # (1280, 720, 60, <format.bgr8: 6>)
+            config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
 
             if self.mode == 'rgbd':
-                w, h, fps, fmt = depth_profiles[0]
-                config.enable_stream(rs.stream.depth, w, h, fmt, fps)
+                # w, h, fps, fmt = depth_profiles[0]
+                # config.enable_stream(rs.stream.depth, w, h, fmt, fps)
+                # 1024, 768, 30, <format.z16: 1>
+                config.enable_stream(rs.stream.depth, 1024, 768, rs.format.z16, 30)
 
 
         # Starting the pipeline
         cfg = pipeline.start(config)
         device = cfg.get_device()
 
-        if self.cam_serial_num == "211422061450": # D435
-            device.hardware_reset()
-
+        # if self.cam_serial_num == "211422061450": # D415
+        #     device.hardware_reset()
 
         # if self.mode == 'rgbd':
         #     # Setting the depth mode to high accuracy mode
@@ -87,7 +88,30 @@ class RealSenseRobotStream(object):
         # print(f"Camera {self.cam_serial_num} intrinsics matrix: {self.intrinsics_matrix}")
 
         # Align function - aligns other frames with the color frame
-        self.align = rs.align(rs.stream.color)
+        if self.cam_serial_num == "211422061450": # D415
+            self.align = rs.align(rs.stream.color)
+        elif self.cam_serial_num == "f1230963":
+            # self.align = rs.align(rs.stream.depth)
+            self.align = rs.align(rs.stream.depth)
+
+        if self.cam_serial_num == "211422061450": # D415
+            sensor = profile.get_device().query_sensors()[1]
+            # sensor.set_option(rs.option.exposure, 87.000)
+            sensor.set_option(rs.option.auto_exposure_priority, True)
+            print(sensor.get_option(rs.option.exposure)) 
+        elif self.cam_serial_num == "f1230963":
+            sensor = profile.get_device().query_sensors()[1]
+            # sensor.set_option(rs.option.exposure, 217.000)
+            sensor.set_option(rs.option.auto_exposure_priority, True)
+            print(sensor.get_option(rs.option.exposure)) 
+        # if sensor.supports(rs.option.exposure):
+        #     print("Exposure setting is supported.")
+        # else:
+        #     print("Exposure setting is not supported.")
+
+        # if self.cam_serial_num == "211422061450":
+        #     sensor.set_option(rs.option.exposure, 190)
+
 
     def get_rgb_depth_images(self):
         frames = None
@@ -103,7 +127,7 @@ class RealSenseRobotStream(object):
 
             # Getting the images from the frames
             if self.mode == 'rgbd':
-                if self.cam_serial_num == "f1231617": 
+                if self.cam_serial_num == "f1230963": 
                     depth_image = (
                         np.asanyarray(aligned_depth_frame.get_data()) // 4
                     )  # L515 camera need to divide by 4 to get metric in meter   
@@ -137,3 +161,32 @@ class RealSenseRobotStream(object):
             self.intrinsics_publisher.publish(self.intrinsics_matrix.reshape(9).tolist())
 
             self.rate.sleep()
+
+if __name__ == '__main__':
+    from PIL import Image as PILImage
+    cam_serial_num = "211422061450"
+    robot_cam_num = 1
+    rotation_angle = 0
+    mode = 'rgb'
+    rs_streamer = RealSenseRobotStream(cam_serial_num, robot_cam_num, rotation_angle, mode)
+
+    original_image = cv2.imread("/home/agibot/Projects/Real-Robo/expert_dataset/reach_cube_large/extracted_data/filtered/images/demonstration_1/camera_1_color_image/1.PNG")
+    # real time visualization using cv2
+    while True:
+        color_image = rs_streamer.get_rgb_depth_images()
+        # depth_iamge = rs_streamer.get_rgb_depth_images()
+        # print(depth_iamge[0].shape, depth_iamge[1].shape)
+        # print(color_image.shape)
+        # print(depth_iamge.shape)
+        # # crop using PIL image crop [460, 125, 1010, 675]
+        color_image = PILImage.fromarray(color_image)
+        color_image = color_image.crop((400, 70, 950, 620))
+        color_image = np.array(color_image)
+        # # resize to 224x224
+        color_image = cv2.resize(color_image, (224, 224))
+
+        # change alpha of color image to 0.5 and add with original image
+        color_image = cv2.addWeighted(color_image, 0.5, original_image, 0.5, 0)
+        
+        cv2.imshow("Color Image", color_image)
+        cv2.waitKey(1)

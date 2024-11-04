@@ -88,3 +88,6 @@ class Tactile3DVisualizer(object):
             data.extend(raw_data[sensor_name].reshape(-1).tolist())
 
         data = torch.tensor(data, dtype=torch.float64)
+
+if __name__ == '__main__':
+    random_data = np.random.rand(8, 5, 3, 3)

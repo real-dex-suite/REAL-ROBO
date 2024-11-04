@@ -77,12 +77,12 @@ class ConcatRGBTactile:
 
 
 def main():
-    extracted_data_path = "/home/agibot/Projects/Real-Robo/expert_dataset/pouring_rich/extracted_data/filtered"
-    ori_data_path = "/home/agibot/Projects/Real-Robo/expert_dataset/pouring_rich/recorded_data"
-    image_names = ["camera_1_color_image", "camera_2_color_image", "camera_1_depth_image", "camera_2_depth_image"]
+    extracted_data_path = "/home/agibot/Projects/Real-Robo/expert_dataset/temp_dataset/extracted_data/filtered"
+    ori_data_path = "/home/agibot/Projects/Real-Robo/expert_dataset/temp_dataset/recorded_data"
+    image_names = ["camera_1_color_image", "camera_2_color_image"]
 
     for demonstration in os.listdir(ori_data_path):
-        concat_image_save_path = os.path.join("/home/agibot/Projects/Real-Robo/expert_dataset/pouring_rich/concat_image", demonstration)
+        concat_image_save_path = os.path.join("/home/agibot/Projects/Real-Robo/expert_dataset/temp_dataset/concat_image", demonstration)
         make_dir(concat_image_save_path)
 
         img_paths = []
