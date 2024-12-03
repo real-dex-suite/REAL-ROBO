@@ -1,0 +1,11 @@
+image_size: [224,224]
+
+crop_sizes:
+  - [400, 0, 950, 550]
+  - [500, 0, 1050, 550]
+
+mean_tensors:
+
+
+std_tensors:
+

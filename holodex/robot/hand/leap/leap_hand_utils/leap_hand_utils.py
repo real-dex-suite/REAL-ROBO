@@ -30,7 +30,7 @@ def angle_safety_clip(joints):
 def LEAPsim_limits(type = "regular"):
     if type == "regular":
         sim_min = np.array([-1.047, -0.314, -0.506, -0.366, -1.047, -0.314, -0.506, -0.366, -1.047, -0.314, -0.506, -0.366, -0.349, -0.47, -1.20, -1.34])
-        sim_max = np.array([1.047,    2.23,  1.885,  2.042,  1.047,   2.23,  1.885,  2.042,  1.047,   2.23,  1.885,  2.042,  2.094,  2.443, 1.90,  1.88]) # change 1.885 to 1.3 for temporal fix collision due to tactile can collide with part
+        sim_max = np.array([1.047,    2.23,  1.3,  1.0,  1.047,   2.23,  1.3,  1.0,  1.047,   2.23,  1.3,  1.0,  2.094,  2.443, 1.90,  1.88]) # change 1.885 to 1.3, 2.042 to 1.0 for temporal fix collision due to tactile can collide with part
     return sim_min, sim_max
 
 #this goes from [-1, 1] to [lower, upper]

@@ -35,7 +35,8 @@ def main(configs):
             replay_controller.replay_hand_motion()
 
         if configs.replay_arm_and_hand:
-            replay_controller.replay_arm_and_hand_motion()
+            replay_controller.replay_arm_and_hand_motion(5)
+
 
     print("............................................")
     print("Don't stop now if you want to process the saved images.")

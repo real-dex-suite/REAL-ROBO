@@ -70,6 +70,7 @@ class TactileVisualizer:
                 offset_x = int(data[0] * 2)  # Adjust the scaling factor as needed
                 offset_y = int(data[1] * 2)  # Adjust the scaling factor as needed
                 
+                
                 # Apply the offset to the center coordinates
                 center_coordinates = (center_coordinates[0] + offset_x, center_coordinates[1] + offset_y)
                 
@@ -115,10 +116,18 @@ class TactileVisualizer:
                     self.imgs[i] = ax.imshow(tactile_image, aspect='auto')  # `aspect='auto'` padding the image to fit the axis
                 else:
                     self.imgs[i].set_data(tactile_image)
-        
-        self.fig.canvas.draw()
-        self.fig.canvas.flush_events()
-        plt.pause(0.001)
+        save_img = True
+
+        if not save_img:
+            self.fig.canvas.draw()
+            self.fig.canvas.flush_events()
+            plt.pause(0.001)
+        else:
+            plt.savefig("tactile_pattern.png")
+            plt.close()
+        # self.fig.canvas.draw()
+        # self.fig.canvas.flush_events()
+        # plt.pause(0.001)
         
     def get_single_tactile_repre_pattern(self, tactile_data):
         tactile_data = torch.tensor(tactile_data, dtype=torch.float64)
@@ -182,3 +191,7 @@ class TactileVisualizer:
     # TODO: generate a rgb + sensor + tactile repre pattern -> video
     def draw_concat_image(self, tactile_data):
         pass
+
+
+if __name__ == "__main__":
+    tactile_data_path = "/home/agibot/Projects/Real-Robo/expert_dataset/new_play/recorded_data/demonstration_1/1"

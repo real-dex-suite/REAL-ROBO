@@ -11,7 +11,9 @@ class RobotName(enum.Enum):
 
 class RetargetingType(enum.Enum):
     vector = enum.auto()  # For teleoperation, no finger closing prior
-    position = enum.auto()  # For offline data processing, especially hand-object interaction data
+    position = (
+        enum.auto()
+    )  # For offline data processing, especially hand-object interaction data
     dexpilot = enum.auto()  # For teleoperation, with finger closing prior
 
 
@@ -30,7 +32,9 @@ ROBOT_NAME_MAP = {
 ROBOT_NAMES = list(ROBOT_NAME_MAP.keys())
 
 
-def get_default_config_path(robot_name: RobotName, retargeting_type: RetargetingType, hand_type: HandType) -> Path:
+def get_default_config_path(
+    robot_name: RobotName, retargeting_type: RetargetingType, hand_type: HandType
+) -> Path:
     config_path = Path(__file__).parent / "configs"
     if retargeting_type is RetargetingType.position:
         config_path = config_path / "offline"

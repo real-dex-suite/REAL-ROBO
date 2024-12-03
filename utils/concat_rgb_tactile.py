@@ -29,7 +29,7 @@ class ConcatRGBTactile:
     def load_images(self, folder_path, prefix):
         images = []
         for i in range(1, self.num_images, self.interval):
-            filename = f"{prefix}{i}.PNG"
+            filename = f"{prefix}{i}.png"
             file_path = os.path.join(folder_path, filename)
             if os.path.isfile(file_path):
                 image = cv2.imread(file_path)
@@ -75,15 +75,29 @@ class ConcatRGBTactile:
         else:
             print("Failed to load images for concat.")
 
+import argparse
+from tqdm import tqdm
+def make_dir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
 
 def main():
-    extracted_data_path = "/home/agibot/Projects/Real-Robo/expert_dataset/temp_dataset/extracted_data/filtered"
-    ori_data_path = "/home/agibot/Projects/Real-Robo/expert_dataset/temp_dataset/recorded_data"
-    image_names = ["camera_1_color_image", "camera_2_color_image"]
+    parser = argparse.ArgumentParser(description="Concatenate RGB and tactile images")
+    parser.add_argument("--base_directory", type=str, default="/home/agibot/Projects/Real-Robo/expert_dataset/",
+                        help="Path to the base directory")
 
-    for demonstration in os.listdir(ori_data_path):
-        concat_image_save_path = os.path.join("/home/agibot/Projects/Real-Robo/expert_dataset/temp_dataset/concat_image", demonstration)
-        make_dir(concat_image_save_path)
+    args = parser.parse_args()
+
+    extracted_data_path = os.path.join(args.base_directory, "extracted_data", "filtered")
+    ori_data_path = os.path.join(args.base_directory, "recorded_data")
+    concat_image_save_path = os.path.join(args.base_directory, "concat_image")
+
+    image_names = ["camera_1_color_image"] # ,"camera_1_depth_image", "camera_2_depth_image"
+
+    demonstrations = os.listdir(ori_data_path)
+    for demonstration in tqdm(demonstrations, desc="Processing demonstrations"):
+        concat_image_save_path_demo = os.path.join(concat_image_save_path, demonstration)
+        make_dir(concat_image_save_path_demo)
 
         img_paths = []
         for image_name in image_names:
@@ -94,16 +108,48 @@ def main():
         comparer = ConcatRGBTactile(
             img_paths,
             tactile_path,
-            prefix1="",
-            prefix2="",
+            prefix1="tactile_image_",
+            prefix2="tactile_image_",
             num_images=num_image,
             interval=1,
             alpha=0.7,
             target_size=(512, 512),
-            concat_image_save_path=concat_image_save_path,
+            concat_image_save_path=concat_image_save_path_demo,
         )
         comparer.run_comparison()
 
 
 if __name__ == "__main__":
     main()
+      
+# def main():
+#     extracted_data_path = "/home/agibot/Projects/Real-Robo/expert_dataset/assembly_random_v2/extracted_data/filtered"
+#     ori_data_path = "/home/agibot/Projects/Real-Robo/expert_dataset/assembly_random_v2/recorded_data"
+#     image_names = ["camera_1_color_image", "camera_2_color_image"] # ,"camera_1_depth_image", "camera_2_depth_image"
+
+#     for demonstration in os.listdir(ori_data_path):
+#         concat_image_save_path = os.path.join("/home/agibot/Projects/Real-Robo/expert_dataset/assembly_random_v2/concat_image", demonstration)
+#         make_dir(concat_image_save_path)
+
+#         img_paths = []
+#         for image_name in image_names:
+#             img_paths.append(os.path.join(extracted_data_path, "images", demonstration, image_name))
+
+#         tactile_path = os.path.join(extracted_data_path, "tactiles", demonstration)
+#         num_image = len(os.listdir(tactile_path))
+#         comparer = ConcatRGBTactile(
+#             img_paths,
+#             tactile_path,
+#             prefix1="",
+#             prefix2="",
+#             num_images=num_image,
+#             interval=1,
+#             alpha=0.7,
+#             target_size=(512, 512),
+#             concat_image_save_path=concat_image_save_path,
+#         )
+#         comparer.run_comparison()
+
+
+# if __name__ == "__main__":
+#     main()

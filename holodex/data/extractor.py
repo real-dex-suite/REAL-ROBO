@@ -11,11 +11,16 @@ from holodex.constants import *
 from utils.tactile_data_vis.tactile_visualizer_2d import Tactile2DVisualizer
 from termcolor import cprint
 
+# Highlight!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+from jkrc import jkrc
+# robot = jkrc.RC("192.168.130.95")
+# robot.login()
+
 # load module according to hand type
-hand_module = __import__("holodex.robot.hand")
-HandKDL_module_name = f'{HAND_TYPE}KDL'
+hand_module = __import__("holodex.robot.hand")  if HAND_TYPE is not None else None
+HandKDL_module_name = f'{HAND_TYPE}KDL'  if HAND_TYPE is not None else None
 # get relevant classes
-HandKDL = getattr(hand_module.robot, HandKDL_module_name)
+HandKDL = getattr(hand_module.robot, HandKDL_module_name)  if HAND_TYPE is not None else None
 
 class TactileExtractor(object):
     def __init__(self, data_path, extract_tactile_types):
@@ -204,7 +209,7 @@ class DepthImageExtractor(object):
 class StateExtractor(object):
     def __init__(self, data_path, extract_state_types):
         self.data_path = data_path
-        self.kdl_solver = HandKDL()
+        self.kdl_solver = HandKDL() if HAND_TYPE is not None else None
         self.extract_state_types = extract_state_types
 
     def _get_coords(self, joint_angles):
@@ -266,7 +271,7 @@ class StateExtractor(object):
 class ActionExtractor(object):
     def __init__(self, data_path, extract_action_types):
         self.data_path = data_path
-        self.kdl_solver = HandKDL()
+        self.kdl_solver = HandKDL() if HAND_TYPE is not None else None
         self.extract_action_types = extract_action_types
 
     def _get_coords(self, joint_angles):
@@ -293,11 +298,8 @@ class ActionExtractor(object):
             demo_action_data[action_type] = []
 
         # depends on what kind of actions, cmd action or delta should start from 0, abs joint should start from 1 
-        if "hand_cmd_abs_joint" in demo_action_data.keys() or "hand_delta_joint" in demo_action_data.keys():
-            start_idx = 0
-        elif "hand_abs_joint" in demo_action_data.keys():
-            start_idx = 1
-
+        start_idx = 0
+        
         for idx in range(start_idx, len(states)): 
             state_data = get_pickle_data(os.path.join(demo_path, states[idx]))
 
@@ -306,21 +308,31 @@ class ActionExtractor(object):
                 if state_type == "arm_cmd_abs_joint":
                     arm_cmd_abs_joint = state_data['arm_commanded_joint_position']
                     demo_action_data[state_type].append(arm_cmd_abs_joint)
-                elif state_type == "arm_ee_pose":
+                if state_type == "arm_cmd_ee_pose":
+                    if ARM_TYPE == "jaka":
+                        arm_cmd_ee_pose = robot.kine_forward(state_data['arm_commanded_joint_position'])[1]
+                        demo_action_data[state_type].append(arm_cmd_ee_pose)
+
+                    elif ARM_TYPE == "Flexiv":
+                        arm_cmd_ee_pose = state_data['arm_commanded_ee_pose']
+                        demo_action_data[state_type].append(arm_cmd_ee_pose)
+
+
+                if state_type == "arm_ee_pose" and idx > 0:
                     arm_ee_pose = state_data['arm_ee_pose']
                     demo_action_data[state_type].append(arm_ee_pose)
-                elif state_type == "arm_abs_joint":
+                if state_type == "arm_abs_joint" and idx > 0:
                     arm_abs_joint = state_data['arm_joint_positions']
                     demo_action_data[state_type].append(arm_abs_joint) 
-                elif state_type == "hand_cmd_abs_joint":
+                if state_type == "hand_cmd_abs_joint":
                     hand_cmd_abs_joint = state_data['hand_commanded_joint_position']
                     demo_action_data[state_type].append(hand_cmd_abs_joint)
-                elif state_type == "hand_abs_joint":
+                if state_type == "hand_abs_joint" and idx > 0:
                     hand_abs_joint = state_data['hand_joint_positions']
                     demo_action_data[state_type].append(hand_abs_joint) 
 
         for state_type in self.extract_action_types:
-             demo_action_data[state_type] = torch.tensor(np.array(demo_action_data[state_type])).squeeze()
+            demo_action_data[state_type] = torch.tensor(np.array(demo_action_data[state_type])).squeeze()
 
         torch.save(demo_action_data, target_path)
 

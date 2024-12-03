@@ -1,3 +1,15 @@
+import sys
+import os
+# append PATH: '/home/agibot/catkin_ws/devel/lib/python3/dist-packages', '/opt/ros/noetic/lib/python3/dist-packages'
+# source 
+# ros_setup_path = '/opt/ros/noetic/setup.bash'
+# catkin_ws_path = '/home/agibot/catkin_ws/devel/setup.bash'
+
+# os.system(f'source {ros_setup_path}')
+# os.system(f'source {catkin_ws_path}')
+
+
+
 import rospy
 import zmq
 

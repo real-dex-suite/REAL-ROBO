@@ -6,10 +6,10 @@ from holodex.utils.vec_ops import get_distance
 from holodex.constants import *
 
 # load module according to hand type
-hand_module = __import__("holodex.robot.hand")
-HandKDL_module_name = f'{HAND_TYPE}KDL'
+hand_module = __import__("holodex.robot.hand")  if HAND_TYPE is not None else None
+HandKDL_module_name = f'{HAND_TYPE}KDL'  if HAND_TYPE is not None else None
 # get relevant classes
-HandKDL = getattr(hand_module.robot, HandKDL_module_name)
+HandKDL = getattr(hand_module.robot, HandKDL_module_name) if HAND_TYPE is not None else None
 
 class FilterData(object):
     def __init__(self, data_path, hand_delta = None, arm_delta = None, tactile_delta = None, play_data=False, last_frame_save_number=0) -> None:
@@ -20,7 +20,8 @@ class FilterData(object):
         self.play_data = play_data
         self.last_frame_save_number = last_frame_save_number
 
-        self.kdl_solver = HandKDL() # # Solver for forward kinematics
+        if HAND_TYPE is not None:
+            self.kdl_solver = HandKDL() # # Solver for forward kinematics
         
     def _get_coords(self, joint_angles):
         # Calculate finger coordinates based on joint angles
@@ -94,6 +95,10 @@ class FilterData(object):
         prev_tactile = self._get_tactile_from_state(demo_path, states[0])
 
         for idx in range(1, len(states)):
+
+            # if idx % 2 == 0:
+            #     continue
+            
             index_coords, middle_coords, ring_coords, thumb_coords, arm_ee_pos, arm_ee_ori = self._get_robot_poses_from_state(demo_path, states[idx])
             tactile = self._get_tactile_from_state(demo_path, states[idx])
             
@@ -143,8 +148,13 @@ class FilterData(object):
 
             # if np.max(np.abs(tactile)) > 50:
             #     save_current_frame = False
+            
+            # if tactile_delta < self.tactile_delta:
+            #     save_current_frame = False
+            
 
             if save_current_frame:
+                # print(idx)
                 filtered_state_idxs.append(idx)
                 prev_index_coords, prev_middle_coords, prev_ring_coords, prev_thumb_coords = index_coords, middle_coords, ring_coords, thumb_coords
                 prev_arm_ee_pos, prev_arm_ee_ori = arm_ee_pos, arm_ee_ori

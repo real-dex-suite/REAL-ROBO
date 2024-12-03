@@ -7,15 +7,37 @@ retargeting:
   target_joint_names: null
   finger_tip_link_names: [ "thumb_tip_head", "index_tip_head", "middle_tip_head", "ring_tip_head"]
   finger_dip_link_names: [ "thumb_dip_head", "index_dip_head", "middle_dip_head", "ring_dip_head"] # []
-  target_tip_link_human_indices: [19, 20, 21, 22] # oculus #TODO condifureable
-  target_dip_link_human_indices: [5, 8, 11, 14] # oculus #TODO condifureable #[]
-
+  target_tip_link_human_indices: [4, 8, 12, 16] # oculus [19, 20, 21, 22]   mano [4, 8, 12, 16]#TODO condifureable
+  target_dip_link_human_indices: [3, 7, 11, 15] # oculus [5, 8, 11, 14] #TODO condifureable #[] 
   # finger_tip_link_names: [ "thumb_tip_head", "index_tip_head", "middle_tip_head", "ring_tip_head"]
   # finger_dip_link_names: []
   # target_tip_link_human_indices: [4, 8, 12, 16]
   # target_dip_link_human_indices: []
   
-  scaling_factor: 1.6
+  scaling_factor: 1.2
 
   # A smaller alpha means stronger filtering, i.e. more smooth but also larger latency
   low_pass_alpha: 0.2
+
+
+# retargeting:
+#   type: DexPilot
+#   urdf_path: leap/assets/leap_hand_right.urdf
+#   wrist_link_name: "base"
+
+#   # Target refers to the retargeting target, which is the robot hand
+#   target_joint_names: null
+#   finger_tip_link_names: [ "thumb_tip_head", "index_tip_head", "middle_tip_head", "ring_tip_head"]
+#   finger_dip_link_names: [ "thumb_dip_head", "index_dip_head", "middle_dip_head", "ring_dip_head"] # []
+#   target_tip_link_human_indices: [19, 20, 21, 22] # oculus #TODO condifureable
+#   target_dip_link_human_indices: [5, 8, 11, 14] # oculus #TODO condifureable #[]
+
+#   # finger_tip_link_names: [ "thumb_tip_head", "index_tip_head", "middle_tip_head", "ring_tip_head"]
+#   # finger_dip_link_names: []
+#   # target_tip_link_human_indices: [4, 8, 12, 16]
+#   # target_dip_link_human_indices: []
+  
+#   scaling_factor: 1.6
+
+#   # A smaller alpha means stronger filtering, i.e. more smooth but also larger latency
+#   low_pass_alpha: 0.2

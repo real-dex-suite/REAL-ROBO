@@ -245,7 +245,7 @@ class PaxiniTactileStream:
                     )
                 processed_data_list = self.transform_data_order(processed_data_list)
             else:
-                print(None)
+                print(self.serial_port_number,None)
 
             self.close()
             read_step += 1
@@ -277,8 +277,6 @@ if __name__ == "__main__":
     import time
 
     while True:
-
-        
         st = time.time()
         tactile_data = tactile.get_data()
         print(time.time() - st)

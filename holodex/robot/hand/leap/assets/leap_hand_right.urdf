@@ -278,7 +278,7 @@
     <parent link="pip"/>
     <child link="dip"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="0.95" velocity="8.48" lower="-0.506" upper="1.885"/> <!-- temporal fix because can collide with part and cause tactile false read -->
+    <limit effort="0.95" velocity="8.48" lower="-0.506" upper="1.3"/> <!-- temporal fix because can collide with part and cause tactile false read -->
     <joint_properties friction="0.0"/>
   </joint>
   <joint name="3" type="revolute">
@@ -286,7 +286,7 @@
     <parent link="dip"/>
     <child link="fingertip"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="0.95" velocity="8.48" lower="-0.366" upper="2.042"/>
+    <limit effort="0.95" velocity="8.48" lower="-0.366" upper="1.0"/> <!-- temporal fix because can collide with part and cause tactile false read -->
     <joint_properties friction="0.0"/>
   </joint>
 
@@ -472,7 +472,7 @@
     <parent link="pip_2"/>
     <child link="dip_2"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="0.95" velocity="8.48" lower="-0.506" upper="1.885"/> <!-- temporal fix because can collide with part and cause tactile false read -->
+    <limit effort="0.95" velocity="8.48" lower="-0.506" upper="1.3"/> <!-- temporal fix because can collide with part and cause tactile false read -->
     <joint_properties friction="0.0"/>
   </joint>
   <joint name="7" type="revolute">
@@ -480,7 +480,7 @@
     <parent link="dip_2"/>
     <child link="fingertip_2"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="0.95" velocity="8.48" lower="-0.366" upper="2.042"/>
+    <limit effort="0.95" velocity="8.48" lower="-0.366" upper="1.0"/> <!-- temporal fix because can collide with part and cause tactile false read -->
     <joint_properties friction="0.0"/>
   </joint>
   <link name="mcp_joint_3">
@@ -665,7 +665,7 @@
     <parent link="pip_3"/>
     <child link="dip_3"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="0.95" velocity="8.48" lower="-0.506" upper="1.885"/> <!-- temporal fix because can collide with part and cause tactile false read -->
+    <limit effort="0.95" velocity="8.48" lower="-0.506" upper="1.3"/> <!-- temporal fix because can collide with part and cause tactile false read -->
     <joint_properties friction="0.0"/>
   </joint>
   <joint name="11" type="revolute">
@@ -673,7 +673,7 @@
     <parent link="dip_3"/>
     <child link="fingertip_3"/>
     <axis xyz="0 0 -1"/>
-    <limit effort="0.95" velocity="8.48" lower="-0.366" upper="2.042"/>
+    <limit effort="0.95" velocity="8.48" lower="-0.366" upper="1.0"/> <!-- temporal fix because can collide with part and cause tactile false read -->
     <joint_properties friction="0.0"/>
   </joint>
   <link name="pip_4">
@@ -911,21 +911,21 @@
   <joint name="thumb_tip" type="fixed">
     <parent link="thumb_fingertip"/>
     <child link="thumb_tip_head"/>
-    <origin rpy="0 0 0" xyz="-0.011 -0.043 -0.015"/>
+    <origin rpy="0 0 0" xyz="-0.011 -0.033 -0.015"/>
   </joint>
   <joint name="index_tip" type="fixed">
     <parent link="fingertip"/>
     <child link="index_tip_head"/>
-    <origin rpy="0 0 0" xyz="-0.011 -0.029 0.015"/>
+    <origin rpy="0 0 0" xyz="-0.001 -0.019 0.015"/>
   </joint>
   <joint name="middle_tip" type="fixed">
     <parent link="fingertip_2"/>
     <child link="middle_tip_head"/>
-    <origin rpy="0 0 0" xyz="-0.011 -0.029 0.015"/>
+    <origin rpy="0 0 0" xyz="-0.011 -0.019 0.015"/>
   </joint>
   <joint name="ring_tip" type="fixed">
     <parent link="fingertip_3"/>
     <child link="ring_tip_head"/>
-    <origin rpy="0 0 0" xyz="-0.011 -0.029 0.015"/>
+    <origin rpy="0 0 0" xyz="-0.011 -0.019 0.015"/>
   </joint>
 </robot>

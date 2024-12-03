@@ -38,13 +38,13 @@ class Plot2DTACTILE(object):
                 fig.scatter(PAXINI_IP_VIS_COORDS_2D[:,0], PAXINI_IP_VIS_COORDS_2D[:,1], c=color, marker='o', s=self.point_size*total_force*self.plot_scale)
                 # add value text to each points
                 for i, txt in enumerate(PAXINI_IP_VIS_COORDS_2D):
-                    fig.annotate(f'{real_total_force[i]:.0f}', (PAXINI_IP_VIS_COORDS_2D[i,0], PAXINI_IP_VIS_COORDS_2D[i,1]), fontsize=7)
+                    fig.annotate(f'{X[fig_id][i]:.0f}, {Y[fig_id][i]:.0f}, {Z[fig_id][i]:.0f}', (PAXINI_IP_VIS_COORDS_2D[i,0], PAXINI_IP_VIS_COORDS_2D[i,1]), fontsize=7)
             elif self.sensor_type[fig_id] == 'DP':
                 real_total_force = np.sqrt(X[fig_id]**2 + Y[fig_id]**2 + Z[fig_id]**2)
                 total_force = np.sqrt(X[fig_id]**2 + Y[fig_id]**2 + Z[fig_id]**2) / self.totoal_force_limit
                 fig.scatter(PAXINI_DP_VIS_COORDS_2D[:,0], PAXINI_DP_VIS_COORDS_2D[:,1], c=color, marker='o', s=self.point_size*total_force*self.plot_scale)
                 for i, txt in enumerate(PAXINI_DP_VIS_COORDS_2D):
-                    fig.annotate(f'{real_total_force[i]:.0f}', (PAXINI_DP_VIS_COORDS_2D[i,0], PAXINI_DP_VIS_COORDS_2D[i,1]), fontsize=7)
+                    fig.annotate(f'{X[fig_id][i]:.0f}, {Y[fig_id][i]:.0f}, {Z[fig_id][i]:.0f}', (PAXINI_DP_VIS_COORDS_2D[i,0], PAXINI_DP_VIS_COORDS_2D[i,1]), fontsize=7)
             fig.set_title(self.sensor_name[fig_id])
 
     def draw(self, X, Y, Z):

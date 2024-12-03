@@ -25,7 +25,9 @@ class SeqRetargeting:
         joint_limits[:, 1] = 1e4
         if has_joint_limits:
             joint_limits[:] = robot.get_qlimits()[:]
-            self.optimizer.set_joint_limit(joint_limits[self.optimizer.target_joint_indices])
+            self.optimizer.set_joint_limit(
+                joint_limits[self.optimizer.target_joint_indices]
+            )
         self.joint_limits = joint_limits
 
         # Temporal information
@@ -42,12 +44,16 @@ class SeqRetargeting:
         # TODO: hack here
         self.scene = None
 
-    def warm_start(self, wrist_pos: np.ndarray, wrist_orientation: np.ndarray, global_rot: np.array):
+    def warm_start(
+        self, wrist_pos: np.ndarray, wrist_orientation: np.ndarray, global_rot: np.array
+    ):
         # This function can only be used when the first joints of robot are free joints
         if len(wrist_pos) != 3:
             raise ValueError(f"Wrist pos:{wrist_pos} is not a 3-dim vector.")
         if len(wrist_orientation) != 3:
-            raise ValueError(f"Wrist orientation:{wrist_orientation} is not a 3-dim vector.")
+            raise ValueError(
+                f"Wrist orientation:{wrist_orientation} is not a 3-dim vector."
+            )
 
         if np.linalg.norm(wrist_orientation) < 1e-3:
             mat = np.eye(3)
@@ -65,7 +71,11 @@ class SeqRetargeting:
         target_wrist_pose[:3, 3] = wrist_pos
 
         wrist_link_name = self.optimizer.wrist_link_name
-        wrist_link = [link for link in self.optimizer.robot.get_links() if link.get_name() == wrist_link_name][0]
+        wrist_link = [
+            link
+            for link in self.optimizer.robot.get_links()
+            if link.get_name() == wrist_link_name
+        ][0]
         name_list = [
             "dummy_x_translation_joint",
             "dummy_y_translation_joint",
@@ -80,7 +90,11 @@ class SeqRetargeting:
             if joint_name in name_list:
                 new_qpos[num] = 0
         robot.set_qpos(new_qpos)
-        root2wrist = (robot.get_pose().inv() * wrist_link.get_pose()).inv().to_transformation_matrix()
+        root2wrist = (
+            (robot.get_pose().inv() * wrist_link.get_pose())
+            .inv()
+            .to_transformation_matrix()
+        )
         target_root_pose = target_wrist_pose @ root2wrist
         robot.set_qpos(old_qpos)
 
@@ -122,7 +136,9 @@ class SeqRetargeting:
 
     def verbose(self):
         min_value = self.optimizer.opt.last_optimum_value()
-        print(f"Retargeting {self.num_retargeting} times takes: {self.accumulated_time}s")
+        print(
+            f"Retargeting {self.num_retargeting} times takes: {self.accumulated_time}s"
+        )
         print(f"Last distance: {min_value}")
 
     def reset(self):

@@ -89,6 +89,11 @@ def hamer_teleop(detector_config):
     teleop = HamerDexArmTeleOp()
     teleop.move(detector_config['finger_configs'])
 
+def kb_teleop(detector_config):
+    notify_process_start("Starting Teleoperation Process")
+    teleop = KBArmTeleop()
+    teleop.move()
+
 def deploy_model(configs):
     if configs.model not in ['VINN', 'BC']:
         raise NotImplementedError("{} not implemented".format(configs.model))
@@ -190,6 +195,8 @@ def get_teleop_process(teleop_configs):
         teleop_process = Process(target = vr_teleop, args = (teleop_configs, ))
     elif teleop_configs.tracker.type == 'HAMER':
         teleop_process = Process(target = hamer_teleop, args = (teleop_configs, ))
+    elif teleop_configs.tracker.type == 'KB':
+        teleop_process = Process(target = kb_teleop, args = (teleop_configs, ), daemon=False)
 
     return teleop_process
 

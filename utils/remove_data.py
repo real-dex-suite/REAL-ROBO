@@ -1,13 +1,13 @@
 import os
 import shutil
-task_name = "openbox_v1"
-demonstration_number = 30
-target_demonstration_number = demonstration_number #+ 30
+task_name = "small_box_v1"
+demonstration_number = 9
+target_demonstration_number = demonstration_number
 demonstration_path = f"/home/agibot/Projects/Real-Robo/expert_dataset/{task_name}/recorded_data/demonstration_{demonstration_number}"
 target_demonstration_path = f"/home/agibot/Projects/Real-Robo/expert_dataset/{task_name}_refined/recorded_data/demonstration_{target_demonstration_number}"
 
 start_idx = 5
-end_idx = 104
+end_idx = 50
 
 os.makedirs(target_demonstration_path, exist_ok=True)
 

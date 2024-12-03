@@ -41,7 +41,9 @@ def add_dummy_free_joint(
     joint_name = [f"dummy_{name}_translation_joint" for name in "xyz"] + [
         f"dummy_{name}_rotation_joint" for name in "xyz"
     ]
-    link_name = [f"dummy_{name}_translation_link" for name in "xyz"] + [f"dummy_{name}_rotation_link" for name in "xyz"]
+    link_name = [f"dummy_{name}_translation_link" for name in "xyz"] + [
+        f"dummy_{name}_rotation_link" for name in "xyz"
+    ]
 
     # Find root link which has no parent
     root_link_builder = None
@@ -74,7 +76,9 @@ def add_dummy_free_joint(
 
         # Build joint
         if i == 3 or i == 0:
-            child.set_joint_properties(joint_types[i], limits=np.array([joint_limit[i]]))
+            child.set_joint_properties(
+                joint_types[i], limits=np.array([joint_limit[i]])
+            )
         elif i == 4 or i == 1:
             child.set_joint_properties(
                 joint_types[i],
@@ -96,7 +100,11 @@ def add_dummy_free_joint(
 
 class SAPIENKinematicsModelStandalone:
     def __init__(
-        self, urdf_path, add_dummy_translation=False, add_dummy_rotation=False, scene: Optional[sapien.Scene] = None
+        self,
+        urdf_path,
+        add_dummy_translation=False,
+        add_dummy_rotation=False,
+        scene: Optional[sapien.Scene] = None,
     ):
         if scene is None:
             self.engine = sapien.Engine()
@@ -108,7 +116,9 @@ class SAPIENKinematicsModelStandalone:
 
         builder = loader.load_file_as_articulation_builder(urdf_path)
         if add_dummy_rotation or add_dummy_translation:
-            dummy_joint_indicator = (add_dummy_translation,) * 3 + (add_dummy_rotation,) * 3
+            dummy_joint_indicator = (add_dummy_translation,) * 3 + (
+                add_dummy_rotation,
+            ) * 3
             add_dummy_free_joint(builder, dummy_joint_indicator)
         self.robot = builder.build(fix_root_link=True)
         self.robot.set_pose(sapien.Pose())

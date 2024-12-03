@@ -17,6 +17,7 @@ palm_normal_scale = 2
 wrist_position_scale = 2
 palm_position_scale = 2
 
+
 def leap_vector_to_numpy(vector) -> np.ndarray:
     """Converts a Leap Motion `Vector` to a numpy array."""
     return np.array([vector.x, vector.y, vector.z])
@@ -41,12 +42,14 @@ def leap_hand_to_keypoints(hand) -> np.ndarray:
     armpoints[3, :] = leap_vector_to_numpy(hand.palm_position)
     return keypoints, armpoints
 
+
 def leap_motion_to_robot(armpoints):
-    direction = np.dot(SENSOR_TO_ROBOT,armpoints[0]/1000) * direction_scale
-    palm_normal = np.dot(SENSOR_TO_ROBOT,armpoints[1]/1000) * palm_normal_scale
-    wrist_position = np.dot(SENSOR_TO_ROBOT,armpoints[2]/1000) * wrist_position_scale
-    palm_position = np.dot(SENSOR_TO_ROBOT,armpoints[3]/1000) * palm_position_scale
+    direction = np.dot(SENSOR_TO_ROBOT, armpoints[0] / 1000) * direction_scale
+    palm_normal = np.dot(SENSOR_TO_ROBOT, armpoints[1] / 1000) * palm_normal_scale
+    wrist_position = np.dot(SENSOR_TO_ROBOT, armpoints[2] / 1000) * wrist_position_scale
+    palm_position = np.dot(SENSOR_TO_ROBOT, armpoints[3] / 1000) * palm_position_scale
     return direction, palm_normal, wrist_position, palm_position
+
 
 def best_fit_transform(A, B):
     """
@@ -91,6 +94,7 @@ def best_fit_transform(A, B):
 
     return T, R, t
 
+
 class SampleListener(Leap.Listener):
     finger_names = ["Thumb", "Index", "Middle", "Ring", "Pinky"]
     bone_names = ["Metacarpal", "Proximal", "Intermediate", "Distal"]
@@ -131,13 +135,12 @@ class SampleListener(Leap.Listener):
             keypoints, armpoints = leap_hand_to_keypoints(hand)
             print()
 
+
 if __name__ == "__main__":
     controller = Leap.Controller()
     robot = JakaArm()
     # TODO double check this
-    SENSOR_TO_ROBOT = np.array([-1, 0, 0,
-                                 0, 0, 1,
-                                 0, 1, 0]).reshape(3, 3)
+    SENSOR_TO_ROBOT = np.array([-1, 0, 0, 0, 0, 1, 0, 1, 0]).reshape(3, 3)
 
     inital_frame_number = 50
     initial_hand_directions = []
@@ -147,7 +150,7 @@ if __name__ == "__main__":
 
     initial_arm_poss = []
     inital_arm_rots = []
-    frame_number =0
+    frame_number = 0
 
     robot.robot.servo_move_enable(True)
 
@@ -156,31 +159,39 @@ if __name__ == "__main__":
         # print("Frame id %d" % frame.id)
         hand = frame.hands[0]
         keypoints, armpoints = leap_hand_to_keypoints(hand)
-        print('calibration initial pose, id: ', frame_number)
-        hand_direction, hand_palm_normal, hand_wrist_position, hand_palm_position = leap_motion_to_robot(armpoints)
+        print("calibration initial pose, id: ", frame_number)
+        hand_direction, hand_palm_normal, hand_wrist_position, hand_palm_position = (
+            leap_motion_to_robot(armpoints)
+        )
         initial_hand_directions.append(hand_direction)
         initial_hand_palm_normals.append(hand_palm_normal)
         initial_hand_wrist_positions.append(hand_wrist_position)
         initial_hand_palm_positions.append(hand_palm_position)
-        
-        initial_arm_poss.append(np.array(robot.robot.get_tcp_position()[1][:3])/1000)
+
+        initial_arm_poss.append(np.array(robot.robot.get_tcp_position()[1][:3]) / 1000)
         inital_arm_rots.append(np.array(robot.robot.get_tcp_position()[1][3:6]))
 
-        init_hand_direction = np.mean(initial_hand_directions,axis=0)
-        init_hand_palm_normal = np.mean(initial_hand_palm_normals,axis=0)
-        init_hand_wrist_position = np.mean(initial_hand_wrist_positions,axis=0)
+        init_hand_direction = np.mean(initial_hand_directions, axis=0)
+        init_hand_palm_normal = np.mean(initial_hand_palm_normals, axis=0)
+        init_hand_wrist_position = np.mean(initial_hand_wrist_positions, axis=0)
         # init_hand_palm_position = np.mean(initial_hand_palm_positions,axis=0)
-        init_points = np.array([init_hand_wrist_position*0,init_hand_palm_normal,init_hand_direction])
+        init_points = np.array(
+            [init_hand_wrist_position * 0, init_hand_palm_normal, init_hand_direction]
+        )
 
-        init_arm_pos = np.mean(initial_arm_poss,axis=0)
-        init_arm_rot = np.mean(inital_arm_rots,axis=0)
+        init_arm_pos = np.mean(initial_arm_poss, axis=0)
+        init_arm_rot = np.mean(inital_arm_rots, axis=0)
         init_arm_transformation_matrix = np.eye(4)
-        init_arm_transformation_matrix[:3,:3] = R.from_euler('xyz', init_arm_rot).as_matrix()
-        init_arm_transformation_matrix[:3,3] = init_arm_pos.reshape(3)
+        init_arm_transformation_matrix[:3, :3] = R.from_euler(
+            "xyz", init_arm_rot
+        ).as_matrix()
+        init_arm_transformation_matrix[:3, 3] = init_arm_pos.reshape(3)
 
         # algin ee coordinate to fake coordinate consistent with human hand coordinate
         fake_to_ee_transformation_matrix = np.eye(4)
-        fake_to_ee_transformation_matrix[:3, :3] = np.linalg.inv(init_arm_transformation_matrix[:3,:3])
+        fake_to_ee_transformation_matrix[:3, :3] = np.linalg.inv(
+            init_arm_transformation_matrix[:3, :3]
+        )
 
         frame_number += 1
 
@@ -190,19 +201,27 @@ if __name__ == "__main__":
         hand = frame.hands[0]
         keypoints, armpoints = leap_hand_to_keypoints(hand)
 
-        hand_direction, hand_palm_normal, hand_wrist_position, hand_palm_position = leap_motion_to_robot(armpoints)
-        hand_wrist_rel_pos = hand_wrist_position-init_hand_wrist_position
-        points = np.array([hand_wrist_rel_pos,hand_wrist_rel_pos+hand_palm_normal,hand_wrist_rel_pos+hand_direction])
-        transfomation, rotation, translation = best_fit_transform(init_points, points)    
+        hand_direction, hand_palm_normal, hand_wrist_position, hand_palm_position = (
+            leap_motion_to_robot(armpoints)
+        )
+        hand_wrist_rel_pos = hand_wrist_position - init_hand_wrist_position
+        points = np.array(
+            [
+                hand_wrist_rel_pos,
+                hand_wrist_rel_pos + hand_palm_normal,
+                hand_wrist_rel_pos + hand_direction,
+            ]
+        )
+        transfomation, rotation, translation = best_fit_transform(init_points, points)
 
         # use open3d visualize points and init_points
         # pcd = o3d.geometry.PointCloud()
         # pcd.points = o3d.utility.Vector3dVector(points)
         # pcd_init = o3d.geometry.PointCloud()
         # pcd_init.points = o3d.utility.Vector3dVector(init_points)
-        # axis = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.01, origin=[0, 0, 0])    
+        # axis = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.01, origin=[0, 0, 0])
 
-        # o3d.visualization.draw_geometries([pcd,pcd_init,axis])        
+        # o3d.visualization.draw_geometries([pcd,pcd_init,axis])
 
         # compute new pose
         # new_arm_transformation_matrix = np.dot(init_arm_transformation_matrix, transfomation)
@@ -218,22 +237,21 @@ if __name__ == "__main__":
         # composed_rotation = np.dot(init_rotation, rotation)
         # composed_translation = np.dot(rotation, translation) + init_arm_pos
 
-        new_ee_transformation_matrix = (init_arm_transformation_matrix @ (fake_to_ee_transformation_matrix@transfomation)) @ np.linalg.inv(fake_to_ee_transformation_matrix)
+        new_ee_transformation_matrix = (
+            init_arm_transformation_matrix
+            @ (fake_to_ee_transformation_matrix @ transfomation)
+        ) @ np.linalg.inv(fake_to_ee_transformation_matrix)
 
-        composed_translation = new_ee_transformation_matrix[:3,3]
-        composed_rotation = new_ee_transformation_matrix[:3,:3]
-        
+        composed_translation = new_ee_transformation_matrix[:3, 3]
+        composed_rotation = new_ee_transformation_matrix[:3, :3]
 
         # convert rotation matrix to rotation vector
-        composed_rotation = R.from_matrix(composed_rotation).as_euler('xyz')
+        composed_rotation = R.from_matrix(composed_rotation).as_euler("xyz")
         new_arm_pose = robot.robot.get_tcp_position()[1]
-        new_arm_pose[:3] = composed_translation*1000
+        new_arm_pose[:3] = composed_translation * 1000
         new_arm_pose[3:6] = composed_rotation
 
         # robot.robot.linear_move_extend(new_arm_pose,0,True,100,50,0.1)
         robot.move(np.array(new_arm_pose))
-    
+
     robot.robot.servo_move_enable(False)
-
-
-        

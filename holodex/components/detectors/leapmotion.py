@@ -15,7 +15,7 @@
 
 #         # Disabling scientific notations
 #         np.set_printoptions(suppress=True)
-        
+
 #         # Initializing Leapmotion pipeline
 #         self._start_leapmotion()
 
@@ -62,10 +62,10 @@
 #             if len(frame.hands) == 1:
 #                 handpoints, armpoints = self.leap_motion_to_keypoints(frame.hands[0])
 #                 # mm to m
-#                 # TODO arm should be same? 
+#                 # TODO arm should be same?
 #                 armpoints = armpoints / 1000
 #                 handpoints = handpoints / 1000
-                
+
 #                 # Publishing the detected data
 #                 self.arm_keypoint_publisher.publish(armpoints.flatten().tolist())
 #                 self.hand_keypoint_publisher.publish(handpoints.flatten().tolist())

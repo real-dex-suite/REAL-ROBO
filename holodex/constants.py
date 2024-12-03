@@ -4,7 +4,7 @@ import numpy as np
 from math import pi as PI
 import torch
 
-# Retarget type
+
 RETARGET_TYPE = "dexpilot"
 
 # dexpilot
@@ -12,7 +12,16 @@ SMOOTH_FACTOR = 0.4 # 0.99
 
 # Robot type
 HAND_TYPE = "Leap"
-ARM_TYPE = "Jaka"
+# HAND_TYPE = None
+# ARM_TYPE = "Jaka"
+# HAND_TYPE = None
+ARM_TYPE = "Flexiv"
+
+# Keyboard control
+# KEYBOARD_CONTROL_TOPIC = '/keyboard_control_node/keyboard_control'
+KEYBOARD_EE_TOPIC = '/keyboard_arm_teleop/keyboard_control_ee_pose'
+KEYBOARD_HAND_TOPIC = '/keyboard_hand_teleop/keyboard_control_hand_dof'
+PREDEFINED_HAND_DOF_STEP = None
 
 # Leap hand
 LEAP_JOINT_STATE_TOPIC = '/leaphand_node/joint_states'
@@ -33,6 +42,11 @@ LEAP_JOINT_OFFSETS = {
 LEAP_HOME_POSITION =  [ 0.2378,  0.0644,  0.0107, -0.0169,  0.1503,  0.0721, -0.0614, -0.3605,
         -0.0276,  0.0629, -0.0874, -0.3620,  0.2500,  0.0199,  1.3300, -0.6504]
 
+# Top to down
+# LEAP_HOME_POSITION = [ 0.1331,  0.2877,  0.0512,  0.4701, -0.0548,  0.3885,  0.0423,  0.1688,
+#          -0.3789,  0.4837,  0.0003,  0.3885,  1.2362,  0.0246,  1.1992, -0.7015]
+
+
 # stacking: [ 0.1933, -0.0752,  0.0077, -0.1135,  0.2040, -0.0629, -0.1074, -0.3620,
         #  0.0844,  0.0215, -0.1565, -0.3605,  0.2991,  0.0245,  1.1167, -0.7363]
 
@@ -44,6 +58,7 @@ LEAP_CMD_TYPE = 'allegro'
 JAKA_JOINT_STATE_TOPIC = '/jaka/joint_states'
 JAKA_COMMANDED_JOINT_STATE_TOPIC = '/jaka/commanded_joint_states'
 JAKA_EE_POSE_TOPIC = '/jaka/ee_pose'
+JAKA_COMMANDED_EE_POSE_TOPIC = '/jaka/commanded_ee_pose'
 
 JAKA_DOF = 6
 JAKA_POSITIONS = {
@@ -52,16 +67,18 @@ JAKA_POSITIONS = {
     # 'home':[-PI/2,-PI*2.2/180,-PI*90/180,0,-PI*90/180,-PI*124.5/180]
     # 'home': [-PI*128/180, -PI*15/180, -PI*95/180, PI*8/180, -PI*65/180, -PI*168/180]
     #'tcp_home':[-35.998, -179.06,  171.279,   -100.19/57.3,   48.86/57.3, -117.97/57.3]
-    #- 'tcp_home':[-50.76120603, -169.9429,  150.56867048,   -2.99596886,   -0.06904709, -2.5355691]
     # 'tcp_home':[-50.76120603, -169.9429,  150.56867048,   -2.99596886,   -0.06904709, -2.5355691]
-    #'tcp_home':[2.245301913043119, -172.0662078521393, 452.8460972484318, -0.0014055084634242037, 0.08438715452066328, -0.8852497052236575]
-    # 'tcp_home':[-50.76120603, -169.9429,  180.56867048,   -2.99596886,   -0.06904709, -2.5355691] #ohter
-    # 'tcp_home': [-50.76120603, -169.9429,  250.56867048,   -2.99596886,   -0.06904709, -2.5355691] #reorient
-    # 'tcp_home': [-50.76120603, -169.9429,  150.56867048,   -2.99596886,   -0.06904709, -2.5355691] #flip
-   'tcp_home': [-138.58834705, -192.14187038, 250.19665657, -3.13160931, -0.07897366, -2.47870095]  # pouring
+    # 'tcp_home':[-50.76120603, -169.9429,  150.56867048,   -2.99596886,   -0.06904709, -2.5355691]
+    # 'tcp_home':[2.245301913043119, -172.0662078521393, 452.8460972484318, -0.0014055084634242037, 0.08438715452066328, -0.8852497052236575]
+    # 'tcp_home':[-50.76120603, -169.9429,  180.56867048,   -2.99596886,   -0.06904709, -2.5355691]   # ohter
+    # 'tcp_home': [-50.76120603, -169.9429,  250.56867048,   -2.99596886,   -0.06904709, -2.5355691]  # reorient
+    # 'tcp_home': [-50.76120603, -169.9429,  150.56867048,   -2.99596886,   -0.06904709, -2.5355691]  # flip
+    'tcp_home': [-138.58834705, -192.14187038, 250.19665657, -3.13160931, -0.07897366, -2.47870095] # pouring
 }
 
-# [)
+FLEXIV_POSITIONS = {
+    'home_js': [-17.82, -41.08, 10.55, 94.19, -6.12, 46.24, 0],
+}
 
 JAKA_IP = "192.168.130.95"
 # JAKA_IP = "192.168.130.105"

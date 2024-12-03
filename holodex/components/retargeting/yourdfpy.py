@@ -40,8 +40,14 @@ class TransmissionJoint:
             return NotImplemented
         return (
             self.name == other.name
-            and all(self_hi in other.hardware_interfaces for self_hi in self.hardware_interfaces)
-            and all(other_hi in self.hardware_interfaces for other_hi in other.hardware_interfaces)
+            and all(
+                self_hi in other.hardware_interfaces
+                for self_hi in self.hardware_interfaces
+            )
+            and all(
+                other_hi in self.hardware_interfaces
+                for other_hi in other.hardware_interfaces
+            )
         )
 
 
@@ -58,8 +64,14 @@ class Actuator:
         return (
             self.name == other.name
             and self.mechanical_reduction == other.mechanical_reduction
-            and all(self_hi in other.hardware_interfaces for self_hi in self.hardware_interfaces)
-            and all(other_hi in self.hardware_interfaces for other_hi in other.hardware_interfaces)
+            and all(
+                self_hi in other.hardware_interfaces
+                for self_hi in self.hardware_interfaces
+            )
+            and all(
+                other_hi in self.hardware_interfaces
+                for other_hi in other.hardware_interfaces
+            )
         )
 
 
@@ -78,8 +90,12 @@ class Transmission:
             and self.type == other.type
             and all(self_joint in other.joints for self_joint in self.joints)
             and all(other_joint in self.joints for other_joint in other.joints)
-            and all(self_actuator in other.actuators for self_actuator in self.actuators)
-            and all(other_actuator in self.actuators for other_actuator in other.actuators)
+            and all(
+                self_actuator in other.actuators for self_actuator in self.actuators
+            )
+            and all(
+                other_actuator in self.actuators for other_actuator in other.actuators
+            )
         )
 
 
@@ -200,7 +216,11 @@ class Collision:
     def __eq__(self, other):
         if not isinstance(other, Collision):
             return NotImplemented
-        return self.name == other.name and _array_eq(self.origin, other.origin) and self.geometry == other.geometry
+        return (
+            self.name == other.name
+            and _array_eq(self.origin, other.origin)
+            and self.geometry == other.geometry
+        )
 
 
 @dataclass(eq=False)
@@ -213,7 +233,9 @@ class Inertial:
         if not isinstance(other, Inertial):
             return NotImplemented
         return (
-            _array_eq(self.origin, other.origin) and self.mass == other.mass and _array_eq(self.inertia, other.inertia)
+            _array_eq(self.origin, other.origin)
+            and self.mass == other.mass
+            and _array_eq(self.inertia, other.inertia)
         )
 
 
@@ -232,8 +254,13 @@ class Link:
             and self.inertial == other.inertial
             and all(self_visual in other.visuals for self_visual in self.visuals)
             and all(other_visual in self.visuals for other_visual in other.visuals)
-            and all(self_collision in other.collisions for self_collision in self.collisions)
-            and all(other_collision in self.collisions for other_collision in other.collisions)
+            and all(
+                self_collision in other.collisions for self_collision in self.collisions
+            )
+            and all(
+                other_collision in self.collisions
+                for other_collision in other.collisions
+            )
         )
 
 
@@ -301,10 +328,20 @@ class Robot:
             and all(other_link in self.links for other_link in other.links)
             and all(self_joint in other.joints for self_joint in self.joints)
             and all(other_joint in self.joints for other_joint in other.joints)
-            and all(self_material in other.materials for self_material in self.materials)
-            and all(other_material in self.materials for other_material in other.materials)
-            and all(self_transmission in other.transmission for self_transmission in self.transmission)
-            and all(other_transmission in self.transmission for other_transmission in other.transmission)
+            and all(
+                self_material in other.materials for self_material in self.materials
+            )
+            and all(
+                other_material in self.materials for other_material in other.materials
+            )
+            and all(
+                self_transmission in other.transmission
+                for self_transmission in self.transmission
+            )
+            and all(
+                other_transmission in self.transmission
+                for other_transmission in other.transmission
+            )
             and all(self_gazebo in other.gazebo for self_gazebo in self.gazebo)
             and all(other_gazebo in self.gazebo for other_gazebo in other.gazebo)
         )
@@ -438,7 +475,9 @@ def filename_handler_ignore_directive_package(fname):
     """
     if fname.startswith("package://"):
         string_length = len("package://")
-        return os.path.join(*os.path.normpath(fname[string_length:]).split(os.path.sep)[1:])
+        return os.path.join(
+            *os.path.normpath(fname[string_length:]).split(os.path.sep)[1:]
+        )
     return filename_handler_ignore_directive(fname)
 
 
@@ -491,7 +530,9 @@ def filename_handler_relative_to_urdf_file(fname, urdf_fname):
 def filename_handler_relative_to_urdf_file_recursive(fname, urdf_fname, level=0):
     if level == 0:
         return filename_handler_relative_to_urdf_file(fname, urdf_fname)
-    return filename_handler_relative_to_urdf_file_recursive(fname, os.path.split(urdf_fname)[0], level=level - 1)
+    return filename_handler_relative_to_urdf_file_recursive(
+        fname, os.path.split(urdf_fname)[0], level=level - 1
+    )
 
 
 def _create_filename_handlers_to_urdf_file_recursive(urdf_fname):
@@ -823,7 +864,9 @@ class URDF:
                 self._scene_collision.show(callback=callback)
         else:
             if self._scene is None:
-                raise ValueError("No scene available. Use build_scene_graph=True and load_meshes=True during loading.")
+                raise ValueError(
+                    "No scene available. Use build_scene_graph=True and load_meshes=True during loading."
+                )
             elif len(self._scene.bounds_corners) < 1:
                 raise ValueError(
                     "Scene is empty, maybe meshes failed to load? Use build_scene_graph=True and load_meshes=True during loading."
@@ -876,10 +919,14 @@ class URDF:
                     self._actuated_dof_indices.append([dof_indices_cnt])
                     dof_indices_cnt += 1
                 elif j.type == "floating":
-                    self._actuated_dof_indices.append([dof_indices_cnt, dof_indices_cnt + 1, dof_indices_cnt + 2])
+                    self._actuated_dof_indices.append(
+                        [dof_indices_cnt, dof_indices_cnt + 1, dof_indices_cnt + 2]
+                    )
                     dof_indices_cnt += 3
                 elif j.type == "planar":
-                    self._actuated_dof_indices.append([dof_indices_cnt, dof_indices_cnt + 1])
+                    self._actuated_dof_indices.append(
+                        [dof_indices_cnt, dof_indices_cnt + 1]
+                    )
                     dof_indices_cnt += 2
 
     def _validate_required_attribute(self, attribute, error_msg, allowed_values=None):
@@ -935,7 +982,10 @@ class URDF:
             for action, elem in xml:
                 # Skip comments and processing instructions,
                 # because they do not have names
-                if not (isinstance(elem, etree._Comment) or isinstance(elem, etree._ProcessingInstruction)):
+                if not (
+                    isinstance(elem, etree._Comment)
+                    or isinstance(elem, etree._ProcessingInstruction)
+                ):
                     # Remove a namespace URI in the element's name
                     # elem.tag = etree.QName(elem).localname
                     if action == "end" and ":" in elem.tag:
@@ -967,10 +1017,18 @@ class URDF:
         for field in element.__dataclass_fields__:
             field_value = getattr(element, field)
             if is_dataclass(field_value):
-                result = result or self.contains(key=key, value=value, element=field_value)
-            elif isinstance(field_value, list) and len(field_value) > 0 and is_dataclass(field_value[0]):
+                result = result or self.contains(
+                    key=key, value=value, element=field_value
+                )
+            elif (
+                isinstance(field_value, list)
+                and len(field_value) > 0
+                and is_dataclass(field_value[0])
+            ):
                 for field_value_element in field_value:
-                    result = result or self.contains(key=key, value=value, element=field_value_element)
+                    result = result or self.contains(
+                        key=key, value=value, element=field_value_element
+                    )
             else:
                 if key == field and value == field_value:
                     result = True
@@ -1000,7 +1058,10 @@ class URDF:
         if joint.mimic is not None:
             if joint.mimic.joint in self.actuated_joint_names:
                 mimic_joint_index = self.actuated_joint_names.index(joint.mimic.joint)
-                q = self._cfg[mimic_joint_index] * joint.mimic.multiplier + joint.mimic.offset
+                q = (
+                    self._cfg[mimic_joint_index] * joint.mimic.multiplier
+                    + joint.mimic.offset
+                )
             else:
                 _logger.warning(
                     f"Joint '{joint.name}' is supposed to mimic '{joint.mimic.joint}'. But this joint is not actuated - will assume (0.0 + offset)."
@@ -1010,7 +1071,11 @@ class URDF:
         if joint.type in ["revolute", "prismatic", "continuous"]:
             if q is None:
                 # Use internal cfg vector for forward kinematics
-                q = self.cfg[self.actuated_dof_indices[self.actuated_joint_names.index(joint.name)]]
+                q = self.cfg[
+                    self.actuated_dof_indices[
+                        self.actuated_joint_names.index(joint.name)
+                    ]
+                ]
 
             if joint.type == "prismatic":
                 matrix = origin @ tra.translation_matrix(q * joint.axis)
@@ -1056,17 +1121,25 @@ class URDF:
             raise TypeError("Invalid type for configuration")
 
         # append all mimic joints in the update
-        for j, q in joint_cfg + [(j, 0.0) for j in self.robot.joints if j.mimic is not None]:
+        for j, q in joint_cfg + [
+            (j, 0.0) for j in self.robot.joints if j.mimic is not None
+        ]:
             matrix, joint_q = self._forward_kinematics_joint(j, q=q)
 
             # update internal configuration vector - only consider actuated joints
             if j.name in self.actuated_joint_names:
-                self._cfg[self.actuated_dof_indices[self.actuated_joint_names.index(j.name)]] = joint_q
+                self._cfg[
+                    self.actuated_dof_indices[self.actuated_joint_names.index(j.name)]
+                ] = joint_q
 
             if self._scene is not None:
-                self._scene.graph.update(frame_from=j.parent, frame_to=j.child, matrix=matrix)
+                self._scene.graph.update(
+                    frame_from=j.parent, frame_to=j.child, matrix=matrix
+                )
             if self._scene_collision is not None:
-                self._scene_collision.graph.update(frame_from=j.parent, frame_to=j.child, matrix=matrix)
+                self._scene_collision.graph.update(
+                    frame_from=j.parent, frame_to=j.child, matrix=matrix
+                )
 
     def get_transform(self, frame_to, frame_from=None, collision_geometry=False):
         """Get the transform from one frame to another.
@@ -1084,14 +1157,22 @@ class URDF:
         """
         if collision_geometry:
             if self._scene_collision is None:
-                raise ValueError("No collision scene available. Use build_collision_scene_graph=True during loading.")
+                raise ValueError(
+                    "No collision scene available. Use build_collision_scene_graph=True during loading."
+                )
             else:
-                return self._scene_collision.graph.get(frame_to=frame_to, frame_from=frame_from)[0]
+                return self._scene_collision.graph.get(
+                    frame_to=frame_to, frame_from=frame_from
+                )[0]
         else:
             if self._scene is None:
-                raise ValueError("No scene available. Use build_scene_graph=True during loading.")
+                raise ValueError(
+                    "No scene available. Use build_scene_graph=True during loading."
+                )
             else:
-                return self._scene.graph.get(frame_to=frame_to, frame_from=frame_from)[0]
+                return self._scene.graph.get(frame_to=frame_to, frame_from=frame_from)[
+                    0
+                ]
 
     def _link_mesh(self, link, collision_geometry=True):
         geometries = link.collisions if collision_geometry else link.visuals
@@ -1169,7 +1250,9 @@ class URDF:
                     elif isinstance(geometry.mesh.scale, np.ndarray):
                         new_s = new_s.scaled(geometry.mesh.scale)
                     else:
-                        _logger.warning(f"Warning: Can't interpret scale '{geometry.mesh.scale}'")
+                        _logger.warning(
+                            f"Warning: Can't interpret scale '{geometry.mesh.scale}'"
+                        )
             else:
                 _logger.warning(f"Can't find {new_filename}")
         return new_s
@@ -1216,7 +1299,10 @@ class URDF:
                     else:
                         # The following map is used to deal with glb format
                         # when the graph node and geometry have different names
-                        geom_name_map = {new_s.graph[node_name][1]: node_name for node_name in new_s.graph.nodes}
+                        geom_name_map = {
+                            new_s.graph[node_name][1]: node_name
+                            for node_name in new_s.graph.nodes
+                        }
                         for name, geom in new_s.geometry.items():
                             if isinstance(v, Visual):
                                 apply_visual_color(geom, v, self._material_map)
@@ -1224,7 +1310,8 @@ class URDF:
                                 geometry=geom,
                                 geom_name=v.name,
                                 parent_node_name=link_name,
-                                transform=origin @ new_s.graph.get(geom_name_map[name])[0],
+                                transform=origin
+                                @ new_s.graph.get(geom_name_map[name])[0],
                             )
 
         if force_single_geometry and len(tmp_scene.geometry) > 0:
@@ -1251,7 +1338,9 @@ class URDF:
 
         for l in self.robot.links:
             if l.name not in s.graph.nodes and l.name != s.graph.base_frame:
-                _logger.warning(f"{l.name} not connected via joints. Will add link to base frame.")
+                _logger.warning(
+                    f"{l.name} not connected via joints. Will add link to base frame."
+                )
                 s.graph.update(frame_from=s.graph.base_frame, frame_to=l.name)
 
             meshes = l.collisions if use_collision_geometry else l.visuals
@@ -1310,7 +1399,9 @@ class URDF:
         Returns:
             list[(np.ndarray, yourdfpy.URDF)]: A list of tuples (np.ndarray, yourdfpy.URDF) whereas each homogeneous 4x4 matrix describes the root transformation of the respective URDF model w.r.t. the original URDF.
         """
-        root_urdf = URDF(robot=copy.deepcopy(self.robot), build_scene_graph=False, load_meshes=False)
+        root_urdf = URDF(
+            robot=copy.deepcopy(self.robot), build_scene_graph=False, load_meshes=False
+        )
         result = []
 
         joint_types = joint_type if isinstance(joint_type, list) else [joint_type]
@@ -1340,7 +1431,9 @@ class URDF:
             # remove joint that connects root urdf to root_link
             if root_link.name in [j.child for j in root_urdf.robot.joints]:
                 root_urdf.robot.joints.remove(
-                    root_urdf.robot.joints[[j.child for j in root_urdf.robot.joints].index(root_link.name)]
+                    root_urdf.robot.joints[
+                        [j.child for j in root_urdf.robot.joints].index(root_link.name)
+                    ]
                 )
 
         result.insert(0, (np.eye(4), URDF(robot=root_urdf.robot, **kwargs)))
@@ -1349,7 +1442,11 @@ class URDF:
 
     def validate_filenames(self):
         for l in self.robot.links:
-            meshes = [m.geometry.mesh for m in l.collisions + l.visuals if m.geometry.mesh is not None]
+            meshes = [
+                m.geometry.mesh
+                for m in l.collisions + l.visuals
+                if m.geometry.mesh is not None
+            ]
             for m in meshes:
                 _logger.debug(m.filename, "-->", self._filename_handler(m.filename))
                 if not os.path.isfile(self._filename_handler(m.filename)):
@@ -1459,7 +1556,9 @@ class URDF:
 
         actuator = Actuator(name=xml_element.get("name"))
         if xml_element.find("mechanicalReduction"):
-            actuator.mechanical_reduction = float(xml_element.find("mechanicalReduction").text)
+            actuator.mechanical_reduction = float(
+                xml_element.find("mechanicalReduction").text
+            )
 
         for h in xml_element.findall("hardwareInterface"):
             actuator.hardware_interfaces.append(h.text)
@@ -1536,7 +1635,9 @@ class URDF:
         return Box(size=np.array(xml_element.attrib["size"].split(), dtype=float))
 
     def _write_box(self, xml_parent, box):
-        etree.SubElement(xml_parent, "box", attrib={"size": " ".join(map(str, box.size))})
+        etree.SubElement(
+            xml_parent, "box", attrib={"size": " ".join(map(str, box.size))}
+        )
 
     def _parse_cylinder(xml_element):
         return Cylinder(
@@ -1576,7 +1677,9 @@ class URDF:
                 xml_parent.set("scale", " ".join(map(str, scale)))
 
     def _parse_mesh(xml_element):
-        return Mesh(filename=xml_element.get("filename"), scale=URDF._parse_scale(xml_element))
+        return Mesh(
+            filename=xml_element.get("filename"), scale=URDF._parse_scale(xml_element)
+        )
 
     def _write_mesh(self, xml_parent, mesh):
         # TODO: turn into different filename handler
@@ -1682,7 +1785,9 @@ class URDF:
         if color is None:
             return
 
-        etree.SubElement(xml_parent, "color", attrib={"rgba": " ".join(map(str, color.rgba))})
+        etree.SubElement(
+            xml_parent, "color", attrib={"rgba": " ".join(map(str, color.rgba))}
+        )
 
     def _parse_texture(xml_element):
         if xml_element is None:
@@ -1865,7 +1970,9 @@ class URDF:
         return link
 
     def _validate_link(self, link):
-        self._validate_required_attribute(attribute=link.name, error_msg="The <link> tag misses a 'name' attribute.")
+        self._validate_required_attribute(
+            attribute=link.name, error_msg="The <link> tag misses a 'name' attribute."
+        )
 
         for v in link.visuals:
             self._validate_visual(v)
@@ -2006,7 +2113,9 @@ class URDF:
         joint.dynamics = URDF._parse_dynamics(xml_element.find("dynamics"))
         joint.mimic = URDF._parse_mimic(xml_element.find("mimic"))
         joint.calibration = URDF._parse_calibration(xml_element.find("calibration"))
-        joint.safety_controller = URDF._parse_safety_controller(xml_element.find("safety_controller"))
+        joint.safety_controller = URDF._parse_safety_controller(
+            xml_element.find("safety_controller")
+        )
 
         return joint
 
@@ -2125,7 +2234,11 @@ class URDF:
             bfs_link_list.extend(children)
         bfs_joint_list = []
         for link_name in bfs_link_list[1:]:
-            joint_index = [i for i in range(len(self.robot.joints)) if self.robot.joints[i].child == link_name][0]
+            joint_index = [
+                i
+                for i in range(len(self.robot.joints))
+                if self.robot.joints[i].child == link_name
+            ][0]
             bfs_joint_list.append(self.robot.joints[joint_index])
 
         # Build tree
@@ -2161,7 +2274,9 @@ class URDF:
             raise TypeError("Invalid type for configuration")
 
         # append all mimic joints in the update
-        for j, q in joint_cfg + [(j, 0.0) for j in self.robot.joints if j.mimic is not None]:
+        for j, q in joint_cfg + [
+            (j, 0.0) for j in self.robot.joints if j.mimic is not None
+        ]:
             matrix, _ = self._forward_kinematics_joint(j, q=q)
             node = anytree.search.findall_by_attr(self.tree_root, j.child)[0]
             node.matrix = matrix

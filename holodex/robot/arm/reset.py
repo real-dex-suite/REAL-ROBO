@@ -12,6 +12,7 @@ from scipy.spatial.transform import Rotation as R
 
 import open3d as o3d
 
+
 def leap_vector_to_numpy(vector) -> np.ndarray:
     """Converts a Leap Motion `Vector` to a numpy array."""
     return np.array([vector.x, vector.y, vector.z])
@@ -36,12 +37,14 @@ def leap_hand_to_keypoints(hand) -> np.ndarray:
     armpoints[3, :] = leap_vector_to_numpy(hand.palm_position)
     return keypoints, armpoints
 
+
 def leap_motion_to_robot(armpoints):
-    direction = np.dot(SENSOR_TO_ROBOT,armpoints[0]/1000)
-    palm_normal = np.dot(SENSOR_TO_ROBOT,armpoints[1]/1000)
-    wrist_position = np.dot(SENSOR_TO_ROBOT,armpoints[2]/1000)
-    palm_position = np.dot(SENSOR_TO_ROBOT,armpoints[3]/1000)
+    direction = np.dot(SENSOR_TO_ROBOT, armpoints[0] / 1000)
+    palm_normal = np.dot(SENSOR_TO_ROBOT, armpoints[1] / 1000)
+    wrist_position = np.dot(SENSOR_TO_ROBOT, armpoints[2] / 1000)
+    palm_position = np.dot(SENSOR_TO_ROBOT, armpoints[3] / 1000)
     return direction, palm_normal, wrist_position, palm_position
+
 
 def best_fit_transform(A, B):
     """
@@ -86,6 +89,7 @@ def best_fit_transform(A, B):
 
     return T, R, t
 
+
 class SampleListener(Leap.Listener):
     finger_names = ["Thumb", "Index", "Middle", "Ring", "Pinky"]
     bone_names = ["Metacarpal", "Proximal", "Intermediate", "Distal"]
@@ -126,9 +130,10 @@ class SampleListener(Leap.Listener):
             keypoints, armpoints = leap_hand_to_keypoints(hand)
             print()
 
+
 if __name__ == "__main__":
     robot = JakaArm()
-    
+
     # moving test
     # robot = JakaArm(servo_mode=False)
     # arm_position = robot.get_tcp_position()
@@ -222,11 +227,3 @@ if __name__ == "__main__":
     # robot.set_tcp_position(current_arm_pose)
     # print("current ee pose: ", robot.get_tcp_position())
     # print("current joint pose: ", robot.get_arm_position())
-
-
-    
-
-
-
-
-        

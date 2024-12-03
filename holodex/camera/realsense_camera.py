@@ -91,8 +91,8 @@ class RealSenseRobotStream(object):
         if self.cam_serial_num == "211422061450": # D415
             self.align = rs.align(rs.stream.color)
         elif self.cam_serial_num == "f1230963":
+            self.align = rs.align(rs.stream.color)
             # self.align = rs.align(rs.stream.depth)
-            self.align = rs.align(rs.stream.depth)
 
         if self.cam_serial_num == "211422061450": # D415
             sensor = profile.get_device().query_sensors()[1]
@@ -184,7 +184,6 @@ if __name__ == '__main__':
         color_image = np.array(color_image)
         # # resize to 224x224
         color_image = cv2.resize(color_image, (224, 224))
-
         # change alpha of color image to 0.5 and add with original image
         color_image = cv2.addWeighted(color_image, 0.5, original_image, 0.5, 0)
         

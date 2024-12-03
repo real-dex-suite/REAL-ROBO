@@ -1,4 +1,3 @@
-import sapien.core as sapien
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Dict
@@ -6,7 +5,6 @@ from typing import Union
 
 import numpy as np
 import yaml
-
 from holodex.components.retargeting.optimizer_utils import LPFilter
 from holodex.components.retargeting.seq_retarget import SeqRetargeting
 
@@ -66,29 +64,51 @@ class RetargetingConfig:
         # Vector retargeting requires: target_origin_link_names + target_task_link_names
         # Position retargeting requires: target_link_names
         if self.type == "vector":
-            if self.target_origin_link_names is None or self.target_task_link_names is None:
-                raise ValueError(f"Vector retargeting requires: target_origin_link_names + target_task_link_names")
+            if (
+                self.target_origin_link_names is None
+                or self.target_task_link_names is None
+            ):
+                raise ValueError(
+                    f"Vector retargeting requires: target_origin_link_names + target_task_link_names"
+                )
             if len(self.target_task_link_names) != len(self.target_origin_link_names):
-                raise ValueError(f"Vector retargeting origin and task links dim mismatch")
-            if self.target_link_human_indices.shape != (2, len(self.target_origin_link_names)):
-                raise ValueError(f"Vector retargeting link names and link indices dim mismatch")
+                raise ValueError(
+                    f"Vector retargeting origin and task links dim mismatch"
+                )
+            if self.target_link_human_indices.shape != (
+                2,
+                len(self.target_origin_link_names),
+            ):
+                raise ValueError(
+                    f"Vector retargeting link names and link indices dim mismatch"
+                )
             if self.target_link_human_indices is None:
-                raise ValueError(f"Vector retargeting requires: target_link_human_indices")
+                raise ValueError(
+                    f"Vector retargeting requires: target_link_human_indices"
+                )
 
         elif self.type == "position":
             if self.target_link_names is None:
                 raise ValueError(f"Position retargeting requires: target_link_names")
             self.target_link_human_indices = self.target_link_human_indices.squeeze()
             if self.target_link_human_indices.shape != (len(self.target_link_names),):
-                raise ValueError(f"Position retargeting link names and link indices dim mismatch")
+                raise ValueError(
+                    f"Position retargeting link names and link indices dim mismatch"
+                )
             if self.target_link_human_indices is None:
-                raise ValueError(f"Position retargeting requires: target_link_human_indices")
+                raise ValueError(
+                    f"Position retargeting requires: target_link_human_indices"
+                )
 
         elif self.type == "dexpilot":
             if self.finger_tip_link_names is None or self.wrist_link_name is None:
-                raise ValueError(f"Position retargeting requires: finger_tip_link_names + wrist_link_name")
+                raise ValueError(
+                    f"Position retargeting requires: finger_tip_link_names + wrist_link_name"
+                )
             if self.target_tip_link_human_indices is None:
-                raise ValueError(f"Dexpilot retargeting requires: target_tip_link_human_indices")
+                raise ValueError(
+                    f"Dexpilot retargeting requires: target_tip_link_human_indices"
+                )
 
         # URDF path check
         urdf_path = Path(self.urdf_path)
@@ -107,7 +127,9 @@ class RetargetingConfig:
         cls._DEFAULT_URDF_DIR = urdf_dir
 
     @classmethod
-    def load_from_file(cls, config_path: Union[str, Path], override: Optional[Dict] = None):
+    def load_from_file(
+        cls, config_path: Union[str, Path], override: Optional[Dict] = None
+    ):
         path = Path(config_path)
         if not path.is_absolute():
             path = path.absolute()
@@ -116,20 +138,25 @@ class RetargetingConfig:
             yaml_config = yaml.load(f, Loader=yaml.FullLoader)
             cfg = yaml_config["retargeting"]
             if "target_link_human_indices" in cfg:
-                cfg["target_link_human_indices"] = np.array(cfg["target_link_human_indices"])
+                cfg["target_link_human_indices"] = np.array(
+                    cfg["target_link_human_indices"]
+                )
             if override is not None:
                 for key, value in override.items():
                     cfg[key] = value
             config = RetargetingConfig(**cfg)
         return config
 
-    def build(self, scene: Optional[sapien.Scene] = None) -> SeqRetargeting:
+    # def build(self, scene: Optional[sapien.Scene] = None) -> SeqRetargeting:
+    def build(self, scene=None) -> SeqRetargeting:
         from holodex.components.retargeting.optimizer import (
             VectorOptimizer,
             PositionOptimizer,
             DexPilotAllegroOptimizer,
         )
-        from holodex.components.retargeting.optimizer_utils import SAPIENKinematicsModelStandalone
+        from holodex.components.retargeting.optimizer_utils import (
+            SAPIENKinematicsModelStandalone,
+        )
         from holodex.components.retargeting import yourdfpy as urdf
         import tempfile
 
@@ -211,7 +238,9 @@ def get_retargeting_config(config_path) -> RetargetingConfig:
 if __name__ == "__main__":
     # Path below is relative to this file
 
-    test_config = get_retargeting_config(str(Path(__file__).parent / "configs/allegro_hand.yml"))
+    test_config = get_retargeting_config(
+        str(Path(__file__).parent / "configs/allegro_hand.yml")
+    )
     print(test_config)
     opt = test_config.build()
     print(opt.optimizer.target_link_human_indices)

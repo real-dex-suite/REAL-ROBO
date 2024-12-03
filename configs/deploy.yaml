@@ -13,7 +13,7 @@ encoder:
   name: resnet18
 selected_view: 1
 
-data_path: expert_dataset/openbottle_filtered_img/extracted_data # 
+data_path: expert_dataset/openbottle_new_filtered/extracted_data # 
 
 run_loop: false
 loop_frequency: 15 # 1 move per second

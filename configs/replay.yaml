@@ -14,9 +14,9 @@ replay_arm_and_hand: True
 
 # hand_state_path: "extracted_data/filtered/actions/demonstration_1.pth"
 # arm_state_path: "extracted_data/filtered/arm/demonstration_1.pth"
-data_path: "expert_dataset/openbottle_filtered_img/recorded_data/demonstration_1"
+data_path: "expert_dataset/reorient_random_v1/recorded_data/demonstration_20"
 
-extract_path: "expert_dataset/openbottle_filtered_img/extracted_data/filtered/actions/demonstration_1.pth"
+extract_path: "expert_dataset/reorient_random_v1/extracted_data/filtered/actions/demonstration_20.pth"
 
 
 # add a option witout camera

@@ -8,9 +8,9 @@ from holodex.constants import *
 
 
 class TransformHandCoords(object):
-    def __init__(self, detector_type, moving_average_limit = 1):
+    def __init__(self, detector_type, moving_average_limit=1):
         # Initializing the ROS node
-        rospy.init_node('hand_transformation_coords_{}'.format(detector_type))
+        rospy.init_node("hand_transformation_coords_{}".format(detector_type))
 
         self.detector_type = detector_type
 
@@ -18,57 +18,109 @@ class TransformHandCoords(object):
         self.hand_coords = None
         self.arm_coords = None
 
-        if detector_type == 'MP':
+        if detector_type == "MP":
             self.num_keypoints = MP_NUM_KEYPOINTS
-            self.knuckle_points = (MP_JOINTS['knuckles'][0], MP_JOINTS['knuckles'][-1])
-            rospy.Subscriber(MP_KEYPOINT_TOPIC, Float64MultiArray, self._callback_hand_coords, queue_size = 1)
-            self.keypoint_publisher = FloatArrayPublisher(MP_HAND_TRANSFORM_COORDS_TOPIC)
-        
-        elif detector_type == 'LP':
+            self.knuckle_points = (MP_JOINTS["knuckles"][0], MP_JOINTS["knuckles"][-1])
+            rospy.Subscriber(
+                MP_KEYPOINT_TOPIC,
+                Float64MultiArray,
+                self._callback_hand_coords,
+                queue_size=1,
+            )
+            self.keypoint_publisher = FloatArrayPublisher(
+                MP_HAND_TRANSFORM_COORDS_TOPIC
+            )
+
+        elif detector_type == "LP":
             self.num_keypoints = LP_NUM_KEYPOINTS
-            rospy.Subscriber(LP_HAND_KEYPOINT_TOPIC, Float64MultiArray, self._callback_hand_coords, queue_size = 1)
-            self.keypoint_publisher = FloatArrayPublisher(LP_HAND_TRANSFORM_COORDS_TOPIC)
+            rospy.Subscriber(
+                LP_HAND_KEYPOINT_TOPIC,
+                Float64MultiArray,
+                self._callback_hand_coords,
+                queue_size=1,
+            )
+            self.keypoint_publisher = FloatArrayPublisher(
+                LP_HAND_TRANSFORM_COORDS_TOPIC
+            )
             if ARM_TYPE is not None:
                 self.num_arm_keypoints = LP_ARM_NUM_KEYPOINTS
-                rospy.Subscriber(LP_ARM_KEYPOINT_TOPIC, Float64MultiArray, self._callback_arm_coords, queue_size = 1)
-                self.arm_keypoint_publisher = FloatArrayPublisher(LP_ARM_TRANSFORM_COORDS_TOPIC)
+                rospy.Subscriber(
+                    LP_ARM_KEYPOINT_TOPIC,
+                    Float64MultiArray,
+                    self._callback_arm_coords,
+                    queue_size=1,
+                )
+                self.arm_keypoint_publisher = FloatArrayPublisher(
+                    LP_ARM_TRANSFORM_COORDS_TOPIC
+                )
 
-        elif detector_type == 'VR_RIGHT':
+        elif detector_type == "VR_RIGHT":
             self.num_keypoints = OCULUS_NUM_KEYPOINTS
-            self.knuckle_points = (OCULUS_JOINTS['knuckles'][0], OCULUS_JOINTS['knuckles'][-1])
-            rospy.Subscriber(VR_RIGHT_HAND_KEYPOINTS_TOPIC, Float64MultiArray, self._callback_hand_coords, queue_size = 1)
-            self.keypoint_publisher = FloatArrayPublisher(VR_RIGHT_TRANSFORM_COORDS_TOPIC)
+            self.knuckle_points = (
+                OCULUS_JOINTS["knuckles"][0],
+                OCULUS_JOINTS["knuckles"][-1],
+            )
+            rospy.Subscriber(
+                VR_RIGHT_HAND_KEYPOINTS_TOPIC,
+                Float64MultiArray,
+                self._callback_hand_coords,
+                queue_size=1,
+            )
+            self.keypoint_publisher = FloatArrayPublisher(
+                VR_RIGHT_TRANSFORM_COORDS_TOPIC
+            )
             if ARM_TYPE is not None:
                 self.num_arm_keypoints = OCULUS_ARM_NUM_KEYPOINTS
-                self.arm_keypoint_publisher = FloatArrayPublisher(VR_RIGHT_ARM_TRANSFORM_COORDS_TOPIC)
+                self.arm_keypoint_publisher = FloatArrayPublisher(
+                    VR_RIGHT_ARM_TRANSFORM_COORDS_TOPIC
+                )
 
-        elif detector_type == 'VR_LEFT':
+        elif detector_type == "VR_LEFT":
             self.num_keypoints = OCULUS_NUM_KEYPOINTS
-            self.knuckle_points = (OCULUS_JOINTS['knuckles'][0], OCULUS_JOINTS['knuckles'][-1])
-            rospy.Subscriber(VR_LEFT_HAND_KEYPOINTS_TOPIC, Float64MultiArray, self._callback_hand_coords, queue_size = 1)
+            self.knuckle_points = (
+                OCULUS_JOINTS["knuckles"][0],
+                OCULUS_JOINTS["knuckles"][-1],
+            )
+            rospy.Subscriber(
+                VR_LEFT_HAND_KEYPOINTS_TOPIC,
+                Float64MultiArray,
+                self._callback_hand_coords,
+                queue_size=1,
+            )
             self.keypoint_publisher = FloatArrayPublisher(VR_LEFT_TRANSFORM_DIR_TOPIC)
-        
-        elif detector_type == 'HAMER':
+
+        elif detector_type == "HAMER":
             self.num_keypoints = HAMER_NUM_KEYPOINTS
-            rospy.Subscriber(HAMER_HAND_KEYPOINT_TOPIC, Float64MultiArray, self._callback_hand_coords, queue_size = 1)
-            self.keypoint_publisher = FloatArrayPublisher(HAMER_HAND_TRANSFORM_COORDS_TOPIC)
+            rospy.Subscriber(
+                HAMER_HAND_KEYPOINT_TOPIC,
+                Float64MultiArray,
+                self._callback_hand_coords,
+                queue_size=1,
+            )
+            self.keypoint_publisher = FloatArrayPublisher(
+                HAMER_HAND_TRANSFORM_COORDS_TOPIC
+            )
             if ARM_TYPE is not None:
                 self.num_arm_keypoints = HAMER_ARM_NUM_KEYPOINTS
                 # rospy.Subscriber(HAMER_ARM_KEYPOINT_TOPIC, Float64MultiArray, self._callback_arm_coords, queue_size = 1)
-                self.arm_keypoint_publisher = FloatArrayPublisher(HAMER_ARM_TRANSFORM_COORDS_TOPIC)
-                
+                self.arm_keypoint_publisher = FloatArrayPublisher(
+                    HAMER_ARM_TRANSFORM_COORDS_TOPIC
+                )
+
         else:
-            raise NotImplementedError("There are no other detectors available. \
-            The only options are Mediapipe or Leapmotion or Oculus or Hamer!")
+            raise NotImplementedError(
+                "There are no other detectors available. \
+            The only options are Mediapipe or Leapmotion or Oculus or Hamer!"
+            )
 
         # Setting the frequency to 30 Hz
-        if detector_type == 'MP':
-            self.frequency_timer = frequency_timer(MP_FREQ)  
-        elif detector_type == 'LP':
+        if detector_type == "MP":
+            self.frequency_timer = frequency_timer(MP_FREQ)
+        elif detector_type == "LP":
             self.frequency_timer = frequency_timer(LP_FREQ)
-        elif detector_type == 'VR_RIGHT' or 'VR_LEFT': 
+        elif detector_type == "VR_RIGHT" or "VR_LEFT":
             self.frequency_timer = frequency_timer(VR_FREQ)
-        elif detector_type == 'HAMER':
+        elif detector_type == "HAMER":
             self.frequency_timer = frequency_timer(HAMER_FREQ)
 
         # Moving average queue
@@ -78,11 +130,19 @@ class TransformHandCoords(object):
     def _callback_hand_coords(self, coords):
         self.hand_coords = np.array(list(coords.data)).reshape(self.num_keypoints, 3)
         if self.detector_type == "VR_RIGHT" and ARM_TYPE is not None:
-            self.arm_coords = self.hand_coords[[0,self.knuckle_points[0],self.knuckle_points[1]],:].copy().reshape(self.num_arm_keypoints, 3)
+            self.arm_coords = (
+                self.hand_coords[[0, self.knuckle_points[0], self.knuckle_points[1]], :]
+                .copy()
+                .reshape(self.num_arm_keypoints, 3)
+            )
         elif self.detector_type == "HAMER" and ARM_TYPE is not None:
             # print("HAMER arm coords")
-            self.arm_coords = self.hand_coords[[0,5,17],:].copy().reshape(self.num_arm_keypoints, 3)
-            
+            self.arm_coords = (
+                self.hand_coords[[0, 5, 17], :]
+                .copy()
+                .reshape(self.num_arm_keypoints, 3)
+            )
+
     def _callback_arm_coords(self, coords):
         self.arm_coords = np.array(list(coords.data)).reshape(self.num_arm_keypoints, 3)
 
@@ -90,11 +150,17 @@ class TransformHandCoords(object):
         return hand_coords - hand_coords[0]
 
     def _get_coord_frame(self, index_knuckle_coord, pinky_knuckle_coord):
-        palm_normal = normalize_vector(np.cross(index_knuckle_coord, pinky_knuckle_coord))   # Current Z
-        palm_direction = normalize_vector(index_knuckle_coord + pinky_knuckle_coord)         # Current Y
-        cross_product = normalize_vector(np.cross(palm_direction, palm_normal))              # Current X
+        palm_normal = normalize_vector(
+            np.cross(index_knuckle_coord, pinky_knuckle_coord)
+        )  # Current Z
+        palm_direction = normalize_vector(
+            index_knuckle_coord + pinky_knuckle_coord
+        )  # Current Y
+        cross_product = normalize_vector(
+            np.cross(palm_direction, palm_normal)
+        )  # Current X
         return [cross_product, palm_direction, palm_normal]
-    
+
     def _get_mano_coord_frame(self, keypoint_3d_array, oculus=False):
         """
         Compute the 3D coordinate frame (orientation only) from detected 3d key points
@@ -103,7 +169,7 @@ class TransformHandCoords(object):
         """
         if oculus:
             assert keypoint_3d_array.shape == (24, 3)
-            points = keypoint_3d_array[[0, 6, 9], :] # TODO check if this is correct
+            points = keypoint_3d_array[[0, 6, 9], :]  # TODO check if this is correct
         else:
             assert keypoint_3d_array.shape == (21, 3)
             points = keypoint_3d_array[[0, 5, 9], :]
@@ -128,33 +194,45 @@ class TransformHandCoords(object):
             z *= -1
         frame = np.stack([x, normal, z], axis=1)
         return frame
-    
+
     def transform_right_keypoints(self, hand_coords):
         translated_coords = self._translate_coords(hand_coords)
-        original_coord_frame = self._get_coord_frame(translated_coords[self.knuckle_points[0]], translated_coords[self.knuckle_points[1]])
+        original_coord_frame = self._get_coord_frame(
+            translated_coords[self.knuckle_points[0]],
+            translated_coords[self.knuckle_points[1]],
+        )
 
         # Finding the rotation matrix and rotating the coordinates
         rotation_matrix = np.linalg.solve(original_coord_frame, np.eye(3)).T
         transformed_coords = (rotation_matrix @ translated_coords.T).T
         return transformed_coords
-    
+
     def transform_left_keypoints(self, hand_coords):
         translated_coords = self._translate_coords(hand_coords)
-        original_coord_frame = self._get_coord_frame(translated_coords[self.knuckle_points[0]], translated_coords[self.knuckle_points[1]])
+        original_coord_frame = self._get_coord_frame(
+            translated_coords[self.knuckle_points[0]],
+            translated_coords[self.knuckle_points[1]],
+        )
 
-        translated_coord_frame = np.hstack([
-            self.hand_coords[0], 
-            original_coord_frame[0] + self.hand_coords[0], 
-            original_coord_frame[1] + self.hand_coords[0],
-            original_coord_frame[2] + self.hand_coords[0]
-        ])
+        translated_coord_frame = np.hstack(
+            [
+                self.hand_coords[0],
+                original_coord_frame[0] + self.hand_coords[0],
+                original_coord_frame[1] + self.hand_coords[0],
+                original_coord_frame[2] + self.hand_coords[0],
+            ]
+        )
         return translated_coord_frame
 
     def transform_lp_right_keypoints(self, hand_coords, oculus=False):
         translated_coords = self._translate_coords(hand_coords)
-        original_coord_frame = self._get_mano_coord_frame(translated_coords, oculus=oculus)
+        original_coord_frame = self._get_mano_coord_frame(
+            translated_coords, oculus=oculus
+        )
 
-        transformed_coords = translated_coords @ original_coord_frame @ OPERATOR2MANO_RIGHT
+        transformed_coords = (
+            translated_coords @ original_coord_frame @ OPERATOR2MANO_RIGHT
+        )
         return transformed_coords
 
     def transform_lp_arm_keypoints(self, arm_coords):
@@ -175,28 +253,38 @@ class TransformHandCoords(object):
             elif self.detector_type == "LP":
                 transformed_coords = self.transform_lp_right_keypoints(self.hand_coords)
                 if ARM_TYPE is not None:
-                    transformed_arm_coords = self.transform_lp_arm_keypoints(self.arm_coords)
+                    transformed_arm_coords = self.transform_lp_arm_keypoints(
+                        self.arm_coords
+                    )
             elif self.detector_type == "VR_RIGHT" or self.detector_type == "MP":
                 transformed_coords = self.transform_right_keypoints(self.hand_coords)
                 if RETARGET_TYPE == "dexpilot":
-                    transformed_coords = self.transform_lp_right_keypoints(transformed_coords, oculus=True)
+                    transformed_coords = self.transform_lp_right_keypoints(
+                        transformed_coords, oculus=True
+                    )
                     # transform coords around z axis for 180 degree
                     transformed_coords[:, 0] *= -1
-                
+
                 if ARM_TYPE is not None:
-                    transformed_arm_coords = self.transform_vr_right_arm_keypoints(self.arm_coords)
+                    transformed_arm_coords = self.transform_vr_right_arm_keypoints(
+                        self.arm_coords
+                    )
             elif self.detector_type == "HAMER":
                 transformed_coords = self.transform_lp_right_keypoints(self.hand_coords)
                 if ARM_TYPE is not None:
                     transformed_arm_coords = self.arm_coords.copy()
-            
+
             # TODO why moving average?
             if self.detector_type == "LP":
                 averaged_coords = transformed_coords
             else:
                 # Passing the transformed coords into a moving average
-                averaged_coords = moving_average(transformed_coords, self.moving_average_queue, self.moving_average_limit)
-            
+                averaged_coords = moving_average(
+                    transformed_coords,
+                    self.moving_average_queue,
+                    self.moving_average_limit,
+                )
+
             self.keypoint_publisher.publish(averaged_coords.flatten().tolist())
 
             if ARM_TYPE is not None:
@@ -206,7 +294,8 @@ class TransformHandCoords(object):
                     averaged_arm_coords = transformed_arm_coords
                 elif self.detector_type == "HAMER":
                     averaged_arm_coords = transformed_arm_coords
-                self.arm_keypoint_publisher.publish(averaged_arm_coords.flatten().tolist())
-
+                self.arm_keypoint_publisher.publish(
+                    averaged_arm_coords.flatten().tolist()
+                )
 
             self.frequency_timer.sleep()

@@ -2,11 +2,11 @@ import os
 import shutil
 import json
 
-dataset_name = "tactile_play_data_v1_refined"
-target_dataset_name = "tactile_play_data_v1_numbered"
+dataset_name = "new_play_refined"
+target_dataset_name = "tactile_play_data_v2_numbered"
 demo_path = os.path.join("/home/agibot/Projects/Real-Robo/expert_dataset", dataset_name, "recorded_data")
 trget_path = os.path.join("/home/agibot/Projects/Real-Robo/expert_dataset", target_dataset_name, "recorded_data")
-idx = 1
+idx = 30
 demo_dict = {}
 for demo in os.listdir(demo_path):
     demo_dir = os.path.join(demo_path, demo)

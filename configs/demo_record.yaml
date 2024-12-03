@@ -17,3 +17,9 @@ num_cams: 2
 
 # State Offset
 offset: 0
+
+# Keyboard Control
+keyboard_control: False
+
+# data collection type
+data_collection_type: ['arm_ee_pose', 'arm_joint_positions', 'arm_commanded_ee_pose']
