@@ -1,1 +1,1 @@
-python /home/agibot/Projects/Real-Robo/holodex/components/robot_operators/robot.py \
+python /home/jinzhou/Lab/REAL-ROBO/holodex/components/robot_operators/robot.py \

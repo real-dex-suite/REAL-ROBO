@@ -164,28 +164,28 @@ class RealSenseRobotStream(object):
 
 if __name__ == '__main__':
     from PIL import Image as PILImage
-    cam_serial_num = "211422061450"
+    cam_serial_num = "f1230963"
     robot_cam_num = 1
     rotation_angle = 0
     mode = 'rgb'
     rs_streamer = RealSenseRobotStream(cam_serial_num, robot_cam_num, rotation_angle, mode)
 
-    original_image = cv2.imread("/home/agibot/Projects/Real-Robo/expert_dataset/reach_cube_large/extracted_data/filtered/images/demonstration_1/camera_1_color_image/1.PNG")
-    # real time visualization using cv2
-    while True:
-        color_image = rs_streamer.get_rgb_depth_images()
-        # depth_iamge = rs_streamer.get_rgb_depth_images()
-        # print(depth_iamge[0].shape, depth_iamge[1].shape)
-        # print(color_image.shape)
-        # print(depth_iamge.shape)
-        # # crop using PIL image crop [460, 125, 1010, 675]
-        color_image = PILImage.fromarray(color_image)
-        color_image = color_image.crop((400, 70, 950, 620))
-        color_image = np.array(color_image)
-        # # resize to 224x224
-        color_image = cv2.resize(color_image, (224, 224))
-        # change alpha of color image to 0.5 and add with original image
-        color_image = cv2.addWeighted(color_image, 0.5, original_image, 0.5, 0)
+    # original_image = cv2.imread("/home/agibot/Projects/Real-Robo/expert_dataset/reach_cube_large/extracted_data/filtered/images/demonstration_1/camera_1_color_image/1.PNG")
+    # # real time visualization using cv2
+    # while True:
+    #     color_image = rs_streamer.get_rgb_depth_images()
+    #     # depth_iamge = rs_streamer.get_rgb_depth_images()
+    #     # print(depth_iamge[0].shape, depth_iamge[1].shape)
+    #     # print(color_image.shape)
+    #     # print(depth_iamge.shape)
+    #     # # crop using PIL image crop [460, 125, 1010, 675]
+    #     color_image = PILImage.fromarray(color_image)
+    #     color_image = color_image.crop((400, 70, 950, 620))
+    #     color_image = np.array(color_image)
+    #     # # resize to 224x224
+    #     color_image = cv2.resize(color_image, (224, 224))
+    #     # change alpha of color image to 0.5 and add with original image
+    #     color_image = cv2.addWeighted(color_image, 0.5, original_image, 0.5, 0)
         
-        cv2.imshow("Color Image", color_image)
-        cv2.waitKey(1)
+    #     cv2.imshow("Color Image", color_image)
+    #     cv2.waitKey(1)

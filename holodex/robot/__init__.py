@@ -7,6 +7,6 @@ from .hand.leap.leap_kdl import *
 from .hand.leap.leap_kdl_controller import *
 from .hand.leap.leap_joint_controller import *
 from .hand.leap.leap import *
-from .arm.jaka.jaka import *
+# from .arm.jaka.jaka import *
 
 from .arm.flexiv.flexiv import *

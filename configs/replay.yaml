@@ -22,8 +22,8 @@ extract_path: "expert_dataset/reorient_random_v1/extracted_data/filtered/actions
 # add a option witout camera
 
 # replay image
-relpay_image_path: "/home/agibot/Projects/Real-Robo/replay_data/"
-target_path: "/home/agibot/Projects/Real-Robo/test_image"
+relpay_image_path: "/home/jinzhou/Lab/REAL-ROBO/replay_data/"
+target_path: "/home/jinzhou/Lab/REAL-ROBO/test_image"
 
 
 extract_replay_images: true
