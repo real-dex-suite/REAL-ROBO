@@ -571,10 +571,7 @@ class HamerDexArmTeleOp(object):
         print("Start controlling the robot hand using the Hamer Framework.\n")
 
         while True:
-            if (
-                self.hand_coords is not None
-                and self.robot.get_hand_position() is not None
-            ):
+            if ((self.arm_coords is not None) and (self.hand_coords is not None) and (self.robot.get_hand_position() is not None)):
 
                 # Original target_arm    [___x___] [___y___] [___z___] [___r___] [___p___] [___y___]
                 # target arm             [_______] [_______] [_______] [___r___] [___p___] [___y___]

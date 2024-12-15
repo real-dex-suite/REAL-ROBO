@@ -179,7 +179,7 @@ class FlexivArm(object):
             # self.flexiv.SendCartesianMotionForce(target_arm_pose, [0]*6, 0.12, 1.0) # space mouse
             self.publish_state(target_arm_pose)  # TODO maybe change to use cros
             self.flexiv.SendCartesianMotionForce(
-                target_arm_pose, [0] * 6, 0.2, 1.0, 0.2, 0.2
+                target_arm_pose, [0] * 6, 0.2, 1.0, 0.2, 0.4
             ) # 0.4
             tcp_position = self.get_tcp_position()
             # cprint(f"tcp_position: {tcp_position}", "yellow")
