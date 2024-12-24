@@ -27,7 +27,7 @@ def fetch_paxini_info():
 
     # for each port, port has to be consistent with defined, and same with collection and deploy
     for serial_port_number in serial_port_numbers:
-        cur_id = int(serial_port_number[serial_port_number.find("USB") + 3])
+        cur_id = int(serial_port_number[serial_port_number.find("USB") + 3]) + 1
         if cur_id not in sensor_info["id"]:
             sensor_info["id"][cur_id] = []
 

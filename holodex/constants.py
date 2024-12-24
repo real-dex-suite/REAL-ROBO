@@ -83,7 +83,7 @@ FLEXIV_POSITIONS = {
 JAKA_IP = "192.168.130.95"
 # JAKA_IP = "192.168.130.105"
 JAKA_SAFE_MOVING_TRANS = 50
-SLEEP_TIME = 0.008
+SLEEP_TIME = 0.01
 
 # Allegro
 ALLEGRO_JOINT_STATE_TOPIC = '/allegroHand/joint_states'
@@ -273,8 +273,8 @@ HEIGHT = 720
 PROCESSING_PRESET = 1 # High accuracy post-processing mode
 VISUAL_RESCALE_FACTOR = 2
 
-### Record FPS
-RECORD_FPS = 5 #10 #5 #TODO
+### Record FPS ###
+RECORD_FPS = 5
 
 # Mediapipe detector
 # ROS Topics
