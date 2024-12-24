@@ -92,7 +92,6 @@ class RealSenseRobotStream(object):
             self.align = rs.align(rs.stream.color)
         elif self.cam_serial_num == "f1230963":
             self.align = rs.align(rs.stream.color)
-            # self.align = rs.align(rs.stream.depth)
 
         if self.cam_serial_num == "211422061450": # D415
             sensor = profile.get_device().query_sensors()[1]
