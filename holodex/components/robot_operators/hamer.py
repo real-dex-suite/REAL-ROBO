@@ -1,5 +1,5 @@
 import rospy
-from std_msgs.msg import Float64MultiArray
+from std_msgs.msg import Float64MultiArray, Bool
 
 from holodex.utils.files import *
 from holodex.utils.vec_ops import coord_in_bound, best_fit_transform, normalize_vector
@@ -23,8 +23,12 @@ import pyspacemouse
 
 # load constants according to hand type
 hand_type = HAND_TYPE.lower() if HAND_TYPE is not None else None
-JOINTS_PER_FINGER = eval(f"{hand_type.upper()}_JOINTS_PER_FINGER") if HAND_TYPE is not None else None
-JOINT_OFFSETS = eval(f"{hand_type.upper()}_JOINT_OFFSETS") if HAND_TYPE is not None else None
+JOINTS_PER_FINGER = (
+    eval(f"{hand_type.upper()}_JOINTS_PER_FINGER") if HAND_TYPE is not None else None
+)
+JOINT_OFFSETS = (
+    eval(f"{hand_type.upper()}_JOINT_OFFSETS") if HAND_TYPE is not None else None
+)
 
 SPACE_MOUSE_CONTROL = False
 
@@ -121,6 +125,37 @@ class HamerDexArmTeleOp(object):
             queue_size=1,
         )
 
+        rospy.Subscriber(
+            "/data_collector/reset_done",
+            Bool,
+            self._callback_reset_done,
+            queue_size=1,
+        )
+
+        rospy.Subscriber(
+            "/data_collector/reset_robot",
+            Bool,
+            self._callback_reset_robot,
+            queue_size=1,
+        )
+
+        self.stop_move = False
+        rospy.Subscriber(
+            "/data_collector/stop_move",
+            Bool,
+            self._callback_stop_move,
+            queue_size=1,
+        )
+
+        self.end_robot = False
+        rospy.Subscriber(
+            "/data_collector/end_robot",
+            Bool,
+            self._callback_end_robot,
+            queue_size=1,
+        )
+
+
         # Initializing the robot controller
         self.robot = RobotController(teleop=True)
 
@@ -145,7 +180,7 @@ class HamerDexArmTeleOp(object):
         self.prev_hand_joint_angles = self.robot.get_hand_position()
 
         if ARM_TYPE is not None:
-            self._calibrate_vr_arm_bounds()
+            self._calibrate_arm_bounds()
             # if ARM_TYPE == "Jaka":
             # TODO configureable
             self.leap2flange = np.eye(4)
@@ -232,6 +267,21 @@ class HamerDexArmTeleOp(object):
             desired_joint_angles = self.retargeting.retarget(ref_value)
 
         return desired_joint_angles
+
+    def _callback_end_robot(self, msg):
+        self.end_robot = msg.data
+
+    def _callback_stop_move(self, msg):
+        self.stop_move = msg.data
+
+    def _callback_reset_robot(self, msg):
+        if msg.data: self.robot.home_robot()
+
+    def _callback_reset_done(self, msg):
+        self.robot.home_robot()
+        if msg.data:
+            if ARM_TYPE is not None:
+                self._calibrate_arm_bounds()
 
     # Low-pass filter function to smooth translation values
     def _low_pass_filter(self, new_value, state, alpha=0.4):
@@ -511,7 +561,7 @@ class HamerDexArmTeleOp(object):
 
         return desired_cmd
 
-    def _calibrate_vr_arm_bounds(self):
+    def _calibrate_arm_bounds(self):
         inital_frame_number = 1  # set to 50 will cause collision
         frame_number = 0
 
@@ -524,7 +574,6 @@ class HamerDexArmTeleOp(object):
         initial_arm_rots = []
 
         while frame_number < inital_frame_number:
-            # print('calibration initial pose, id: ', frame_number)
             hand_center, hand_x, hand_y, hand_z = self.vr_to_robot(self.arm_coords)
             initial_hand_centers.append(hand_center)
             initial_hand_xs.append(hand_x)
@@ -571,7 +620,11 @@ class HamerDexArmTeleOp(object):
         print("Start controlling the robot hand using the Hamer Framework.\n")
 
         while True:
-            if ((self.arm_coords is not None) and (self.hand_coords is not None) and (self.robot.get_hand_position() is not None)):
+            if (
+                (self.arm_coords is not None)
+                and (self.hand_coords is not None)
+                and (self.robot.get_hand_position() is not None)
+            ):
 
                 # Original target_arm    [___x___] [___y___] [___z___] [___r___] [___p___] [___y___]
                 # target arm             [_______] [_______] [_______] [___r___] [___p___] [___y___]
@@ -581,6 +634,10 @@ class HamerDexArmTeleOp(object):
                 #                            |         |         |         |         |         |
                 #                            v         v         v         v         v         v
                 # Desired_joint_angles   [_______] [_______] [_______] [_______] [_______] [_______] + [hand]
+                if self.stop_move:
+                    continue
+                if self.end_robot:
+                    break
 
                 desired_joint_angles = self.motion(finger_configs)
                 if SPACE_MOUSE_CONTROL:
