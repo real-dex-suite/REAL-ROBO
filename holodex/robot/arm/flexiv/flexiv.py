@@ -37,8 +37,9 @@ class FlexivArm(object):
             publisher_name=JAKA_COMMANDED_JOINT_STATE_TOPIC
         )
         self.ee_pose_publisher = FloatArrayPublisher(publisher_name=JAKA_EE_POSE_TOPIC)
-        self.command_ee_pose_publisher = FloatArrayPublisher(publisher_name=JAKA_COMMANDED_EE_POSE_TOPIC)
-
+        self.command_ee_pose_publisher = FloatArrayPublisher(
+            publisher_name=JAKA_COMMANDED_EE_POSE_TOPIC
+        )
 
         # Threading setup
         self.tcp_position = None
@@ -116,6 +117,13 @@ class FlexivArm(object):
 
         self.flexiv.SwitchMode(self.mode.NRT_CARTESIAN_MOTION_FORCE)
 
+    def get_arm_position(self):
+        try:
+            return self.flexiv.states().q
+        except Exception as e:
+            self.logger.error(f"Failed to get arm position: {e}")
+            return
+
     def get_tcp_position(self, euler=False, degree=True):
         # p_x, p_y, p_z, wx, r_x, r_y, r_z
         try:
@@ -158,7 +166,6 @@ class FlexivArm(object):
                             time.sleep(1 / 30)
                         except Exception as e:
                             self.logger.error(f"SendCartesianMotionForce failed: {e}")
-                        
 
             except Exception as e:
                 self.logger.error(f"Movement execution error: {e}")
@@ -180,7 +187,7 @@ class FlexivArm(object):
             self.publish_state(target_arm_pose)  # TODO maybe change to use cros
             self.flexiv.SendCartesianMotionForce(
                 target_arm_pose, [0] * 6, 0.2, 1.0, 0.2, 0.4
-            ) # 0.4
+            )  # 0.4
             tcp_position = self.get_tcp_position()
             # cprint(f"tcp_position: {tcp_position}", "yellow")
             # time.sleep(1 / 30)
@@ -190,7 +197,6 @@ class FlexivArm(object):
 
     def move_joint(self, target_joint):
         pass
-
 
     def quat2eulerZYX(self, quat, degree=False):
         eulerZYX = (
@@ -287,11 +293,11 @@ if __name__ == "__main__":
             controller.logger.warn(f"\nMoving: {target_pose[2]:.5f}")
             iterations += 1
             controller.move_to_position(target_pose)
-            time.sleep(1/10) # 5和10 基本align # TODO: add time check and align
+            time.sleep(1 / 10)  # 5和10 基本align # TODO: add time check and align
 
             positions.append(controller.tcp_position[:3])
             controller.logger.info(f"Final: {controller.tcp_position[2]:.5f}")
-   
+
         end_time = time.monotonic()
         total_time = end_time - start_time
         actual_frequency = iterations / total_time
