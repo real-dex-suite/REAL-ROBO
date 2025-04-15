@@ -32,18 +32,32 @@ class FrankaEnvWrapper:
     operations while handling the underlying ROS communication and state management.
     """
 
-    def __init__(self):
-        """Initialize robot arm controller."""
+    def __init__(self, control_mode: str = "joint"):
+        """
+        Initialize robot arm controller.
+
+        Args:
+            control_mode (str): Control mode for the robot arm.
+                Options: "joint" (default) or "cartesian"
+        """
         self.arm = FrankaArm("franka_arm_reader")
         rospy.loginfo("Initializing FrankaWrapper...")
 
         self._initialize_state()
-        self._initialize_joint_control_config()
+
+        # Set up the robot control configuration based on the specified mode
+        if control_mode == "joint":
+            self._initialize_joint_control_config()
+        elif control_mode == "cartesian":
+            self._initialize_cartesian_control_config()
+        else:
+            raise ValueError(
+                f"Unsupported control mode: '{control_mode}'. "
+                "Supported modes are 'joint' or 'cartesian'."
+            )
 
         self.cmd_pub = rospy.Publisher(
-            FC.DEFAULT_SENSOR_PUBLISHER_TOPIC, 
-            SensorDataGroup, 
-            queue_size=1000
+            FC.DEFAULT_SENSOR_PUBLISHER_TOPIC, SensorDataGroup, queue_size=1000
         )
 
         self._fa_cmd_id = 0
@@ -123,20 +137,6 @@ class FrankaEnvWrapper:
         if ik_res is None:
             raise ValueError("IK solution not found")
         return ik_res
-
-    def get_pose_as_matrix(self) -> np.ndarray:
-        """
-        Get current end-effector pose as 4x4 transformation matrix.
-
-        Returns:
-            np.ndarray: A 4x4 NumPy array representing the transformation matrix.
-        """
-        trans = self.current_ee_pose.translation
-        rotation_mat = self.current_ee_pose.rotation
-        transformation_matrix = np.eye(4)
-        transformation_matrix[:3, :3] = rotation_mat
-        transformation_matrix[:3, 3] = trans
-        return transformation_matrix
 
     def open_gripper(self):
         """
@@ -241,38 +241,6 @@ class FrankaEnvWrapper:
         )
         self.cmd_pub.publish(ros_msg)
 
-    def eulerZYX2quat(self, euler: list, degree: bool = False) -> list:
-        """
-        Convert Euler ZYX angles to quaternion.
-
-        Args:
-            euler (list): [roll, pitch, yaw]
-            degree (bool): If True, input is in degrees
-
-        Returns:
-            list: [qw, qx, qy, qz]
-        """
-        if degree:
-            euler = np.radians(euler)
-        tmp_quat = R.from_euler("xyz", euler).as_quat().tolist()
-        return [tmp_quat[3], tmp_quat[0], tmp_quat[1], tmp_quat[2]]
-
-    def eulerXYZ2quat(self, euler: list, degree: bool = False) -> list:
-        """
-        Convert Euler XYZ angles to quaternion.
-
-        Args:
-            euler (list): [roll, pitch, yaw]
-            degree (bool): If True, input is in degrees
-
-        Returns:
-            list: [qw, qx, qy, qz]
-        """
-        if degree:
-            euler = np.radians(euler)
-        tmp_quat = R.from_euler("xyz", euler).as_quat().tolist()
-        return [tmp_quat[3], tmp_quat[0], tmp_quat[1], tmp_quat[2]]
-
     def run(self):
         """
         Run test motion sequence.
@@ -298,6 +266,7 @@ class FrankaEnvWrapper:
         Returns:
             None
         """
+        #TODO: shutdown the robot
         pass
 
 
