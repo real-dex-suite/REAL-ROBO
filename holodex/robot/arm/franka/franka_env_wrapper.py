@@ -4,7 +4,6 @@ import rospy
 import numpy as np
 import roslib
 
-
 roslib.load_manifest("franka_interface_msgs")
 from std_msgs.msg import Float64MultiArray
 from frankapy import FrankaArm, SensorDataMessageType, FrankaConstants as FC
@@ -12,8 +11,6 @@ from frankapy.proto_utils import sensor_proto2ros_msg, make_sensor_group_msg
 from frankapy.proto import JointPositionSensorMessage
 from franka_interface_msgs.msg import SensorDataGroup
 from holodex.robot.arm.franka.kinematics_solver import FrankaSolver
-
-# from kinematics_solver import FrankaSolver
 from scipy.spatial.transform import Rotation as R
 from frankapy.utils import min_jerk, min_jerk_weight
 from frankapy.proto import (
@@ -23,50 +20,45 @@ from frankapy.proto import (
 )
 
 
-class LowPassFilter:
-    def __init__(self, alpha):
-        self.alpha = alpha
-        self.prev_value = None
-
-    def __call__(self, new_value):
-        if self.prev_value is None:
-            self.prev_value = new_value
-        else:
-            self.prev_value = (
-                self.alpha * new_value + (1 - self.alpha) * self.prev_value
-            )
-        return self.prev_value
-
-
 class FrankaEnvWrapper:
+    """
+    Wrapper class for controlling Franka robot arm.
+
+    This class provides an interface to the Franka Emika Panda robot using frankapy.
+    It handles joint and Cartesian control, gripper operations, and inverse kinematics.
+
+    Dependencies:
+        - frankapy: https://github.com/iamlab-cmu/frankapy
+        - curobo: High-performance IK solver (https://curobo.org/)
+
+    The wrapper simplifies robot control by providing high-level methods for common
+    operations while handling the underlying ROS communication and state management.
+    """
+
     def __init__(self):
+        """Initialize robot arm controller."""
         self.arm = FrankaArm("franka_arm_reader")
         rospy.loginfo("Initializing FrankaWrapper...")
 
         self._initialize_state()
         self._initialize_joint_control_config()
 
-        # publishers msg to control the robot
         self.cmd_pub = rospy.Publisher(
             FC.DEFAULT_SENSOR_PUBLISHER_TOPIC, SensorDataGroup, queue_size=1000
         )
 
         self._fa_cmd_id = 0
-        self.ik_solver = FrankaSolver()  # implement by curobo
-        # if we use vr, this is no longer needed
-        self.low_pass_filter = LowPassFilter(0.2)  # higher meaning more smoothing
-
-        # TODO: add logic to process the gripper from franka or third party like robotiq
+        self.ik_solver = FrankaSolver("ik_solver")
 
     def _initialize_state(self):
-        # Initialize the current joint state and end-effector pose
+        """Initialize robot state variables."""
         self.current_joint_state = self.arm.get_joints()
         self.joint_state = self.current_joint_state[:]
         self.current_ee_pose = self.arm.get_pose()
         self.ee_pose = self.current_ee_pose
 
     def _initialize_joint_control_config(self):
-        # This configuration is calibrated between the real robot and simulation parameters
+        """Configure joint control parameters."""
         self.arm.goto_joints(
             self.current_joint_state,
             duration=10000,
@@ -77,46 +69,48 @@ class FrankaEnvWrapper:
         )
 
     def _initialize_cartesian_control_config(self):
+        """Configure Cartesian control parameters."""
         self.arm.goto_pose(
-            FC.HOME_POSE,  #! check this
+            FC.HOME_POSE,
             duration=10000,
             dynamic=True,
             buffer_time=10000,
             cartesian_impedances=[1200.0, 1200.0, 1200.0, 50.0, 50.0, 50.0],
         )
 
-
-    def get_arm_position(self)-> list:
+    def get_arm_position(self) -> list:
         """
-        Get the current joint state of the robot arm.
-        return:
+        Get current joint positions.
+
+        Returns:
             list: The current joint state of the robot arm.
         """
         return self.arm.get_joints()
 
+    def get_tcp_position(self) -> np.ndarray:
+        """
+        Get TCP position and orientation.
 
-    def get_tcp_position(self):
+        Returns:
+            np.ndarray: [x, y, z, qw, qx, qy, qz]
         """
-        Get the TCP position of the robot
-        return:
-            Translation: [x, y, z]
-            Quaternion: [w, x, y, z]
-        """
-        # Retrieve the current end-effector pose and return it as a concatenated array
         self.current_ee_pose = self.arm.get_pose()
         trans = self.current_ee_pose.translation
         rot_quat = self.current_ee_pose.quaternion
-        ee_pose = np.concatenate([trans, rot_quat])
-        return ee_pose
-    
+        return np.concatenate([trans, rot_quat])
 
-    def solve_ik(self, ee_pose):
+    def solve_ik(self, ee_pose: list) -> list:
         """
-        Solve the inverse kinematics for the given end-effector pose.
-        Parameters:
+        Solve inverse kinematics.
+
+        Args:
             ee_pose (list): The end-effector pose in the form [x, y, z, qx, qy, qz, qw].
+
         Returns:
             list: The joint positions that achieve the desired end-effector pose.
+
+        Raises:
+            ValueError: If no IK solution found
         """
         np.set_printoptions(precision=4, suppress=True)
         print("ee_pose", ee_pose)
@@ -126,115 +120,77 @@ class FrankaEnvWrapper:
             raise ValueError("IK solution not found")
         return ik_res
 
-
-    def get_transformation_matrix(self):
-        # Compute the transformation matrix from the current end-effector pose
-        trans = self.current_ee_pose.translation
-        rotation_mat = self.current_ee_pose.rotation
-        transformation_matrix = np.eye(4)
-        transformation_matrix[:3, :3] = rotation_mat
-        transformation_matrix[:3, 3] = trans
-
-        self.arm.inverse_kinematics(transformation_matrix)
-        return transformation_matrix
-    
-
     def get_pose_as_matrix(self) -> np.ndarray:
         """
-        Gets the current end-effector pose (from self.current_ee_pose)
-        as a 4x4 homogeneous transformation matrix.
-
-        Warning: Relies on self.current_ee_pose being updated externally.
+        Get current end-effector pose as 4x4 transformation matrix.
 
         Returns:
             np.ndarray: A 4x4 NumPy array representing the transformation matrix.
         """
-        # Using the potentially cached pose:
         trans = self.current_ee_pose.translation
         rotation_mat = self.current_ee_pose.rotation
-
         transformation_matrix = np.eye(4)
         transformation_matrix[:3, :3] = rotation_mat
         transformation_matrix[:3, 3] = trans
-
-        # Removed the incorrect self.arm.inverse_kinematics call
-
         return transformation_matrix
-
 
     def open_gripper(self):
         """
-        Opens gripper to maximum width
+        Open gripper to maximum width.
 
-        Parameters:
-            block (bool) - Function blocks by default. If False, the function becomes asynchronous
-                           and can be preempted.
-            skill_desc (str) - Skill description to use for logging on control-pc.
-
+        Returns:
+            None
         """
         self.arm.open_gripper(block=True, skill_desc="OpenGripper")
 
-
     def close_gripper(self):
-        """
-        Closes the gripper as much as possible
-
-        Parameters:
-            grasp (bool) - Flag that signals whether to grasp.
-            block (bool) - Function blocks by default. If False, the function becomes asynchronous
-                           and can be preempted.
-            skill_desc (str) - Skill description to use for logging on control-pc.
-        """
-        # Close the robot's gripper
+        """Close gripper and attempt to grasp object."""
         self.arm.close_gripper(grasp=True, block=True, skill_desc="CloseGripper")
 
-
-    def get_gripper_width(self):
+    def get_gripper_width(self) -> float:
         """
-        Returns the current width of the gripper.
+        Get current gripper width.
 
         Returns:
             float: The current width of the gripper.
-
         """
         return self.arm.get_gripper_width()
 
-
-    def get_gripper_is_grasped(self):
+    def get_gripper_is_grasped(self) -> bool:
         """
-        Returns a flag that represents if the gripper is grasping something.
+        Check if gripper is currently grasping an object.
 
         Returns:
-            True if the gripper is grasping something, False otherwise.
+            bool: True if the gripper is grasping something, False otherwise.
         """
         return self.arm.get_gripper_is_grasped()
 
-
-    def move_gripper(self, target_width):
+    def move_gripper(self, target_width: float):
         """
-        Move the gripper to a target width.
+        Move gripper to target width.
 
-        Parameters:
-            target_width (float): The target width for the gripper.
+        Args:
+            target_width (float): Target gripper width in meters
+
         """
-
         raise NotImplementedError(
             "Gripper control not implemented yet. Contact Jinzhou"
         )
 
+    def move_cartesian(self, target_pose: list):
+        """
+        Move end-effector to target Cartesian pose.
 
-    def move_cartesian(self, target_pose):
-        '''
-        Move the robot to a target pose in Cartesian space.
-        Parameters:
+        Args:
             target_pose (list): The target pose for the robot in the form [x, y, z, qx, qy, qz, qw].
-        This function uses the Franka arm's pose position sensor message to control the robot's end-effector.
-        It publishes the pose position command to the appropriate ROS topic.
-        '''
+
+        """
         assert len(target_pose) == 7, "target_pose must be a list of length 7"
+
         init_time = rospy.Time.now().to_time()
         timestamp = rospy.Time.now().to_time() - init_time
         self._fa_cmd_id += 1
+
         traj_gen_proto_msg = PosePositionSensorMessage(
             id=self._fa_cmd_id,
             timestamp=timestamp,
@@ -245,7 +201,7 @@ class FrankaEnvWrapper:
         fb_ctrlr_proto = CartesianImpedanceSensorMessage(
             id=self._fa_cmd_id,
             timestamp=timestamp,
-            translational_stiffnesses=[600.0, 600.0, 600.0],  # ! Double Check
+            translational_stiffnesses=[600.0, 600.0, 600.0],
             rotational_stiffnesses=FC.DEFAULT_ROTATIONAL_STIFFNESSES,
         )
 
@@ -260,24 +216,22 @@ class FrankaEnvWrapper:
 
         self.cmd_pub.publish(ros_msg)
 
+    def move_joint(self, target_joint: list):
+        """
+        Move joints to target positions.
 
-    def move_joint(self, target_joint):
-        '''
-        Move the robot to a target joint position.
-
-        Parameters:
+        Args:
             target_joint (list): The target joint position for the robot.
 
-        This function uses the Franka arm's joint position sensor message to control the robot's joints.
-        It publishes the joint position command to the appropriate ROS topic.
-        
-        '''
+        Returns:
+            None
+        """
         init_time = rospy.Time.now().to_time()
         timestamp = rospy.Time.now().to_time() - init_time
 
         self._fa_cmd_id += 1
         traj_gen_proto_msg = JointPositionSensorMessage(
-            id=0, timestamp=timestamp, joints=target_joint
+            id=self._fa_cmd_id, timestamp=timestamp, joints=target_joint
         )
         ros_msg = make_sensor_group_msg(
             trajectory_generator_sensor_msg=sensor_proto2ros_msg(
@@ -286,40 +240,63 @@ class FrankaEnvWrapper:
         )
         self.cmd_pub.publish(ros_msg)
 
+    def eulerZYX2quat(self, euler: list, degree: bool = False) -> list:
+        """
+        Convert Euler ZYX angles to quaternion.
 
-    def eulerZYX2quat(self, euler, degree=False):
+        Args:
+            euler (list): [roll, pitch, yaw]
+            degree (bool): If True, input is in degrees
+
+        Returns:
+            list: [qw, qx, qy, qz]
+        """
         if degree:
             euler = np.radians(euler)
-
         tmp_quat = R.from_euler("xyz", euler).as_quat().tolist()
-        quat = [tmp_quat[3], tmp_quat[0], tmp_quat[1], tmp_quat[2]]
-        return quat
+        return [tmp_quat[3], tmp_quat[0], tmp_quat[1], tmp_quat[2]]
 
-    def eulerXYZ2quat(self, euler, degree=False):
-        pass
+    def eulerXYZ2quat(self, euler: list, degree: bool = False) -> list:
+        """
+        Convert Euler XYZ angles to quaternion.
 
+        Args:
+            euler (list): [roll, pitch, yaw]
+            degree (bool): If True, input is in degrees
+
+        Returns:
+            list: [qw, qx, qy, qz]
+        """
+        if degree:
+            euler = np.radians(euler)
+        tmp_quat = R.from_euler("xyz", euler).as_quat().tolist()
+        return [tmp_quat[3], tmp_quat[0], tmp_quat[1], tmp_quat[2]]
 
     def run(self):
-        # Main loop to move the robot and open the gripper
-        rate = rospy.Rate(10)  # test in 10 Hz
+        """
+        Run test motion sequence.
+
+        Returns:
+            None
+        """
+        rate = rospy.Rate(10)
         for i in range(11):
             if rospy.is_shutdown():
                 break
             x = self.get_arm_position()
-            x[6] += 0.05
-            x[5] += 0.05
-            x[4] += 0.05
-            x[3] += 0.05
-            x[2] += 0.05
-            x[1] += 0.05
-            x[0] += 0.05
+            x = [j + 0.05 for j in x]  # Increment all joints by 0.05
             self.move_joint(x)
             print(self.current_joint_state)
             rate.sleep()
         self.open_gripper()
 
     def shutdown(self):
-        # Placeholder for shutdown procedures
+        """
+        Clean shutdown of robot controller.
+
+        Returns:
+            None
+        """
         pass
 
 
@@ -327,7 +304,6 @@ if __name__ == "__main__":
     try:
         controller = FrankaEnvWrapper()
         controller.run()
-
     except rospy.ROSInterruptException:
         pass
     finally:
