@@ -41,12 +41,18 @@ class FrankaEnvWrapper:
         self._initialize_joint_control_config()
 
         self.cmd_pub = rospy.Publisher(
-            FC.DEFAULT_SENSOR_PUBLISHER_TOPIC, SensorDataGroup, queue_size=1000
+            FC.DEFAULT_SENSOR_PUBLISHER_TOPIC, 
+            SensorDataGroup, 
+            queue_size=1000
         )
 
         self._fa_cmd_id = 0
         self._init_time = rospy.Time.now().to_time()
-        self.ik_solver = FrankaSolver("motion_generator")
+        self.ik_solver = FrankaSolver("motion_gen")
+
+        # TODO: make these configurable
+        self.joint_k_gains = [100.0, 100.0, 150.0, 400.0, 400.0, 600.0, 80.0]
+        self.joint_d_gains = [30.0, 30.0, 40.0, 150.0, 100.0, 30.0, 15.0]
 
     def _initialize_state(self):
         """Initialize robot state variables."""
@@ -60,8 +66,8 @@ class FrankaEnvWrapper:
         self.arm.goto_joints(
             self.current_joint_state,
             duration=10000,
-            k_gains=[100.0, 100.0, 150.0, 400.0, 400.0, 600.0, 80.0],
-            d_gains=[30.0, 30.0, 40.0, 150.0, 100.0, 30.0, 15.0],
+            k_gains=self.joint_k_gains,
+            d_gains=self.joint_d_gains,
             dynamic=True,
             buffer_time=10,
         )
