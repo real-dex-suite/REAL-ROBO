@@ -5,7 +5,7 @@ from sensor_msgs.msg import JointState
 
 from holodex.robot.hand.leap.leap_hand_utils.dynamixel_client import *
 import holodex.robot.hand.leap.leap_hand_utils.leap_hand_utils as lhu
-from leap_hand.srv import *#######################################################
+# from leap_hand.srv import *#######################################################
 """This can control and query the LEAP Hand
 
 I recommend you only query when necessary and below 90 samples a second.  Each of position, velociy and current costs one sample, so you can sample all three at 30 hz or one at 90hz.
