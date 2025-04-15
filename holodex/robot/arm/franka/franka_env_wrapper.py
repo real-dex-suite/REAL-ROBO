@@ -9,7 +9,11 @@ from frankapy import FrankaArm, SensorDataMessageType, FrankaConstants as FC
 from frankapy.proto_utils import sensor_proto2ros_msg, make_sensor_group_msg
 from frankapy.proto import JointPositionSensorMessage
 from franka_interface_msgs.msg import SensorDataGroup
-from holodex.robot.arm.franka.kinematics_solver import FrankaSolver
+
+try:
+    from holodex.robot.arm.franka.kinematics_solver import FrankaSolver
+except:
+    from kinematics_solver import FrankaSolver
 from scipy.spatial.transform import Rotation as R
 from frankapy.proto import (
     PosePositionSensorMessage,
@@ -32,7 +36,7 @@ class FrankaEnvWrapper:
     operations while handling the underlying ROS communication and state management.
     """
 
-    def __init__(self, control_mode: str = "joint"):
+    def __init__(self, control_mode: str = "joint", teleop: bool = False):
         """
         Initialize robot arm controller.
 
@@ -40,13 +44,18 @@ class FrankaEnvWrapper:
             control_mode (str): Control mode for the robot arm.
                 Options: "joint" (default) or "cartesian"
         """
-        self.arm = FrankaArm("franka_arm_reader")
+        self.arm = FrankaArm(rosnode_name="franka_arm_reader", with_gripper=True)
         rospy.loginfo("Initializing FrankaWrapper...")
 
         self._initialize_state()
+        self.teleop = teleop
 
         # Set up the robot control configuration based on the specified mode
         if control_mode == "joint":
+            # TODO: make these configurable
+            self.joint_k_gains = [100.0, 100.0, 150.0, 400.0, 400.0, 600.0, 80.0]
+            self.joint_d_gains = [30.0, 30.0, 40.0, 150.0, 100.0, 30.0, 15.0]
+
             self._initialize_joint_control_config()
         elif control_mode == "cartesian":
             self._initialize_cartesian_control_config()
@@ -63,10 +72,6 @@ class FrankaEnvWrapper:
         self._fa_cmd_id = 0
         self._init_time = rospy.Time.now().to_time()
         self.ik_solver = FrankaSolver("motion_gen")
-
-        # TODO: make these configurable
-        self.joint_k_gains = [100.0, 100.0, 150.0, 400.0, 400.0, 600.0, 80.0]
-        self.joint_d_gains = [30.0, 30.0, 40.0, 150.0, 100.0, 30.0, 15.0]
 
     def _initialize_state(self):
         """Initialize robot state variables."""
@@ -130,10 +135,10 @@ class FrankaEnvWrapper:
         Raises:
             ValueError: If no IK solution found
         """
-        np.set_printoptions(precision=4, suppress=True)
-        print("ee_pose", ee_pose)
-        print("cur_ee_pose", self.get_tcp_position())
-        ik_res = self.ik_solver.solve_ik(ee_pose[:3], ee_pose[3:])
+        ik_res = self.ik_solver.solve_ik_by_motion_gen(
+            self.get_arm_position(), ee_pose[:3], ee_pose[3:]
+        )
+        ik_res = np.array(ik_res[-1])
         if ik_res is None:
             raise ValueError("IK solution not found")
         return ik_res
@@ -162,7 +167,7 @@ class FrankaEnvWrapper:
 
     def get_gripper_is_grasped(self) -> bool:
         """
-        Check if gripper is currently grasping an object.
+        Check if gripper is currently grasping an object. Save this in data!
 
         Returns:
             bool: True if the gripper is grasping something, False otherwise.
@@ -181,6 +186,7 @@ class FrankaEnvWrapper:
             "Gripper control not implemented yet. Contact Jinzhou"
         )
 
+    #! We need testing for this
     def move_cartesian(self, target_pose: list):
         """
         Move end-effector to target Cartesian pose.
@@ -228,6 +234,7 @@ class FrankaEnvWrapper:
         Returns:
             None
         """
+        target_joint = self.solve_ik(target_joint) if self.teleop else target_joint
         timestamp = rospy.Time.now().to_time() - self._init_time
 
         self._fa_cmd_id += 1
@@ -266,14 +273,22 @@ class FrankaEnvWrapper:
         Returns:
             None
         """
-        #TODO: shutdown the robot
+        # TODO: shutdown the robot
         pass
 
 
 if __name__ == "__main__":
     try:
         controller = FrankaEnvWrapper()
-        controller.run()
+        # controller.run()
+        # TODO: run the robot, and test at local side
+        i = 1
+        while i < 100:
+            solved_joint = controller.solve_ik(controller.get_tcp_position())
+            print("solved_joint:", solved_joint)
+            print(f"gripper_status: {controller.get_gripper_is_grasped()}")
+            i += 1
+
     except rospy.ROSInterruptException:
         pass
     finally:

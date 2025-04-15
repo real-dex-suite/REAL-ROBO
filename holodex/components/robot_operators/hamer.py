@@ -19,9 +19,13 @@ from termcolor import cprint
 from typing import Tuple
 
 import multiprocessing
-import pyspacemouse
+import time
+import os
+import sys
+import spdlog
+import numpy as np
 
-# load constants according to hand type
+# Load constants according to hand type
 hand_type = HAND_TYPE.lower() if HAND_TYPE is not None else None
 JOINTS_PER_FINGER = (
     eval(f"{hand_type.upper()}_JOINTS_PER_FINGER") if HAND_TYPE is not None else None
@@ -29,20 +33,6 @@ JOINTS_PER_FINGER = (
 JOINT_OFFSETS = (
     eval(f"{hand_type.upper()}_JOINT_OFFSETS") if HAND_TYPE is not None else None
 )
-
-SPACE_MOUSE_CONTROL = False
-
-import os
-import sys
-import spdlog
-
-## Potential Bug: The SpaceMouseExpert class is not working as expected. The action and buttons are not being printed.
-## sudo chmod 666 /dev/hidraw* to fix the issue
-# using os to run the cmd: sudo chmod 666 /dev/hidraw*
-
-if SPACE_MOUSE_CONTROL:
-    os.system("cd /usr/lib64")
-    os.system("sudo chmod 666 /dev/hidraw*")
 
 move_linear_velocity = 0.002
 move_angular_velocity = 0.002
@@ -70,7 +60,7 @@ def get_mano_coord_frame(keypoint_3d_array, oculus=False):
 
     normal = v[2, :]
 
-    # Gram–Schmidt Or thonormalize
+    # Gram–Schmidt Orthonormalize
     x = x_vector - np.sum(x_vector * normal) * normal
     x = x / np.linalg.norm(x)
     z = np.cross(x, normal)
@@ -85,27 +75,64 @@ def get_mano_coord_frame(keypoint_3d_array, oculus=False):
 
 class HamerDexArmTeleOp(object):
     def __init__(self):
-        # Initializing the ROS Node
-        rospy.init_node("hamer_dexarm_teleop")
-
         if RETARGET_TYPE == "dexpilot":
             print("Loading the retargeting configuration")
-            from holodex.components.retargeting.retargeting_config import (
-                RetargetingConfig,
-            )  # -> bug
+            from holodex.components.retargeting.retargeting_config import RetargetingConfig
 
-            print("Loading the retargeting configuration")
             config_path = f"holodex/components/retargeting/configs/teleop/{HAND_TYPE.lower()}_hand_right_{RETARGET_TYPE}.yml"
             RetargetingConfig.set_default_urdf_dir("holodex/robot/hand")
             retarget_config = RetargetingConfig.load_from_file(config_path)
             self.retargeting = retarget_config.build()
+        elif RETARGET_TYPE == "distance_gripper":
+            self.retargeting = None
 
-        self.trans_scale = 1 if ARM_TYPE == "Flexiv" else 1000
-
+        self.trans_scale = 1
         self.logger = spdlog.ConsoleLogger("RobotController")
-
-        # Storing the transformed hand coordinates
+        self.finger_distance = 0.1
+        
+        # Initialize state variables
         self.hand_coords = None
+        self.arm_coords = None
+        self.arm_ee_pose = None
+        self.stop_move = False
+        self.end_robot = False
+        self.translation_state = None
+        
+        # Set up ROS subscribers
+        self._setup_subscribers()
+
+        # Initialize robot controller
+        self.robot = RobotController(teleop=True)
+        self.init_tcp = np.array(self._get_tcp_position())
+        self.arm_ee_pose = self._get_tcp_position()
+
+        # Initialize moving average queues
+        self.moving_average_queues = {
+            "thumb": [],
+            "index": [],
+            "middle": [],
+            "ring": [],
+        }
+
+        if ARM_TYPE is not None:
+            self._calibrate_arm_bounds()
+            self.leap2flange = np.eye(4)
+
+            if ARM_TYPE == "Jaka":
+                self.leap2flange[:3, :3] = R.from_euler(
+                    "xyz", [0, 0, 214.5], degrees=True
+                ).as_matrix()
+            elif ARM_TYPE == "Franka":
+                self.leap2flange[:3, :3] = R.from_euler(
+                    "xyz", [0, 0, 90], degrees=True
+                ).as_matrix()
+            else:
+                self.leap2flange[:3, :3] = R.from_euler(
+                    "xyz", [0, 0, 90], degrees=True
+                ).as_matrix()
+
+    def _setup_subscribers(self):
+        """Set up all ROS subscribers"""
         rospy.Subscriber(
             HAMER_HAND_TRANSFORM_COORDS_TOPIC,
             Float64MultiArray,
@@ -124,127 +151,54 @@ class HamerDexArmTeleOp(object):
             self._callback_arm_ee_pose,
             queue_size=1,
         )
-
         rospy.Subscriber(
             "/data_collector/reset_done",
             Bool,
             self._callback_reset_done,
             queue_size=1,
         )
-
         rospy.Subscriber(
             "/data_collector/reset_robot",
             Bool,
             self._callback_reset_robot,
             queue_size=1,
         )
-
-        self.stop_move = False
         rospy.Subscriber(
             "/data_collector/stop_move",
             Bool,
             self._callback_stop_move,
             queue_size=1,
         )
-
-        self.end_robot = False
         rospy.Subscriber(
             "/data_collector/end_robot",
             Bool,
             self._callback_end_robot,
             queue_size=1,
         )
-
-
-        # Initializing the robot controller
-        self.robot = RobotController(teleop=True)
-
-        # self.arm_ee_pose = self.robot.arm.get_tcp_position()
-        self.init_tcp = np.array(self._get_tcp_position())
-        self.arm_ee_pose = self._get_tcp_position()
-
-        # Initializing the solvers
-        self.fingertip_solver = self.robot.hand_KDLControl
-        self.finger_joint_solver = self.robot.hand_JointControl
-
-        self.translation_state = None
-
-        # Initialzing the moving average queues
-        self.moving_average_queues = {
-            "thumb": [],
-            "index": [],
-            "middle": [],
-            "ring": [],
-        }
-
-        self.prev_hand_joint_angles = self.robot.get_hand_position()
-
-        if ARM_TYPE is not None:
-            self._calibrate_arm_bounds()
-            # if ARM_TYPE == "Jaka":
-            # TODO configureable
-            self.leap2flange = np.eye(4)
-
-            if ARM_TYPE == "Jaka":
-                self.leap2flange[:3, :3] = R.from_euler(
-                    "xyz", [0, 0, 214.5], degrees=True
-                ).as_matrix()
-            else:
-                self.leap2flange[:3, :3] = R.from_euler(
-                    "xyz", [0, 0, 90], degrees=True
-                ).as_matrix()
-
-        # Initializing SpaceMouse
-        if SPACE_MOUSE_CONTROL:  # TODO: intergrate to processes.py
-
-            try:
-                pyspacemouse.open()
-                self.logger.info("Space Mouse is started!")
-            except Exception as e:
-                self.logger.error(f"Failed to start space mouse.")
-
-            # cprint("HamerDexArmTeleOp Initializing Successfully!2", "green")
-
-            self.desired_arm_pose = list(self.arm_ee_pose)
-            self.tmp_desired_arm_pose = copy(self.desired_arm_pose)
-
-            self.lockhand = False
-            self.lockrotation = False
-
-            # Initializing the space mouse arguments
-            self.manager = multiprocessing.Manager()
-            self.latest_data = self.manager.dict()
-            self.latest_data["action"] = [0.0] * 6  # Using lists for compatibility
-            self.latest_data["buttons"] = [0, 0, 0, 0]
-
-            # Start a process to continuously read the SpaceMouse state
-            self.process = multiprocessing.Process(target=self._read_spacemouse)
-            self.process.daemon = True
-            self.process.start()
+        rospy.Subscriber(
+            HAMER_FINGER_DISTANCE_TOPIC,
+            Float64MultiArray,
+            self._callback_finger_distance,
+            queue_size=1,
+        )
 
     def _get_tcp_position(self):
+        """Get the TCP position based on the arm type"""
         if ARM_TYPE == "Flexiv":
             return self.robot.arm.get_tcp_position(euler=True, degree=False)
+        elif ARM_TYPE == "Franka":
+            tcp_pose = self.robot.arm.get_tcp_position()  # w, x, y, z
+            # Convert to euler
+            tcp_quat_wxyz = tcp_pose[3:7]
+            tcp_quat_xyzw = [tcp_quat_wxyz[1], tcp_quat_wxyz[2], tcp_quat_wxyz[3], tcp_quat_wxyz[0]]
+            tcp_rot = R.from_quat(tcp_quat_xyzw).as_euler("xyz", degrees=False)
+            return np.concatenate([tcp_pose[:3], tcp_rot])
         else:
             return self.robot.arm.get_tcp_position()
 
-    def get_action(self) -> Tuple[np.ndarray, list]:
-        """Returns the latest action and button state of the SpaceMouse."""
-        action = self.latest_data["action"]
-        buttons = self.latest_data["buttons"]
-        return np.array(action), buttons
-
-    def _read_spacemouse(self):
-        while True:
-            state = pyspacemouse.read()
-            action = [0.0] * 6
-            buttons = [0, 0, 0, 0]
-
-            self.latest_data["action"] = np.array(
-                [-state.y, state.x, state.z, -state.roll, -state.pitch, -state.yaw]
-            )  # spacemouse axis matched with robot base frame
-            self.latest_data["buttons"] = state.buttons
-
+    def _callback_finger_distance(self, data):
+        self.finger_distance = np.array(list(data.data))
+            
     def _callback_hand_coords(self, coords):
         self.hand_coords = np.array(list(coords.data)).reshape(HAMER_NUM_KEYPOINTS, 3)
 
@@ -256,18 +210,6 @@ class HamerDexArmTeleOp(object):
     def _callback_arm_ee_pose(self, data):
         self.arm_ee_pose = np.array(data.data)
 
-    def _retarget_hand(self, finger_configs):
-        if RETARGET_TYPE == "dexpilot":
-            indices = self.retargeting.optimizer.target_link_human_indices
-            origin_indices = indices[0, :]
-            task_indices = indices[1, :]
-            ref_value = (
-                self.hand_coords[task_indices, :] - self.hand_coords[origin_indices, :]
-            )
-            desired_joint_angles = self.retargeting.retarget(ref_value)
-
-        return desired_joint_angles
-
     def _callback_end_robot(self, msg):
         self.end_robot = msg.data
 
@@ -275,15 +217,15 @@ class HamerDexArmTeleOp(object):
         self.stop_move = msg.data
 
     def _callback_reset_robot(self, msg):
-        if msg.data: self.robot.home_robot()
+        if msg.data:
+            self.robot.home_robot()
 
     def _callback_reset_done(self, msg):
         self.robot.home_robot()
-        if msg.data:
-            if ARM_TYPE is not None:
-                self._calibrate_arm_bounds()
+        if msg.data and ARM_TYPE is not None:
+            self._calibrate_arm_bounds()
 
-    # Low-pass filter function to smooth translation values
+    # Filter functions for smoothing
     def _low_pass_filter(self, new_value, state, alpha=0.4):
         if state is None:
             state = new_value
@@ -299,7 +241,6 @@ class HamerDexArmTeleOp(object):
         self.state_mean, self.state_covariance = self.kf.filter_update(
             self.state_mean, self.state_covariance, observation
         )
-
         return self.state_mean
 
     def _stable_translation(self, new_translation, alpha=0.4):
@@ -317,11 +258,11 @@ class HamerDexArmTeleOp(object):
             raise ValueError(f"Unsupported filter type: {filter_type}")
 
     def vr_to_robot(self, armpoints):
-        # translation_vector = np.average(armpoints * np.array([1.5, 1.5, 1/15]), axis=0)
-        # print(armpoints)
+        """Convert VR arm points to robot coordinates"""
         scaled_points = armpoints * np.array([1, 1, 1 / 30])
         timestamps = np.arange(len(scaled_points))
 
+        # Create cubic splines for smooth interpolation
         cs_x = CubicSpline(timestamps, scaled_points[:, 0])
         cs_y = CubicSpline(timestamps, scaled_points[:, 1])
         cs_z = CubicSpline(timestamps, scaled_points[:, 2])
@@ -336,8 +277,6 @@ class HamerDexArmTeleOp(object):
         translation_vector = np.average(interpolated_points, axis=0)
         rotation_vectors = armpoints - np.average(armpoints, axis=0)
 
-        # print("rotation_vectors: ", rotation_vectors)
-
         rotation_vectors = self._arm_filter(rotation_vectors, "low_pass")
         index_knuckle_coord = rotation_vectors[1]
         pinky_knuckle_coord = rotation_vectors[2]
@@ -348,32 +287,30 @@ class HamerDexArmTeleOp(object):
         palm_direction = normalize_vector(index_knuckle_coord + pinky_knuckle_coord)
         cross_product = normalize_vector(np.cross(palm_direction, palm_normal))
 
-        # print("----------------------")
-        # print(translation_vector, cross_product, palm_direction, palm_normal)
-
         return translation_vector, cross_product, palm_direction, palm_normal
 
     def _compute_transformation(self, init_hand_transformation, hand2vr_transformation):
+        """Compute the transformation matrix for the robot arm"""
         new_hand2init_hand = init_hand_transformation @ hand2vr_transformation
         init_flange2base = self.init_arm_transformation_matrix
         init_leap2base = init_flange2base @ self.leap2flange
         new_ee_transformation_matrix = (
             init_leap2base @ new_hand2init_hand @ np.linalg.inv(self.leap2flange)
         )
-
         return new_ee_transformation_matrix
 
     def _get_transformation(self, points_in_hand_space, points_in_vr_space):
+        """Get transformation matrices between hand space and VR space"""
         vr2init_hand_transformation, _, _ = best_fit_transform(
             self.init_points_in_vr_space, points_in_hand_space
         )
         hand2vr_transformation, _, _ = best_fit_transform(
             points_in_hand_space, points_in_vr_space
         )
-
         return vr2init_hand_transformation, hand2vr_transformation
 
     def _retarget_base(self):
+        """Retarget the base position of the robot arm"""
         # Get the scaled hand center and direction vectors
         hand_center, hand_x, hand_y, hand_z = self.vr_to_robot(self.arm_coords)
 
@@ -395,52 +332,29 @@ class HamerDexArmTeleOp(object):
             points_in_hand_space, points_in_vr_space
         )
 
-        cprint(
-            f"vr2init_hand_transformation: {vr2init_hand_transformation.shape}", "green"
-        )
-
-        # Extract translation and rotation parts
+        # Compute the composed transformation
         composed_transformation = self._compute_transformation(
             vr2init_hand_transformation, hand2vr_transformation
-        )  # 4 * 4
-
-        # flexiv
-        # this transformation is different from jaka, so we need to transform 180 degrees by z axis
-
-        if ARM_TYPE == "Flexiv":
-            # F_X_J = np.eye(4)
-            # # F_X_J[:3, :3] = R.from_euler('xyz', [0, 0, -90], degrees=True).as_matrix()
-
-            # tcpJ_X_tcpF = np.eye(4)
-            # # tcpJ_X_tcpF[:3, :3] = R.from_euler('xyz', [0, 0, 180], degrees=True).as_matrix()
-            # composed_transformation =  F_X_J @ composed_transformation @ tcpJ_X_tcpF
-            pass
+        )
 
         composed_translation = composed_transformation[:3, 3]
         composed_rotation = composed_transformation[:3, :3]
-
         composed_rotation_quat = R.from_matrix(composed_rotation).as_quat()
         current_arm_pose = self.arm_ee_pose
 
-        # exponential_smoothing = 0.2  # Smoothing factor (adjust as needed)
-        exponential_smoothing = 1.0  # Smoothing factor (adjust as needed)
-
+        # Apply exponential smoothing to translation
+        exponential_smoothing = 1.0
         if not hasattr(self, "previous_filtered_translation"):
             self.previous_filtered_translation = current_arm_pose[:3]
 
-        # current_filtered_translation = ((1.0 - exponential_smoothing) * self.previous_filtered_translation) + (exponential_smoothing * composed_translation)
-        # self.previous_filtered_translation = current_filtered_translation
-
-        self.previous_filtered_translation = np.array(
-            self.previous_filtered_translation
-        )
+        self.previous_filtered_translation = np.array(self.previous_filtered_translation)
         composed_translation = np.array(composed_translation)
         current_filtered_translation = (
             (1.0 - exponential_smoothing) * self.previous_filtered_translation
         ) + (exponential_smoothing * composed_translation)
 
-        # use Slrp to smooth the rotation
-        alpha = 0.03  # 0.2
+        # Use Slerp to smooth the rotation
+        alpha = 0.03
         if not hasattr(self, "previous_filtered_rotation"):
             self.previous_filtered_rotation = R.from_euler(
                 "xyz", current_arm_pose[3:6]
@@ -459,110 +373,39 @@ class HamerDexArmTeleOp(object):
         self.previous_filtered_rotation = smoothed_rotation
         smoothed_rotation_euler = R.from_quat(smoothed_rotation).as_euler("xyz")
 
-        # if space mouse -> dont move translation
-        if not SPACE_MOUSE_CONTROL:
-            current_arm_pose[:3] = current_filtered_translation * self.trans_scale
-        else:
-            current_arm_pose[:3] = self._get_tcp_position()[:3]
-
-        # current_arm_pose[3:6] = smoothed_rotation_euler
+        # Update the arm pose
+        current_arm_pose[:3] = current_filtered_translation * self.trans_scale
         current_arm_pose[3:6] = self._limited_rot_ws(
             smoothed_rotation_euler, max_rot=np.pi / 2, min_rot=-np.pi / 2
         )
 
         return current_arm_pose
 
-    def get_space_mouse_motion(self, desired_joint_angles):
-        desired_cmd = []
-        action, buttons = self.get_action()
-
-        if buttons[0] == 1:
-            self.lockhand = not self.lockhand
-            self.prev_desired_joint_angles = desired_joint_angles[6:]
-
-        self.tmp_desired_arm_pose[:3] = (
-            self.desired_arm_pose[:3] + action[:3] * move_linear_velocity
-        )
-
-        # euler to quat
-        tmp_desired_arm_euler = desired_joint_angles[3:6]
-        tmp_desired_arm_quat = self.robot.arm.eulerZYX2quat(tmp_desired_arm_euler)
-
-        if self.lockhand:
-            tmp_desired_joint_angles = self.prev_desired_joint_angles
-        else:
-            tmp_desired_joint_angles = desired_joint_angles[6:]
-
-        if buttons[1] == 1:
-            self.lockrotation = not self.lockrotation
-            self.prev_desired_arm_quat = tmp_desired_arm_quat
-
-        if self.lockrotation:
-            tmp_desired_arm_quat = self.prev_desired_arm_quat
-
-        desired_cmd = np.concatenate(
-            [
-                desired_cmd,
-                self.tmp_desired_arm_pose[:3],
-                tmp_desired_arm_quat,
-                tmp_desired_joint_angles,
-            ]
-        )
-        return desired_cmd
-
-    def _filter(self, desired_hand_joint_angles):
-        desired_hand_joint_angles = (
-            desired_hand_joint_angles * SMOOTH_FACTOR
-            + self.prev_hand_joint_angles * (1 - SMOOTH_FACTOR)
-        )
-        self.prev_hand_joint_angles = desired_hand_joint_angles
-        return desired_hand_joint_angles
-
     def _limited_rot_ws(self, current_tcp, max_rot, min_rot):
-        # TODO: finish this
+        """Limit rotation within workspace"""
         self.init_tcp_rot = self.init_tcp[3:6]
         current_tcp_rot = np.array(current_tcp)
-
-        cprint(f"current tcp rot: {current_tcp_rot}", "red")
-        # cprint(f"self.init_tcp_rot: {self.init_tcp_rot}", "green")
-        # cprint(f"clip limits: {self.init_tcp_rot - max_rot, self.init_tcp_rot + max_rot}", "yellow")
-
-        # current_tcp_rot = np.clip(current_tcp_rot, self.init_tcp_rot - max_rot, self.init_tcp_rot + max_rot)
-
-        # if current
-
         return current_tcp_rot
 
-    def _limited_trans_ws(self, current_tcp, max_dist, min_dist):
-        pass
-
     def motion(self, finger_configs):
+        """Generate motion commands for the robot"""
         desired_cmd = []
 
         if ARM_TYPE is not None:
             desired_arm_pose = self._retarget_base()
-
-            if not SPACE_MOUSE_CONTROL:
-                tmp_desired_arm_euler = desired_arm_pose[3:6]
-                tmp_desired_arm_quat = self.robot.arm.eulerZYX2quat(
-                    tmp_desired_arm_euler
-                )
-                desired_cmd = np.concatenate(
-                    [desired_cmd, desired_arm_pose[:3], tmp_desired_arm_quat]
-                )
-            else:
-                desired_cmd = np.concatenate([desired_cmd, desired_arm_pose])
-
-        if HAND_TYPE is not None:
-            # hand control based on the retargeted hand coordinates
-            desired_hand_joint_angles = self._retarget_hand(finger_configs)
-            desired_hand_joint_angles = self._filter(desired_hand_joint_angles)
-            desired_cmd = np.concatenate([desired_cmd, desired_hand_joint_angles])
+            tmp_desired_arm_euler = desired_arm_pose[3:6]
+            tmp_desired_arm_quat = self.robot.arm.eulerZYX2quat(
+                tmp_desired_arm_euler
+            )
+            desired_cmd = np.concatenate(
+                [desired_cmd, desired_arm_pose[:3], tmp_desired_arm_quat]
+            )
 
         return desired_cmd
 
     def _calibrate_arm_bounds(self):
-        inital_frame_number = 1  # set to 50 will cause collision
+        """Calibrate the arm bounds based on initial positions"""
+        inital_frame_number = 1
         frame_number = 0
 
         initial_hand_centers = []
@@ -587,6 +430,7 @@ class HamerDexArmTeleOp(object):
 
             frame_number += 1
 
+        # Calculate mean values
         init_hand_center = np.mean(initial_hand_centers, axis=0)
         init_hand_x = np.mean(initial_hand_xs, axis=0)
         init_hand_y = np.mean(initial_hand_ys, axis=0)
@@ -609,42 +453,31 @@ class HamerDexArmTeleOp(object):
         ).as_matrix()
         self.init_arm_transformation_matrix[:3, 3] = self.init_arm_pos.reshape(3)
 
+
     def move(self, finger_configs):
-        print(
-            "\n******************************************************************************"
-        )
+        """Main control loop for robot movement"""
+        print("\n" + "*" * 78)
         cprint("[   ok   ]     Controller initiated. ", "green", attrs=["bold"])
-        print(
-            "******************************************************************************\n"
-        )
+        print("*" * 78 + "\n")
         print("Start controlling the robot hand using the Hamer Framework.\n")
 
         while True:
-            if (
-                (self.arm_coords is not None)
-                and (self.hand_coords is not None)
-                and (self.robot.get_hand_position() is not None)
-            ):
-
-                # Original target_arm    [___x___] [___y___] [___z___] [___r___] [___p___] [___y___]
-                # target arm             [_______] [_______] [_______] [___r___] [___p___] [___y___]
-                #                                                          |         |         |
-                #                                                          v         v         v
-                # space mouse control    [___x___] [___y___] [___z___] [_______] [_______] [_______]
-                #                            |         |         |         |         |         |
-                #                            v         v         v         v         v         v
-                # Desired_joint_angles   [_______] [_______] [_______] [_______] [_______] [_______] + [hand]
+            if (self.arm_coords is not None) and (self.hand_coords is not None):
                 if self.stop_move:
                     continue
                 if self.end_robot:
                     break
 
-                desired_joint_angles = self.motion(finger_configs)
-                if SPACE_MOUSE_CONTROL:
-                    self.tmp_desired_arm_pose = copy(self.desired_arm_pose)
-                    desired_joint_angles = self.get_space_mouse_motion(
-                        desired_joint_angles
-                    )
-                    self.desired_arm_pose = copy(self.tmp_desired_arm_pose)
+                # desired_joint_angles = self.motion(finger_configs)
+                # print(f"desired_joint_angles: {desired_joint_angles}")
+                # self.robot.move_arm(desired_joint_angles)
 
-                self.robot.move(desired_joint_angles)
+                # self.robot.move_arm(desired_joint_angles)
+
+                print(f"gripper: {self.finger_distance}")
+                self.robot.move_gripper(self.finger_distance)
+
+
+if __name__ == "__main__":
+    hamer = HamerDexArmTeleOp()
+    hamer.move()
