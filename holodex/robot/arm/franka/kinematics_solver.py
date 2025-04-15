@@ -66,7 +66,7 @@ class FrankaSolver:
                 interpolation_dt=0.02,
                 ee_link_name="ee_link",
             )
-            self.motion_gen = MotionGen(self.ik_config)
+            self.motion_gen = MotionGen(self.plan_config)
             cprint("warming up motion gen solver", "green")
 
             # If constraints are needed, uncomment the following lines
@@ -76,8 +76,8 @@ class FrankaSolver:
             # )
             # plan_config.pose_cost_metric = pose_cost_metric
 
-            self.ik_solver.warmup(warmup_js_trajopt=False)
-            plan_config = MotionGenPlanConfig(
+            self.motion_gen.warmup(warmup_js_trajopt=False)
+            self.plan_config_temp = MotionGenPlanConfig(
                 enable_graph=False,
                 enable_graph_attempt=4,
                 max_attempts=2,
@@ -90,6 +90,7 @@ class FrankaSolver:
 
     def solve_ik_by_motion_gen(self, curr_joint_state, target_trans, target_quat):
          # motion generation:
+
         cu_js = JointState(
             position=self.tensor_args.to_device(curr_joint_state),
             velocity=self.tensor_args.to_device(curr_joint_state) * 0.0,
@@ -104,7 +105,7 @@ class FrankaSolver:
             position=self.tensor_args.to_device(target_trans),
             quaternion=self.tensor_args.to_device(target_quat),
         )
-        result = self.motion_gen.plan_single(cu_js.unsqueeze(0), ik_goal, self.plan_config)
+        result = self.motion_gen.plan_single(cu_js.unsqueeze(0), ik_goal, self.plan_config_temp)
         succ = result.success.item()  
         if succ:
             print("success")
