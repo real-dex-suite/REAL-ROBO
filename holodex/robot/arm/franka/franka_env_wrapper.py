@@ -46,7 +46,7 @@ class FrankaEnvWrapper:
 
         self._fa_cmd_id = 0
         self._init_time = rospy.Time.now().to_time()
-        self.ik_solver = FrankaSolver("ik_solver")
+        self.ik_solver = FrankaSolver("motion_generator")
 
     def _initialize_state(self):
         """Initialize robot state variables."""

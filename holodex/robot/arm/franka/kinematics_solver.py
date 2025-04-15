@@ -34,7 +34,7 @@ JS_NAMES = [
 class FrankaSolver:
     """Inverse Kinematics solver for Franka Emika Panda robot."""
 
-    def __init__(self, ik_type="ik_solver"):
+    def __init__(self, ik_type="motion_gen"):
         """
         Initialize the Franka IK Solver.
 
