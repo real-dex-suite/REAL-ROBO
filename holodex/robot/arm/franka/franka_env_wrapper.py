@@ -102,7 +102,7 @@ class FrankaEnvWrapper:
         )
 
     def home_robot(self):
-        self.arm.reset_joints()
+        pass
         
     def get_arm_position(self) -> list:
         """
