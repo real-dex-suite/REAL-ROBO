@@ -48,11 +48,11 @@ class RealSenseRobotStream(object):
             config.enable_stream(rs.stream.color, WIDTH, HEIGHT, rs.format.bgr8, CAM_FPS)
             if self.mode == 'rgbd':
                 config.enable_stream(rs.stream.depth, WIDTH, HEIGHT,rs.format.z16, CAM_FPS)
-        elif self.cam_serial_num in ["207122078785"]:
+        elif self.cam_serial_num in ["311322301369"]: # D455, case for TwinAligner
             config.enable_stream(rs.stream.color, WIDTH, HEIGHT, rs.format.bgr8, CAM_FPS)
             if self.mode == 'rgbd':
                 config.enable_stream(rs.stream.depth, WIDTH, HEIGHT,rs.format.z16, CAM_FPS)
-        if self.cam_serial_num == "f1230963": # L515
+        elif self.cam_serial_num == "f1230963": # L515
             # color_profiles, depth_profiles = get_profiles(self.cam_serial_num)
             # w, h, fps, fmt = color_profiles[26]
             # config.enable_stream(rs.stream.color, w, h, fmt, fps)
@@ -93,7 +93,7 @@ class RealSenseRobotStream(object):
         # Align function - aligns other frames with the color frame
         if self.cam_serial_num == "211422061450": # D415
             self.align = rs.align(rs.stream.color)
-        elif self.cam_serial_num in ["207122078785"]:
+        elif self.cam_serial_num in ["311322301369"]: # D455, case for TwinAligner
             self.align = rs.align(rs.stream.color)
         elif self.cam_serial_num == "f1230963":
             self.align = rs.align(rs.stream.color)
@@ -103,7 +103,7 @@ class RealSenseRobotStream(object):
             # sensor.set_option(rs.option.exposure, 87.000)
             sensor.set_option(rs.option.auto_exposure_priority, True)
             print(sensor.get_option(rs.option.exposure)) 
-        elif self.cam_serial_num in ["207122078785"]:
+        elif self.cam_serial_num in ["311322301369"]: # D455, case for TwinAligner
             sensor = profile.get_device().query_sensors()[1]
             # sensor.set_option(rs.option.exposure, 217.000)
             sensor.set_option(rs.option.auto_exposure_priority, True)
@@ -140,7 +140,7 @@ class RealSenseRobotStream(object):
                     depth_image = (
                         np.asanyarray(aligned_depth_frame.get_data()) // 4
                     )  # L515 camera need to divide by 4 to get metric in meter  
-                elif self.cam_serial_num in ["207122078785"] :
+                elif self.cam_serial_num in ["311322301369"] :
                     depth_image = np.asanyarray(aligned_depth_frame.get_data()) 
                 elif self.cam_serial_num == "211422061450":
                     depth_image = np.asanyarray(aligned_depth_frame.get_data()) 
