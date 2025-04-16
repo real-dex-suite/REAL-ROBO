@@ -175,12 +175,12 @@ class HamerDexArmTeleOp(object):
             self._callback_end_robot,
             queue_size=1,
         )
-        rospy.Subscriber(
-            HAMER_FINGER_DISTANCE_TOPIC,
-            Float64MultiArray,
-            self._callback_finger_distance,
-            queue_size=1,
-        )
+        # rospy.Subscriber(
+        #     HAMER_FINGER_DISTANCE_TOPIC,
+        #     Float64MultiArray,
+        #     self._callback_finger_distance,
+        #     queue_size=1,
+        # )
 
     def _get_tcp_position(self):
         """Get the TCP position based on the arm type"""

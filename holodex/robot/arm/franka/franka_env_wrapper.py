@@ -101,6 +101,9 @@ class FrankaEnvWrapper:
             cartesian_impedances=[1200.0, 1200.0, 1200.0, 50.0, 50.0, 50.0],
         )
 
+    def home_robot(self):
+        self.arm.reset_joints()
+        
     def get_arm_position(self) -> list:
         """
         Get current joint positions.

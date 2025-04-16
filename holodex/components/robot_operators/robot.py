@@ -55,6 +55,9 @@ class RobotController(object):
         if ARM_TYPE == "Flexiv":
             self.arm = Arm()
             cprint("Call Flexiv Arm", "red")
+        elif ARM_TYPE == "Franka":
+            self.arm = Arm(teleop=teleop)
+            cprint("Call Franka Arm", "red")
         else:
             self.arm = (
                 Arm(

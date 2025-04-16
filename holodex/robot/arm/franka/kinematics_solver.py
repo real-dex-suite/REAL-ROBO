@@ -1,5 +1,7 @@
 import time
 import torch
+import os
+
 from curobo.types.base import TensorDeviceType
 from curobo.types.math import Pose
 from curobo.types.robot import RobotConfig, JointState
@@ -55,7 +57,7 @@ class FrankaSolver:
 
     def _initialize_robot_config(self):
         """Load and initialize robot configuration."""
-        config_file = load_yaml(join_path(get_robot_configs_path(), "franka.yml"))
+        config_file = load_yaml(join_path(os.path.dirname(__file__), "franka.yml"))
         urdf_file = config_file["robot_cfg"]["kinematics"]["urdf_path"]
         base_link = config_file["robot_cfg"]["kinematics"]["base_link"]
         ee_link = config_file["robot_cfg"]["kinematics"]["ee_link"]

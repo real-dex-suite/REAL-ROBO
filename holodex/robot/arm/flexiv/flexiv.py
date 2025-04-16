@@ -1,4 +1,7 @@
-import flexivrdk
+try:
+    import flexivrdk
+except:
+    flexivrdk = None
 import rospy
 import numpy as np
 import time

@@ -15,7 +15,8 @@ HAND_TYPE = "Leap"
 # HAND_TYPE = None
 # ARM_TYPE = "Jaka"
 # HAND_TYPE = None
-ARM_TYPE = "Flexiv"
+# ARM_TYPE = "Flexiv"
+ARM_TYPE = "Franka"
 
 # Keyboard control
 # KEYBOARD_CONTROL_TOPIC = '/keyboard_control_node/keyboard_control'
