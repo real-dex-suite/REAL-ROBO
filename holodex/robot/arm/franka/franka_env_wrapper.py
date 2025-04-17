@@ -101,6 +101,14 @@ class FrankaEnvWrapper:
             cartesian_impedances=[1200.0, 1200.0, 1200.0, 50.0, 50.0, 50.0],
         )
 
+    def eulerZYX2quat(self, euler, degree=False):
+        if degree:
+            euler = np.radians(euler)
+
+        tmp_quat = R.from_euler("xyz", euler).as_quat().tolist()
+        quat = [tmp_quat[3], tmp_quat[0], tmp_quat[1], tmp_quat[2]]
+        return quat
+
     def home_robot(self):
         pass
         
@@ -237,7 +245,9 @@ class FrankaEnvWrapper:
         Returns:
             None
         """
-        target_joint = self.solve_ik(target_joint) if self.teleop else target_joint
+        # if self.teleop else target_joint
+        target_joint = self.solve_ik(target_joint)
+        print(f"target{target_joint}") 
         timestamp = rospy.Time.now().to_time() - self._init_time
 
         self._fa_cmd_id += 1
@@ -288,6 +298,7 @@ if __name__ == "__main__":
         i = 1
         while i < 100:
             solved_joint = controller.solve_ik(controller.get_tcp_position())
+            print("original_joint", controller.get_arm_position())
             print("solved_joint:", solved_joint)
             print(f"gripper_status: {controller.get_gripper_is_grasped()}")
             i += 1
