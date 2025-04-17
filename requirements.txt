@@ -1,0 +1,14 @@
+hydra-core
+zmq
+termcolor
+ikpy
+pykalman
+spdlog
+pynput
+pyrealsense2
+ipdb
+serial
+sapien
+nlopt
+anytree
+numpy==1.22.0

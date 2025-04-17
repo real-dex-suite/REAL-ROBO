@@ -5,17 +5,19 @@ from math import pi as PI
 import torch
 
 
-RETARGET_TYPE = "dexpilot"
+RETARGET_TYPE = "distance_gripper" # "distance_gripper"
 
 # dexpilot
 SMOOTH_FACTOR = 0.4 # 0.99 
 
 # Robot type
-HAND_TYPE = "Leap"
-# HAND_TYPE = None
+# HAND_TYPE = "Leap"
+HAND_TYPE = None
 # ARM_TYPE = "Jaka"
 # HAND_TYPE = None
-ARM_TYPE = "Flexiv"
+# ARM_TYPE = "Flexiv"
+ARM_TYPE = "Franka"
+
 
 # Keyboard control
 # KEYBOARD_CONTROL_TOPIC = '/keyboard_control_node/keyboard_control'
@@ -77,7 +79,10 @@ JAKA_POSITIONS = {
 }
 
 FLEXIV_POSITIONS = {
-    'home_js': [-17.82, -41.08, 10.55, 94.19, -6.12, 46.24, 0],
+    # 'home_js': [-17.82, -41.08, 10.55, 94.19, -6.12, 46.24, 0], # pick basketball
+    # 'home_js': [-8.38, -49.10, -1.51, 97.80, 2.17, 62.87, -13.57], # flip
+    'home_js': np.array([-0.20539183914661407, -0.6288893818855286, 0.2788938581943512, 1.8674005270004272, -0.2044251412153244, 0.9303941130638123, 0.27979201078414917]) * 57.3, # middle pos
+    # 'home_js': np.array([-0.2133278250694275, -0.5433886051177979, 0.29640617966651917, 1.838704228401184, -0.1605091542005539, 0.8208202719688416, 0.2522362470626831]) * 57.3 # open light pos
 }
 
 JAKA_IP = "192.168.130.95"
@@ -451,6 +456,8 @@ HAMER_HAND_KEYPOINT_TOPIC = "/hamer/hand_keypoints"
 HAMER_ARM_KEYPOINT_TOPIC = "/hamer/arm_keypoints"
 HAMER_HAND_TRANSFORM_COORDS_TOPIC = "/hamer/transformed_hand_keypoints"
 HAMER_ARM_TRANSFORM_COORDS_TOPIC = "/hamer/transformed_arm_keypoints"
+HAMER_FINGER_DISTANCE_TOPIC = "/hamer/finger_distance"
+
 
 IMU_ROT_TOPIC = "/hamer/imu_rpy"
 

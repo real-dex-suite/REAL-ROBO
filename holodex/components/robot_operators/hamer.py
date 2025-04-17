@@ -113,7 +113,6 @@ class HamerDexArmTeleOp(object):
             "middle": [],
             "ring": [],
         }
-
         if ARM_TYPE is not None:
             self._calibrate_arm_bounds()
             self.leap2flange = np.eye(4)
@@ -259,6 +258,7 @@ class HamerDexArmTeleOp(object):
 
     def vr_to_robot(self, armpoints):
         """Convert VR arm points to robot coordinates"""
+        
         scaled_points = armpoints * np.array([1, 1, 1 / 30])
         timestamps = np.arange(len(scaled_points))
 
@@ -468,11 +468,17 @@ class HamerDexArmTeleOp(object):
                 if self.end_robot:
                     break
 
-                # desired_joint_angles = self.motion(finger_configs)
+                desired_joint_angles = self.motion(finger_configs)
+                x = np.array(self.robot.get_arm_tcp_position())
+                np.set_printoptions(precision=5, suppress=True)
+                # print(f"current_tcp{x}")
                 # print(f"desired_joint_angles: {desired_joint_angles}")
-                # self.robot.move_arm(desired_joint_angles)
+                print(f"current_joint{self.robot.get_arm_position()}")
+                # time.sleep(3)
+                
 
-                # self.robot.move_arm(desired_joint_angles)
+
+                self.robot.move_arm(desired_joint_angles)
 
                 print(f"gripper: {self.finger_distance}")
                 self.robot.move_gripper(self.finger_distance)

@@ -1,11 +1,14 @@
 import hydra
 import time
 from processes import get_tactile_stream_processes, get_camera_stream_processes, get_detector_processes, get_teleop_process, get_tactile_visualizer_process
+import multiprocessing
 
 @hydra.main(version_base = '1.2', config_path='configs', config_name='teleop')
 def main(configs):    
     # Obtaining all the robot streams
     # tactile_processes = get_tactile_stream_processes(configs)
+    multiprocessing.set_start_method('spawn')
+    
     robot_camera_processes, robot_camera_stream_processes = get_camera_stream_processes(configs)
     detection_process, keypoint_transform_processes, plotter_processes = get_detector_processes(configs)
     teleop_process = get_teleop_process(configs)
@@ -16,12 +19,12 @@ def main(configs):
     # for process in tactile_processes:
     #     process.start()
     #     time.sleep(2)
-    for process in robot_camera_processes:
-        process.start()
-        time.sleep(2)
+    # for process in robot_camera_processes:
+    #     process.start()
+    #     time.sleep(2)
 
-    for process in robot_camera_stream_processes:
-        process.start()
+    # for process in robot_camera_stream_processes:
+    #     process.start()
 
     if configs.tracker.type != 'HAMER': # only for temporal
         # # Detection processes
@@ -44,11 +47,11 @@ def main(configs):
     # for process in tactile_processes:
     #     process.join()
 
-    for process in robot_camera_processes:
-        process.join()
+    # for process in robot_camera_processes:
+    #     process.join()
 
-    for process in robot_camera_stream_processes:
-        process.join()
+    # for process in robot_camera_stream_processes:
+    #     process.join()
 
     if configs.tracker.type != 'HAMER': # only for temporal
         detection_process.join()

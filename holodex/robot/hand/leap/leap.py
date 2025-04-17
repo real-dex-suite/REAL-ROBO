@@ -8,9 +8,10 @@ from holodex.robot.hand.leap.controller import LeapNode # From https://github.co
 import holodex.robot.hand.leap.leap_hand_utils.leap_hand_utils as lhu
 
 from copy import deepcopy as copy
-
-from leap_hand.srv import *
-
+try:
+    from leap_hand.srv import *
+except:
+    pass
 class LeapHand(object):
     def __init__(self):
         self.kdl_solver = LeapKDL()

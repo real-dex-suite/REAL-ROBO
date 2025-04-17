@@ -1,3 +1,4 @@
+# from holodex.robot.arm.franka_fr3.franka_env_wrapper import FrankaEnvWrapper
 import rospy
 from holodex.constants import *
 import warnings
@@ -9,22 +10,22 @@ warnings.filterwarnings(
     message="Link .* is of type 'fixed' but set as active in the active_links_mask.*",
 )
 # load module according to hand type
-hand_module = __import__("holodex.robot.hand")
-KDLControl_module_name = f"{HAND_TYPE}KDLControl" 
-JointControl_module_name = f"{HAND_TYPE}JointControl" 
-Hand_module_name = f"{HAND_TYPE}Hand" 
+# hand_module = __import__("holodex.robot.hand")
+# KDLControl_module_name = f"{HAND_TYPE}KDLControl" 
+# JointControl_module_name = f"{HAND_TYPE}JointControl" 
+# Hand_module_name = f"{HAND_TYPE}Hand" 
 # get relevant classes
-KDLControl = (
-    getattr(hand_module.robot, KDLControl_module_name)
-    if HAND_TYPE is not None
-    else None
-)
-JointControl = (
-    getattr(hand_module.robot, JointControl_module_name)
-    if HAND_TYPE is not None
-    else None
-)
-Hand = getattr(hand_module.robot, Hand_module_name) 
+# KDLControl = (
+#     getattr(hand_module.robot, KDLControl_module_name)
+#     if HAND_TYPE is not None
+#     else None
+# )
+# JointControl = (
+#     getattr(hand_module.robot, JointControl_module_name)
+#     if HAND_TYPE is not None
+#     else None
+# )
+# Hand = getattr(hand_module.robot, Hand_module_name) 
 
 if ARM_TYPE is not None:
     # load module according to arm type
@@ -33,13 +34,13 @@ if ARM_TYPE is not None:
     Arm = getattr(arm_module.robot, Arm_module_name)
 
 # load constants according to hand type
-hand_type = HAND_TYPE.lower() 
-JOINTS_PER_FINGER = (
-    eval(f"{hand_type.upper()}_JOINTS_PER_FINGER") 
-)
-JOINT_OFFSETS = (
-    eval(f"{hand_type.upper()}_JOINT_OFFSETS") 
-)
+# hand_type = HAND_TYPE.lower() 
+# JOINTS_PER_FINGER = (
+#     eval(f"{hand_type.upper()}_JOINTS_PER_FINGER") 
+# )
+# JOINT_OFFSETS = (
+#     eval(f"{hand_type.upper()}_JOINT_OFFSETS") 
+# )
 
 
 class RobotController(object):
@@ -55,6 +56,10 @@ class RobotController(object):
         if ARM_TYPE == "Flexiv":
             self.arm = Arm()
             cprint("Call Flexiv Arm", "red")
+        elif ARM_TYPE == "Franka":
+            from holodex.robot.arm.franka.franka_env_wrapper import FrankaEnvWrapper
+            self.arm = FrankaEnvWrapper(control_mode="joint") # modify this 
+            cprint("Call Franka Arm", "red")
         else:
             self.arm = (
                 Arm(
@@ -71,15 +76,15 @@ class RobotController(object):
         self.arm_control_mode = arm_control_mode
         cprint(f"self.arm_control_mode: {self.arm_control_mode}", "red")
 
-        self.hand_control_mode = hand_control_mode
+        # self.hand_control_mode = hand_control_mode
 
-        self.hand = (
-            Hand() 
-        )  # TODO add different control mode for hand
-        self.hand_KDLControl = KDLControl() 
-        self.hand_JointControl = JointControl() 
-        self.joints_per_finger = JOINTS_PER_FINGER
-        self.joint_offsets = JOINT_OFFSETS
+        # self.hand = (
+        #     Hand() 
+        # )  # TODO add different control mode for hand
+        # self.hand_KDLControl = KDLControl() 
+        # self.hand_JointControl = JointControl() 
+        # self.joints_per_finger = JOINTS_PER_FINGER
+        # self.joint_offsets = JOINT_OFFSETS
         self.teleop = teleop
 
         self.home = home
@@ -88,20 +93,20 @@ class RobotController(object):
         self.home_robot()
 
     def home_robot(self):
-        if ARM_TYPE is not None:
-            self.arm.home_robot()
-        if HAND_TYPE is not None:
-            self.hand.home_robot()
+        # if ARM_TYPE is not None:
+        #     self.arm.home_robot()
+        # if HAND_TYPE is not None:
+        #     self.hand.home_robot()
+        pass
 
     def reset_robot(self):
         if ARM_TYPE is not None:
             self.arm.reset()
-        if HAND_TYPE is not None:
-            self.hand.reset()
+        # if HAND_TYPE is not None:
+        #     self.hand.reset()
 
     def get_arm_position(self):
-        # return self.arm.get_arm_position()
-        pass
+        return self.arm.get_arm_position()
 
     def get_arm_velocity(self):
         return self.arm.get_arm_velocity()
@@ -128,8 +133,10 @@ class RobotController(object):
             ]
         self.hand.move(input_angles)
 
+    # TODO
     def move_arm(self, input_angles: np.ndarray):
-        self.arm.move(input_angles)
+        self.arm.move_joint(input_angles)
+        # self.arm.move_cartesian(input_angles)
         rospy.sleep(SLEEP_TIME)
 
     def move_arm_and_hand(self, input_angles):
@@ -159,7 +166,35 @@ class RobotController(object):
             self.move_hand(action["hand"])
         rospy.sleep(1/5)
         
+    def move_gripper(self, gripper_cmd):
+        """
+        Control gripper for teleoperation with binary open/close command.
+        Includes debouncing to avoid too frequent control commands.
+        
+        Args:
+            gripper_cmd (float or int): Binary command for gripper
+                - Values <= 0.05: Close the gripper
+                - Values > 0.05: Open the gripper
+                
+        """
+        # Initialize state tracking if not already set
+        if not hasattr(self, '_gripper_state'):
+            self._gripper_state = None
             
+        # Debounce logic - only send commands when state actually changes
+        if float(gripper_cmd) > 0.05:
+            # Open gripper command
+            if self._gripper_state != 'open':
+                self.arm.open_gripper()
+                self._gripper_state = 'open'
+        else:
+            # Close gripper command
+            if self._gripper_state != 'closed':
+                self.arm.close_gripper()
+                self._gripper_state = 'closed'
+
+    def get_gripper_state(self):
+        return self.arm.get_gripper_is_grasped()
 
     def servo_move(self, action: dict, n_interpolations: int = 30):
         # hand interpolation
@@ -233,38 +268,6 @@ class RobotController(object):
         arm_position = self.get_arm_tcp_position()
         arm_position_diff = np.linalg.norm(action["arm"][:3] - arm_position[:3])
         arm_orientation_diff = np.linalg.norm(action["arm"][3:] - arm_position[3:])
-        # print(f"Arm position difference: {arm_position_diff}")
-        # print(f"Arm orientation difference: {arm_orientation_diff}")
-
-    def servo_move_test(self, action: dict, n_interpolations: int = 30):
-        # hand interpolation
-        if self.hand_control_mode == "joint":
-            start_hand_pos = self.get_hand_position()
-            end_hand_pos = action["hand"]
-
-        # arm interpolation
-        if self.arm_control_mode == "interpo_ik":
-            start_arm_pos = self.get_arm_tcp_position()
-            current_joint = self.get_arm_position()
-            start_arm_pos = np.array(self.arm.compute_ik(current_joint, start_arm_pos))
-            end_arm_pos = np.array(self.arm.compute_ik(current_joint, action["arm"]))
-        elif self.arm_control_mode == "joint":
-            start_arm_pos = self.get_arm_position()
-            end_arm_pos = action["arm"]
-
-        # make the robot move
-        for step in range(1, n_interpolations + 1):
-            interpolated_hand_pos = (
-                start_hand_pos
-                + (end_hand_pos - start_hand_pos) * step / n_interpolations
-            )
-            interpolated_arm_pos = (
-                start_arm_pos + (end_arm_pos - start_arm_pos) * step / n_interpolations
-            )
-            self.move_arm(interpolated_arm_pos)
-            self.move_hand(interpolated_hand_pos)
-
-            rospy.sleep(0.1)
 
 
 import sensor_msgs
@@ -318,7 +321,23 @@ if __name__ == "__main__":
     robot = RobotController(teleop=False, random_arm_home=False, home=True)
     # robot.move_hand(np.zeros(16))
     # get  ee pose
-    print(robot.get_arm_tcp_position())
+    # print(robot.get_arm_tcp_position())
+
+    # rospy.sleep(2)
+    # tcp_position = robot.get_arm_tcp_position()
+    # # tcp_position[0] += 0.15
+    # # tcp_position[1] -= 0.05
+    # tcp_position[2] += 0.05
+    # rospy.sleep(2)
+
+    # robot.move_arm(tcp_position)
+    # rospy.sleep(2)
+
+    # print(robot.get_arm_position())
+    
+
+
+
 
     # robot.reset_robot()
     # robot.home_robot()
