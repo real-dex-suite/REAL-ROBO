@@ -63,7 +63,7 @@ class FrankaDataCollector:
         self.franka_env_wrapper = FrankaEnvWrapper()
 
         # Set up cameras
-        self._setup_cameras()
+        # self._setup_cameras()
 
         # Set up ROS topics
         self._setup_ros_topics()
