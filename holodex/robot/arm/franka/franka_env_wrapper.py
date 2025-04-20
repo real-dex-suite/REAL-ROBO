@@ -72,7 +72,7 @@ class FrankaEnvWrapper:
         self._fa_cmd_id = 0
         self._init_time = rospy.Time.now().to_time()
         self.ik_solver = FrankaSolver("motion_gen")
-
+        
     def _initialize_state(self):
         """Initialize robot state variables."""
         self.current_joint_state = self.arm.get_joints()
@@ -89,6 +89,7 @@ class FrankaEnvWrapper:
             d_gains=self.joint_d_gains,
             dynamic=True,
             buffer_time=10,
+            ignore_virtual_walls=True,
         )
 
     def _initialize_cartesian_control_config(self):
@@ -99,6 +100,7 @@ class FrankaEnvWrapper:
             dynamic=True,
             buffer_time=10000,
             cartesian_impedances=[1200.0, 1200.0, 1200.0, 50.0, 50.0, 50.0],
+            ignore_virtual_walls=True,
         )
 
     def eulerZYX2quat(self, euler, degree=False):
@@ -289,6 +291,11 @@ class FrankaEnvWrapper:
         # TODO: shutdown the robot
         pass
 
+    def reset(self):
+        """
+        This function is used to reset the robot to the home position from the frankapy.
+        """
+        self.arm.reset_joints()
 
 if __name__ == "__main__":
     try:

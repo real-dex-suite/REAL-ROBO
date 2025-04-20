@@ -91,7 +91,7 @@ class RobotController(object):
         if self.home is True:
             self.home_robot()
         self.home_robot()
-
+        self.arm.reset()
     def home_robot(self):
         # if ARM_TYPE is not None:
         #     self.arm.home_robot()
@@ -133,7 +133,6 @@ class RobotController(object):
             ]
         self.hand.move(input_angles)
 
-    # TODO
     def move_arm(self, input_angles: np.ndarray):
         self.arm.move_joint(input_angles)
         # self.arm.move_cartesian(input_angles)

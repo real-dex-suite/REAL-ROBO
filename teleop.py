@@ -19,9 +19,9 @@ def main(configs):
     # for process in tactile_processes:
     #     process.start()
     #     time.sleep(2)
-    # for process in robot_camera_processes:
-    #     process.start()
-    #     time.sleep(2)
+    for process in robot_camera_processes:
+        process.start()
+        time.sleep(2)
 
     # for process in robot_camera_stream_processes:
     #     process.start()
@@ -47,11 +47,11 @@ def main(configs):
     # for process in tactile_processes:
     #     process.join()
 
-    # for process in robot_camera_processes:
-    #     process.join()
+    for process in robot_camera_processes:
+        process.join()
 
-    # for process in robot_camera_stream_processes:
-    #     process.join()
+    for process in robot_camera_stream_processes:
+        process.join()
 
     if configs.tracker.type != 'HAMER': # only for temporal
         detection_process.join()

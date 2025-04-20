@@ -6,5 +6,8 @@ python franka_record.py \
     storage_path='expert_dataset/test_ros/recorded_data' \
 
 
+# frequency setup
+# RECORD_FPS=120
+
 
  

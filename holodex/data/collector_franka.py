@@ -28,13 +28,12 @@ def clear_input_buffer():
     termios.tcflush(sys.stdin, termios.TCIFLUSH)
 
 
-class FrankaDataCollector:
+class FrankaDataCollector(object):
     def __init__(
         self,
         num_cams=0,
         keyboard_control=False,
         storage_path=None,
-        data_collection_type=None,
     ):
         """
         Initialize the data collector for Franka robot.
@@ -43,7 +42,6 @@ class FrankaDataCollector:
             num_cams (int): Number of cameras
             keyboard_control (bool): Whether to use keyboard control
             storage_path (str): Path to store collected data
-            data_collection_type (list): Types of data to collect
         """
         self.storage_path = storage_path
         self.keyboard_control = keyboard_control
@@ -60,19 +58,17 @@ class FrankaDataCollector:
             make_dir(self.storage_path)
 
         # Initialize Franka environment wrapper
-        self.franka_env_wrapper = FrankaEnvWrapper()
+        # self.franka_env_wrapper = FrankaEnvWrapper()
 
         # Set up cameras
-        # self._setup_cameras()
+        self._setup_cameras()
 
         # Set up ROS topics
         self._setup_ros_topics()
 
         # Set up data collection based on type
-        if data_collection_type:
-            self._setup_data_collection(data_collection_type)
-        else:
-            self._setup_franka_state_collection()
+
+        self._setup_franka_state_collection()
 
         # Frequency timer for data collection
         self.frequency_timer = frequency_timer(RECORD_FPS)
@@ -162,15 +158,6 @@ class FrankaDataCollector:
         """Callback for keyboard hand control"""
         self.hand_commanded_joint_position = data
 
-    def _setup_data_collection(self, data_collection_type):
-        """
-        Set up data collection based on specified types
-
-        Args:
-            data_collection_type (list): List of data types to collect
-        """
-        if "robot_state" in data_collection_type:
-            self._setup_franka_state_collection()
 
     def _setup_franka_state_collection(self):
         """Set up franka state collection"""
@@ -193,13 +180,13 @@ class FrankaDataCollector:
             bool: True if all data is available, False otherwise
         """
         # Check gripper data
-        if self.franka_env_wrapper.get_gripper_width() is None:
-            cprint("Gripper width data not available!", "red")
-            return False
+        # if self.franka_env_wrapper.get_gripper_width() is None:
+        #     cprint("Gripper width data not available!", "red")
+        #     return False
 
-        if self.franka_env_wrapper.get_gripper_is_grasped() is None:
-            cprint("Gripper grasp status not available!", "red")
-            return False
+        # if self.franka_env_wrapper.get_gripper_is_grasped() is None:
+        #     cprint("Gripper grasp status not available!", "red")
+        #     return False
 
         # Check robot state data if needed
         if hasattr(self, "robot_state") and self.robot_state is None:
@@ -226,9 +213,9 @@ class FrankaDataCollector:
         """
         state = {}
 
-        # Gripper data
-        state["gripper_joint_positions"] = self.franka_env_wrapper.get_gripper_width()
-        state["gripper_status"] = self.franka_env_wrapper.get_gripper_is_grasped()
+        # # Gripper data
+        # state["gripper_joint_positions"] = self.franka_env_wrapper.get_gripper_width()
+        # state["gripper_status"] = self.franka_env_wrapper.get_gripper_is_grasped()
 
         # Full robot state if available
         if getattr(self, "robot_state", None) is not None:
@@ -290,6 +277,7 @@ class FrankaDataCollector:
             )
             clear_input_buffer()
             input_cmd = input("Enter the next command: ")
+            cprint(f"Received command: {input_cmd}", "blue")  # Debug print
 
             if input_cmd == "c":
                 # Update demo number and continue recording
@@ -341,7 +329,22 @@ class FrankaDataCollector:
 
             else:
                 cprint(f"Invalid command {input_cmd}!", "red")
-
+    
+    def _on_press(self, key):
+        """
+        Keyboard listener callback to handle key presses during data collection
+        
+        Args:
+            key: The key that was pressed
+        """
+        try:
+            if key.char == 's':
+                cprint("Stop signal received from keyboard", "yellow")
+                self.stop = True
+        except AttributeError:
+            # Special keys don't have a char attribute
+            pass
+    
     def extract(self, offset=0):
         """
         Extract and save data from all sources
@@ -349,8 +352,35 @@ class FrankaDataCollector:
         Args:
             offset (int): Counter offset for file naming
         """
+        # Ask for demonstration number
+        try:
+            self.demo_num = int(input("Enter demonstration number to start with: "))
+            self.storage_path = os.path.join(
+                self.storage_root, f"demonstration_{self.demo_num}"
+            )
+            make_dir(self.storage_path)
+            cprint(f"Will save data to {self.storage_path}", "green")
+        except ValueError:
+            cprint("Invalid input. Using default demonstration number 1.", "yellow")
+            self.demo_num = 1
+            self.storage_path = os.path.join(
+                self.storage_root, f"demonstration_{self.demo_num}"
+            )
+            make_dir(self.storage_path)
+        
+        # Set up keyboard listener
+        self.keyboard_listener = keyboard.Listener(on_press=self._on_press)
+        self.keyboard_listener.start()
+        cprint("Keyboard listener started", "blue")
+        
         counter = offset + 1
         try:
+            # Initial prompt to user to start collection
+            cprint("Press any key to stop recording when ready, or Ctrl + | to exit", "yellow")
+            cprint("Don't use Ctrl + C because cannot kill the camera process", "red")
+            cprint("Starting data collection automatically...", "green")
+            
+            cprint("Data collection in progress...", "green")
             while True:
                 # Check if all data is available
                 if not self._check_data_availability():
@@ -366,6 +396,8 @@ class FrankaDataCollector:
                 state = self._collect_state_data()
 
                 # Save data to file
+                if not os.path.exists(self.storage_path):
+                    os.makedirs(self.storage_path)
                 state_pickle_path = os.path.join(self.storage_path, f"{counter}")
                 store_pickle_data(state_pickle_path, state)
 
@@ -382,12 +414,12 @@ class FrankaDataCollector:
                 # Handle auto collection stop
                 if self.stop:
                     cprint(
-                        f"Successfully recorded demonstration {self.demo_num}! Data can be found in {self.storage_path}",
+                        f"Successfully record {self.demo_num} traj! Data can be found in {self.storage_path}",
                         "green",
                     )
                     self.stop = False
 
-                    # Handle user commands
+                    # Use the _handle_user_command method instead of duplicating code
                     counter, continue_collection = self._handle_user_command(counter)
                     if not continue_collection:
                         break
@@ -398,62 +430,7 @@ class FrankaDataCollector:
                 "green",
             )
             sys.exit(0)
-
-
-if __name__ == "__main__":
-    import os
-    import time
-    from holodex.utils.files import make_dir
-
-    # Define storage path
-    storage_path = "expert_dataset/test_data/franka_collector_test"
-
-    # Create directory if it doesn't exist
-    make_dir(storage_path)
-
-    # Create a data collector instance for testing
-    collector = FrankaDataCollector(
-        num_cams=1,
-        keyboard_control=False,
-        data_collection_type=["robot_state"],
-        storage_path=storage_path,
-    )
-
-    # Print initialization message
-    print(
-        f"FrankaDataCollector test initialized. Data will be saved to: {storage_path}"
-    )
-
-    try:
-        # Start data collection
-        print("Starting data collection test...")
-
-        # Collect data for 10 seconds
-        start_time = time.time()
-        duration = 10  # seconds
-
-        collector.extract(offset=0)
-
-        while time.time() - start_time < duration:
-            print(
-                f"Collecting data... {int(time.time() - start_time)}/{duration} seconds"
-            )
-            time.sleep(1)
-
-        # Check if data was collected
-        import glob
-
-        collected_files = glob.glob(f"{storage_path}/*")
-        print(f"Test results: Collected {len(collected_files)} data points")
-
-        if len(collected_files) > 0:
-            print("Test PASSED: Data collection successful")
-        else:
-            print("Test FAILED: No data collected")
-
-    except KeyboardInterrupt:
-        print("Test terminated by user")
-    except Exception as e:
-        print(f"Test FAILED with error: {e}")
-    finally:
-        print("Test completed")
+        finally:
+            # Clean up keyboard listener
+            if hasattr(self, 'keyboard_listener') and self.keyboard_listener.running:
+                self.keyboard_listener.stop()

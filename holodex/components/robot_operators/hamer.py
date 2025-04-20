@@ -123,7 +123,7 @@ class HamerDexArmTeleOp(object):
                 ).as_matrix()
             elif ARM_TYPE == "Franka":
                 self.leap2flange[:3, :3] = R.from_euler(
-                    "xyz", [0, 0, 90], degrees=True
+                    "xyz", [0, 0, -90], degrees=True
                 ).as_matrix()
             else:
                 self.leap2flange[:3, :3] = R.from_euler(
@@ -259,7 +259,7 @@ class HamerDexArmTeleOp(object):
     def vr_to_robot(self, armpoints):
         """Convert VR arm points to robot coordinates"""
         
-        scaled_points = armpoints * np.array([1, 1, 1 / 30])
+        scaled_points = armpoints * np.array([2, 2, 1 / 10])
         timestamps = np.arange(len(scaled_points))
 
         # Create cubic splines for smooth interpolation
@@ -343,7 +343,7 @@ class HamerDexArmTeleOp(object):
         current_arm_pose = self.arm_ee_pose
 
         # Apply exponential smoothing to translation
-        exponential_smoothing = 1.0
+        exponential_smoothing = 0.8
         if not hasattr(self, "previous_filtered_translation"):
             self.previous_filtered_translation = current_arm_pose[:3]
 
@@ -354,7 +354,7 @@ class HamerDexArmTeleOp(object):
         ) + (exponential_smoothing * composed_translation)
 
         # Use Slerp to smooth the rotation
-        alpha = 0.03
+        alpha = 0.2 # alpha composed_rotation + (1- alpha) of previous_rotation.
         if not hasattr(self, "previous_filtered_rotation"):
             self.previous_filtered_rotation = R.from_euler(
                 "xyz", current_arm_pose[3:6]
@@ -375,9 +375,11 @@ class HamerDexArmTeleOp(object):
 
         # Update the arm pose
         current_arm_pose[:3] = current_filtered_translation * self.trans_scale
-        current_arm_pose[3:6] = self._limited_rot_ws(
-            smoothed_rotation_euler, max_rot=np.pi / 2, min_rot=-np.pi / 2
-        )
+        current_arm_pose[3:6] = smoothed_rotation_euler
+        
+        # current_arm_pose[3:6] = self._limited_rot_ws(
+        #     smoothed_rotation_euler, max_rot=np.pi / 2, min_rot=-np.pi / 2
+        # )
 
         return current_arm_pose
 
