@@ -103,8 +103,6 @@ class FrankaGenesisEnvWrapper:
     def ee2joint(self, ee_pose):
         # Convert end-effector pose to joint positions using inverse kinematics
         np.set_printoptions(precision=4, suppress=True)
-        print("ee_pose", ee_pose)
-        print("cur_ee_pose", self.get_tcp_position())
         ik_res = self.ik_solver.solve_ik(ee_pose[:3], ee_pose[3:])
         return ik_res
 
@@ -122,11 +120,12 @@ class FrankaGenesisEnvWrapper:
         """
         This function is used to reset the robot to the home position from the frankapy.
         """
-        # Open the robot's gripper
-        reset_msg = Bool(data=True)
-        self.reset_pub.publish(reset_msg)
-        reset_msg = Bool(data=False)
-        self.reset_pub.publish(reset_msg)
+        print("publishing...")
+        rate = rospy.Rate(10)
+        for _ in range(5):
+            reset_msg = Bool(data=True)
+            self.reset_pub.publish(reset_msg)
+            rate.sleep()
 
     def solve_ik(self, ee_pose: list) -> list:
         """
@@ -141,18 +140,20 @@ class FrankaGenesisEnvWrapper:
         Raises:
             ValueError: If no IK solution found
         """
+        
         ik_res = self.ik_solver.solve_ik_by_motion_gen(
             self.get_arm_position(), ee_pose[:3], ee_pose[3:]
         )
-        ik_res = np.array(ik_res[-1])
         if ik_res is None:
-            raise ValueError("IK solution not found")
+            return None
+        ik_res = np.array(ik_res[-1])
         return ik_res
 
     def move_joint(self, target_joint): #! double check the type of target_joint
         target_joint = self.solve_ik(target_joint)
-        joint_pos_msg = Float64MultiArray(data=target_joint)
-        self.joint_control_pub.publish(joint_pos_msg)
+        if target_joint is not None:
+            joint_pos_msg = Float64MultiArray(data=target_joint)
+            self.joint_control_pub.publish(joint_pos_msg)
 
     def run(self):
         pass

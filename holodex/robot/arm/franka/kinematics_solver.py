@@ -137,16 +137,18 @@ class FrankaSolver:
             position=self.tensor_args.to_device(target_trans),
             quaternion=self.tensor_args.to_device(target_quat),
         )
+        try:
+            result = self.motion_gen.plan_single(
+                cu_js.unsqueeze(0), ik_goal, self.plan_config_temp
+            )
 
-        result = self.motion_gen.plan_single(
-            cu_js.unsqueeze(0), ik_goal, self.plan_config_temp
-        )
-
-        if result.success.item():
-            motion_plan = result.get_interpolated_plan()
-            motion_plan = self.motion_gen.get_full_js(motion_plan)
-            motion_plan = motion_plan.get_ordered_joint_state(JS_NAMES)
-            return motion_plan.position.cpu().numpy().tolist()
+            if result.success.item():
+                motion_plan = result.get_interpolated_plan()
+                motion_plan = self.motion_gen.get_full_js(motion_plan)
+                motion_plan = motion_plan.get_ordered_joint_state(JS_NAMES)
+                return motion_plan.position.cpu().numpy().tolist()
+        except:
+            return None
         return None
 
     def solve_ik(self, target_position, target_quaternion):

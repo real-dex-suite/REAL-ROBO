@@ -25,9 +25,6 @@ import sys
 import spdlog
 import numpy as np
 
-from geometry_msgs.msg import Pose
-from std_msgs.msg import Float64
-
 # Load constants according to hand type
 hand_type = HAND_TYPE.lower() if HAND_TYPE is not None else None
 JOINTS_PER_FINGER = (
@@ -91,8 +88,8 @@ class HamerDexArmTeleOp(object):
 
         self.trans_scale = 1
         self.logger = spdlog.ConsoleLogger("RobotController")
-        self.finger_distance = 1.0
-
+        self.finger_distance = 0.1
+        
         # Initialize state variables
         self.hand_coords = None
         self.arm_coords = None
@@ -100,7 +97,7 @@ class HamerDexArmTeleOp(object):
         self.stop_move = False
         self.end_robot = False
         self.translation_state = None
-
+        
         # Set up ROS subscribers
         self._setup_subscribers()
 
@@ -178,17 +175,10 @@ class HamerDexArmTeleOp(object):
             queue_size=1,
         )
         rospy.Subscriber(
-            "vr/gripper",
-            Float64,
+            HAMER_FINGER_DISTANCE_TOPIC,
+            Float64MultiArray,
             self._callback_finger_distance,
             queue_size=1,
-        )
-        rospy.Subscriber(
-            "vr/ee_pose",
-            Pose,
-            self._callback_ee_pose,
-            queue_size=1,
-
         )
 
     def _get_tcp_position(self):
@@ -205,26 +195,9 @@ class HamerDexArmTeleOp(object):
         else:
             return self.robot.arm.get_tcp_position()
 
-    def _callback_ee_pose(self, pose):
-        # self.joystick_trans = np.array(pose.position)
-        # self.joystick_quat = np.array(pose.orientation)
-        # print("joystick", self.joystick_trans, self.joystick_quat)
-        # self.joystick_pose = np.concatenate([self.joystick_trans, self.joystick_quat])
-        self.joystick_pose = np.array(
-            [
-                pose.position.x,
-                pose.position.y,
-                pose.position.z,
-                pose.orientation.x,
-                pose.orientation.y,
-                pose.orientation.z,
-                pose.orientation.w,
-            ]
-        )
-
     def _callback_finger_distance(self, data):
-        self.finger_distance = np.array(data.data)
-
+        self.finger_distance = np.array(list(data.data))
+            
     def _callback_hand_coords(self, coords):
         self.hand_coords = np.array(list(coords.data)).reshape(HAMER_NUM_KEYPOINTS, 3)
 
@@ -283,55 +256,41 @@ class HamerDexArmTeleOp(object):
         else:
             raise ValueError(f"Unsupported filter type: {filter_type}")
 
-    # def vr_to_robot(self, armpoints):
-    #     """Convert VR arm points to robot coordinates"""
+    def vr_to_robot(self, armpoints):
+        """Convert VR arm points to robot coordinates"""
+        
+        scaled_points = armpoints * np.array([3, 3, 1 / 10])
+        timestamps = np.arange(len(scaled_points))
 
-    #     scaled_points = armpoints * np.array([2, 2, 1 / 10])
-    #     timestamps = np.arange(len(scaled_points))
+        # Create cubic splines for smooth interpolation
+        cs_x = CubicSpline(timestamps, scaled_points[:, 0])
+        cs_y = CubicSpline(timestamps, scaled_points[:, 1])
+        cs_z = CubicSpline(timestamps, scaled_points[:, 2])
 
-    #     # Create cubic splines for smooth interpolation
-    #     cs_x = CubicSpline(timestamps, scaled_points[:, 0])
-    #     cs_y = CubicSpline(timestamps, scaled_points[:, 1])
-    #     cs_z = CubicSpline(timestamps, scaled_points[:, 2])
+        dense_timestamps = np.linspace(
+            0, len(scaled_points) - 1, num=len(scaled_points) * 2
+        )
+        interpolated_points = np.column_stack(
+            (cs_x(dense_timestamps), cs_y(dense_timestamps), cs_z(dense_timestamps))
+        )
 
-    #     dense_timestamps = np.linspace(
-    #         0, len(scaled_points) - 1, num=len(scaled_points) * 2
-    #     )
-    #     interpolated_points = np.column_stack(
-    #         (cs_x(dense_timestamps), cs_y(dense_timestamps), cs_z(dense_timestamps))
-    #     )
+        translation_vector = np.average(interpolated_points, axis=0)
+        rotation_vectors = armpoints - np.average(armpoints, axis=0)
 
-    #     translation_vector = np.average(interpolated_points, axis=0)
-    #     rotation_vectors = armpoints - np.average(armpoints, axis=0)
+        rotation_vectors = self._arm_filter(rotation_vectors, "low_pass")
+        index_knuckle_coord = rotation_vectors[1]
+        pinky_knuckle_coord = rotation_vectors[2]
 
-    #     rotation_vectors = self._arm_filter(rotation_vectors, "low_pass")
-    #     index_knuckle_coord = rotation_vectors[1]
-    #     pinky_knuckle_coord = rotation_vectors[2]
+        palm_normal = normalize_vector(
+            np.cross(index_knuckle_coord, pinky_knuckle_coord)
+        )
+        palm_direction = normalize_vector(index_knuckle_coord + pinky_knuckle_coord)
+        cross_product = normalize_vector(np.cross(palm_direction, palm_normal))
 
-    #     palm_normal = normalize_vector(
-    #         np.cross(index_knuckle_coord, pinky_knuckle_coord)
-    #     )
-    #     palm_direction = normalize_vector(index_knuckle_coord + pinky_knuckle_coord)
-    #     cross_product = normalize_vector(np.cross(palm_direction, palm_normal))
-
-    #     return translation_vector, cross_product, palm_direction, palm_normal
-
-
-    def vr_to_robot(self, pose):
-        """Convert joystick end-effector pose to robot coordinates without smoothing and interpolation"""
-
-        # Assuming 'ee_pose' is the end-effector pose from the joystick
-        translation_vector = pose[:3]
-        rotation_quat = pose[3:7]
-
-        # Convert quaternion to rotation matrix
-        rotation_matrix = R.from_quat(rotation_quat).as_matrix()
-
-        # Extract direction vectors from the rotation matrix
-        palm_direction = normalize_vector(rotation_matrix[:, 0])
-        palm_normal = normalize_vector(rotation_matrix[:, 1])
-        cross_product = normalize_vector(rotation_matrix[:, 2])
-
+        # print("trans", translation_vector)
+        # print("cross", cross_product)
+        # print("palmdire", palm_direction)
+        # print("palmnorm", palm_normal)
         return translation_vector, cross_product, palm_direction, palm_normal
 
     def _compute_transformation(self, init_hand_transformation, hand2vr_transformation):
@@ -357,8 +316,12 @@ class HamerDexArmTeleOp(object):
     def _retarget_base(self):
         """Retarget the base position of the robot arm"""
         # Get the scaled hand center and direction vectors
-        hand_center, hand_x, hand_y, hand_z = self.vr_to_robot(self.joystick_pose)
-
+        hand_center, hand_x, hand_y, hand_z = self.vr_to_robot(self.arm_coords)
+        # print("hand center", hand_center, hand_center.shape)
+        # print("hand x", hand_x, hand_x.shape)
+        # print("hand y", hand_y, hand_y.shape)
+        # print("hand z", hand_z, hand_z.shape)
+        
         # Define points in hand space
         points_in_hand_space = np.array(
             [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
@@ -373,6 +336,10 @@ class HamerDexArmTeleOp(object):
             ]
         )
 
+        # print("points_in_hand_space", points_in_hand_space, points_in_hand_space.shape)
+        # print("points_in_vr_space", points_in_vr_space, points_in_vr_space.shape)
+        # print("hand y", hand_y, hand_y.shape)
+        # print("hand z", hand_z, hand_z.shape)
         vr2init_hand_transformation, hand2vr_transformation = self._get_transformation(
             points_in_hand_space, points_in_vr_space
         )
@@ -421,7 +388,7 @@ class HamerDexArmTeleOp(object):
         # Update the arm pose
         current_arm_pose[:3] = current_filtered_translation * self.trans_scale
         current_arm_pose[3:6] = smoothed_rotation_euler
-
+        
         # current_arm_pose[3:6] = self._limited_rot_ws(
         #     smoothed_rotation_euler, max_rot=np.pi / 2, min_rot=-np.pi / 2
         # )
@@ -464,7 +431,7 @@ class HamerDexArmTeleOp(object):
         initial_arm_rots = []
 
         while frame_number < inital_frame_number:
-            hand_center, hand_x, hand_y, hand_z = self.vr_to_robot(self.joystick_pose)
+            hand_center, hand_x, hand_y, hand_z = self.vr_to_robot(self.arm_coords)
             initial_hand_centers.append(hand_center)
             initial_hand_xs.append(hand_x)
             initial_hand_ys.append(hand_y)
@@ -509,7 +476,7 @@ class HamerDexArmTeleOp(object):
         print("Start controlling the robot hand using the Hamer Framework.\n")
 
         while True:
-            if self.joystick_pose is not None:
+            if (self.arm_coords is not None) and (self.hand_coords is not None):
                 if self.stop_move:
                     continue
                 if self.end_robot:
@@ -519,11 +486,15 @@ class HamerDexArmTeleOp(object):
                 x = np.array(self.robot.get_arm_tcp_position())
                 np.set_printoptions(precision=5, suppress=True)
                 # print(f"current_tcp{x}")
-                # print(f"desired_joint_angles: {desired_joint_angles}")
-                print(f"current_joint{self.robot.get_arm_position()}")
+                print(f"desired_joint_angles: {desired_joint_angles}")
+                print(f"current_joint: {x}")
+                # time.sleep(3)
+                
+
+
                 self.robot.move_arm(desired_joint_angles)
 
-                print(f"gripper: {self.finger_distance}")
+                # print(f"gripper: {self.finger_distance}")
                 self.robot.move_gripper(self.finger_distance)
 
 
