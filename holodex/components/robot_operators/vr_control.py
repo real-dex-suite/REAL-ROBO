@@ -203,11 +203,11 @@ class HamerDexArmTeleOp(object):
         self.joystick_pose = np.array(
             [
                 pose.position.x,
-                pose.position.y,
+                -pose.position.y,
                 pose.position.z,
-                pose.orientation.x,
+                -pose.orientation.x,
                 pose.orientation.y,
-                pose.orientation.z,
+                -pose.orientation.z,
                 pose.orientation.w,
             ]
         )
