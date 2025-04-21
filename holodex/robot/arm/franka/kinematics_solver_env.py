@@ -46,7 +46,7 @@ def solve(joint_state, ee_translation_goal, ee_orientation_goal, args):
         None,
         tensor_args,
         interpolation_dt=0.02,
-        ee_link_name="ee_link",
+        ee_link_name="panda_hand",
     )
     motion_gen = MotionGen(motion_gen_config)
     print("warming up..")

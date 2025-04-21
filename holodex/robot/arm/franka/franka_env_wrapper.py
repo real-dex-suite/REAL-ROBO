@@ -4,21 +4,24 @@ import rospy
 import numpy as np
 import roslib
 
-roslib.load_manifest("franka_interface_msgs")
-from frankapy import FrankaArm, SensorDataMessageType, FrankaConstants as FC
-from frankapy.proto_utils import sensor_proto2ros_msg, make_sensor_group_msg
-from frankapy.proto import JointPositionSensorMessage
-from franka_interface_msgs.msg import SensorDataGroup
-
+try:
+    roslib.load_manifest("franka_interface_msgs")
+    from frankapy import FrankaArm, SensorDataMessageType, FrankaConstants as FC
+    from frankapy.proto_utils import sensor_proto2ros_msg, make_sensor_group_msg
+    from frankapy.proto import JointPositionSensorMessage
+    from franka_interface_msgs.msg import SensorDataGroup
+    from frankapy.proto import (
+        PosePositionSensorMessage,
+        CartesianImpedanceSensorMessage,
+    )
+except:
+    rospy.logwarn("frankapy not loaded! Please check whether is in Sim mode.")
 try:
     from holodex.robot.arm.franka.kinematics_solver import FrankaSolver
 except:
     from kinematics_solver import FrankaSolver
 from scipy.spatial.transform import Rotation as R
-from frankapy.proto import (
-    PosePositionSensorMessage,
-    CartesianImpedanceSensorMessage,
-)
+
 
 
 class FrankaEnvWrapper:

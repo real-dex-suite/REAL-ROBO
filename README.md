@@ -19,8 +19,10 @@ Tested on Ubuntu 20.04
 ## Installation
 
 ```bash
-conda activate frankapy
+conda create -n twinaligner-tele python=3.10
+conda activate twinaligner-tele
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+pip install genesis-world
 pip install -r requirements.txt
 cd $HOME
 git clone https://github.com/NVlabs/curobo.git

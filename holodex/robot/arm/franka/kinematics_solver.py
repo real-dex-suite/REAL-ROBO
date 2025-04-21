@@ -98,7 +98,7 @@ class FrankaSolver:
             None,
             tensor_args=self.tensor_args,
             interpolation_dt=0.02,
-            ee_link_name="ee_link",
+            ee_link_name="panda_hand",
         )
         self.motion_gen = MotionGen(self.plan_config)
         cprint("warming up motion gen solver", "green")

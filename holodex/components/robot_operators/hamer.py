@@ -121,7 +121,7 @@ class HamerDexArmTeleOp(object):
                 self.leap2flange[:3, :3] = R.from_euler(
                     "xyz", [0, 0, 214.5], degrees=True
                 ).as_matrix()
-            elif ARM_TYPE == "Franka":
+            elif ARM_TYPE in ["Franka", "FrankaGenesis"]:
                 self.leap2flange[:3, :3] = R.from_euler(
                     "xyz", [0, 0, -90], degrees=True
                 ).as_matrix()
@@ -185,7 +185,7 @@ class HamerDexArmTeleOp(object):
         """Get the TCP position based on the arm type"""
         if ARM_TYPE == "Flexiv":
             return self.robot.arm.get_tcp_position(euler=True, degree=False)
-        elif ARM_TYPE == "Franka":
+        elif ARM_TYPE in ["Franka", "FrankaGenesis"]:
             tcp_pose = self.robot.arm.get_tcp_position()  # w, x, y, z
             # Convert to euler
             tcp_quat_wxyz = tcp_pose[3:7]
@@ -474,15 +474,15 @@ class HamerDexArmTeleOp(object):
                 x = np.array(self.robot.get_arm_tcp_position())
                 np.set_printoptions(precision=5, suppress=True)
                 # print(f"current_tcp{x}")
-                # print(f"desired_joint_angles: {desired_joint_angles}")
-                print(f"current_joint{self.robot.get_arm_position()}")
+                print(f"desired_joint_angles: {desired_joint_angles}")
+                print(f"current_joint: {x}")
                 # time.sleep(3)
                 
 
 
                 self.robot.move_arm(desired_joint_angles)
 
-                print(f"gripper: {self.finger_distance}")
+                # print(f"gripper: {self.finger_distance}")
                 self.robot.move_gripper(self.finger_distance)
 
 

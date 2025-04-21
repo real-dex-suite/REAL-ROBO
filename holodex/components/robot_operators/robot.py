@@ -60,6 +60,10 @@ class RobotController(object):
             from holodex.robot.arm.franka.franka_env_wrapper import FrankaEnvWrapper
             self.arm = FrankaEnvWrapper(control_mode="joint") # modify this 
             cprint("Call Franka Arm", "red")
+        elif ARM_TYPE == "FrankaGenesis":
+            from holodex.robot.arm.franka.franka_genesis_env_wrapper import FrankaGenesisEnvWrapper
+            self.arm = FrankaGenesisEnvWrapper(control_mode="joint") # modify this 
+            cprint("Call FrankaGenesis Arm", "red")
         else:
             self.arm = (
                 Arm(

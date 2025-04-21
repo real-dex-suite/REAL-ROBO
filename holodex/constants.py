@@ -16,7 +16,8 @@ HAND_TYPE = None
 # ARM_TYPE = "Jaka"
 # HAND_TYPE = None
 # ARM_TYPE = "Flexiv"
-ARM_TYPE = "Franka"
+# ARM_TYPE = "Franka"
+ARM_TYPE = "FrankaGenesis"
 
 
 # Keyboard control
