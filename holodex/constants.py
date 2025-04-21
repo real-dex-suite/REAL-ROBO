@@ -62,6 +62,7 @@ JAKA_COMMANDED_JOINT_STATE_TOPIC = '/jaka/commanded_joint_states'
 JAKA_EE_POSE_TOPIC = '/jaka/ee_pose'
 JAKA_COMMANDED_EE_POSE_TOPIC = '/jaka/commanded_ee_pose'
 
+
 JAKA_DOF = 6
 JAKA_POSITIONS = {
     # 'home':[0,0,0,0,0,0],

@@ -12,7 +12,7 @@ from utils.tactile_data_vis.tactile_visualizer_2d import Tactile2DVisualizer
 from termcolor import cprint
 
 # Highlight!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-from jkrc import jkrc
+# from jkrc import jkrc
 # robot = jkrc.RC("192.168.130.95")
 # robot.login()
 
