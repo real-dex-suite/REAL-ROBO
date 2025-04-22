@@ -29,3 +29,9 @@ git clone https://github.com/NVlabs/curobo.git
 cd curobo && pip install -e . --no-build-isolation && cd ..
 ln -sf /usr/lib/x86_64-linux-gnu/libffi.so.7 $CONDA_PREFIX/lib/libffi.so.7
 ```
+
+## Teleop
+
+```bash
+python teleop_sim.py
+```

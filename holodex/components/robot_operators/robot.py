@@ -95,7 +95,6 @@ class RobotController(object):
         if self.home is True:
             self.home_robot()
         self.home_robot()
-        self.arm.reset()
         
     def home_robot(self):
         # if ARM_TYPE is not None:
