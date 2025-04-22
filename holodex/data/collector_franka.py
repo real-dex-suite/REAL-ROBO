@@ -5,7 +5,6 @@ import time
 import shutil
 import termios
 import numpy as np
-from sensor_msgs.msg import JointState
 from std_msgs.msg import Bool
 from holodex.utils.files import store_pickle_data, make_dir
 from holodex.constants import (
@@ -20,6 +19,7 @@ from holodex.utils.network import (
 )
 from holodex.robot.arm.franka.franka_env_wrapper import FrankaEnvWrapper
 from franka_interface_msgs.msg import RobotState
+from sensor_msgs.msg import JointState
 from termcolor import cprint
 from pynput import keyboard
 
@@ -57,9 +57,6 @@ class FrankaDataCollector(object):
             )
             make_dir(self.storage_path)
 
-        # Initialize Franka environment wrapper
-        # self.franka_env_wrapper = FrankaEnvWrapper()
-
         # Set up cameras
         self._setup_cameras()
 
@@ -67,8 +64,8 @@ class FrankaDataCollector(object):
         self._setup_ros_topics()
 
         # Set up data collection based on type
-
         self._setup_franka_state_collection()
+        self._setup_gripper_state_collection()
 
         # Frequency timer for data collection
         self.frequency_timer = frequency_timer(RECORD_FPS)
@@ -158,7 +155,6 @@ class FrankaDataCollector(object):
         """Callback for keyboard hand control"""
         self.hand_commanded_joint_position = data
 
-
     def _setup_franka_state_collection(self):
         """Set up franka state collection"""
         rospy.Subscriber(
@@ -168,9 +164,22 @@ class FrankaDataCollector(object):
             queue_size=1,
         )
 
+    def _setup_gripper_state_collection(self):
+        """Set up gripper state collection"""
+        rospy.Subscriber(
+            "/franka_gripper/joint_states",
+            JointState,
+            self._callback_gripper_state,
+            queue_size=1,
+        )
+
     def _callback_robot_state(self, data):
         """Callback for robot state"""
         self.robot_state = data
+
+    def _callback_gripper_state(self, data):
+        """Callback for gripper state"""
+        self.gripper_state = data
 
     def _check_data_availability(self):
         """
@@ -179,15 +188,6 @@ class FrankaDataCollector(object):
         Returns:
             bool: True if all data is available, False otherwise
         """
-        # Check gripper data
-        # if self.franka_env_wrapper.get_gripper_width() is None:
-        #     cprint("Gripper width data not available!", "red")
-        #     return False
-
-        # if self.franka_env_wrapper.get_gripper_is_grasped() is None:
-        #     cprint("Gripper grasp status not available!", "red")
-        #     return False
-
         # Check robot state data if needed
         if hasattr(self, "robot_state") and self.robot_state is None:
             cprint("Robot state data not available!", "red")
@@ -212,10 +212,7 @@ class FrankaDataCollector(object):
             dict: Dictionary containing all collected state data
         """
         state = {}
-
-        # # Gripper data
-        # state["gripper_joint_positions"] = self.franka_env_wrapper.get_gripper_width()
-        # state["gripper_status"] = self.franka_env_wrapper.get_gripper_is_grasped()
+        state["gripper_joint_positions"] = self.gripper_state.position()
 
         # Full robot state if available
         if getattr(self, "robot_state", None) is not None:
@@ -248,103 +245,103 @@ class FrankaDataCollector(object):
 
         return state
 
-    def _handle_user_command(self, counter):
-        """
-        Handle user commands during auto collection
+    # def _handle_user_command(self, counter):
+    #     """
+    #     Handle user commands during auto collection
 
-        Args:
-            counter (int): Current counter value
+    #     Args:
+    #         counter (int): Current counter value
 
-        Returns:
-            int: Updated counter value
-            bool: Whether to continue collection
-        """
-        bool_true_msg = Bool()
-        bool_true_msg.data = True
+    #     Returns:
+    #         int: Updated counter value
+    #         bool: Whether to continue collection
+    #     """
+    #     bool_true_msg = Bool()
+    #     bool_true_msg.data = True
 
-        bool_false_msg = Bool()
-        bool_false_msg.data = False
+    #     bool_false_msg = Bool()
+    #     bool_false_msg.data = False
 
-        # Stop robot movement
-        self.stop_publisher.publish(bool_true_msg)
+    #     # Stop robot movement
+    #     self.stop_publisher.publish(bool_true_msg)
 
-        # Wait for next command
-        while True:
-            cprint("Waiting for the next command: ", "yellow")
-            cprint(
-                "c -> continue, d -> delete, r -> reset, q -> quit, x -> stop robot",
-                "yellow",
-            )
-            clear_input_buffer()
-            input_cmd = input("Enter the next command: ")
-            cprint(f"Received command: {input_cmd}", "blue")  # Debug print
+    #     # Wait for next command
+    #     while True:
+    #         cprint("Waiting for the next command: ", "yellow")
+    #         cprint(
+    #             "c -> continue, d -> delete, r -> reset, q -> quit, x -> stop robot",
+    #             "yellow",
+    #         )
+    #         clear_input_buffer()
+    #         input_cmd = input("Enter the next command: ")
+    #         cprint(f"Received command: {input_cmd}", "blue")  # Debug print
 
-            if input_cmd == "c":
-                # Update demo number and continue recording
-                counter = 1
-                self.demo_num += 1
-                self.storage_path = os.path.join(
-                    self.storage_root, f"demonstration_{self.demo_num}"
-                )
-                make_dir(self.storage_path)
-                self.hamer_recalib_publisher.publish(bool_true_msg)
-                cprint(f"Start recording at {self.storage_path}", "green")
+    #         if input_cmd == "c":
+    #             # Update demo number and continue recording
+    #             counter = 1
+    #             self.demo_num += 1
+    #             self.storage_path = os.path.join(
+    #                 self.storage_root, f"demonstration_{self.demo_num}"
+    #             )
+    #             make_dir(self.storage_path)
+    #             self.hamer_recalib_publisher.publish(bool_true_msg)
+    #             cprint(f"Start recording at {self.storage_path}", "green")
 
-                # Reset robot
-                self.reset_publisher.publish(bool_true_msg)
-                rospy.sleep(1)
+    #             # Reset robot
+    #             self.reset_publisher.publish(bool_true_msg)
+    #             rospy.sleep(1)
 
-                # Start robot movement
-                self.stop_publisher.publish(bool_false_msg)
-                return counter, True
+    #             # Start robot movement
+    #             self.stop_publisher.publish(bool_false_msg)
+    #             return counter, True
 
-            elif input_cmd == "d":
-                # Remove the last data
-                shutil.rmtree(self.storage_path)
-                cprint(f"Removing the last data at {self.storage_path}", "red")
-                self.demo_num -= 1
-                continue
+    #         elif input_cmd == "d":
+    #             # Remove the last data
+    #             shutil.rmtree(self.storage_path)
+    #             cprint(f"Removing the last data at {self.storage_path}", "red")
+    #             self.demo_num -= 1
+    #             continue
 
-            elif input_cmd == "r":
-                # Reset the robot
-                cprint(f"Resetting the robot...", "blue")
-                self.reset_publisher.publish(bool_true_msg)
-                rospy.sleep(1)
-                continue
+    #         elif input_cmd == "r":
+    #             # Reset the robot
+    #             cprint(f"Resetting the robot...", "blue")
+    #             self.reset_publisher.publish(bool_true_msg)
+    #             rospy.sleep(1)
+    #             continue
 
-            elif input_cmd == "q":
-                # Quit the program
-                cprint(
-                    f"Finished recording! Successfully recorded {self.demo_num} demonstrations! Data can be found in {self.storage_root}",
-                    "green",
-                )
-                self.end_publisher.publish(bool_true_msg)
-                sys.exit(0)
+    #         elif input_cmd == "q":
+    #             # Quit the program
+    #             cprint(
+    #                 f"Finished recording! Successfully recorded {self.demo_num} demonstrations! Data can be found in {self.storage_root}",
+    #                 "green",
+    #             )
+    #             self.end_publisher.publish(bool_true_msg)
+    #             sys.exit(0)
 
-            elif input_cmd == "x":
-                # Stop the robot movement
-                cprint(f"Stop the robot movement...", "red")
-                self.stop_publisher.publish(bool_true_msg)
-                continue
+    #         elif input_cmd == "x":
+    #             # Stop the robot movement
+    #             cprint(f"Stop the robot movement...", "red")
+    #             self.stop_publisher.publish(bool_true_msg)
+    #             continue
 
-            else:
-                cprint(f"Invalid command {input_cmd}!", "red")
-    
+    #         else:
+    #             cprint(f"Invalid command {input_cmd}!", "red")
+
     def _on_press(self, key):
         """
         Keyboard listener callback to handle key presses during data collection
-        
+
         Args:
             key: The key that was pressed
         """
         try:
-            if key.char == 's':
+            if key.char == "s":
                 cprint("Stop signal received from keyboard", "yellow")
                 self.stop = True
         except AttributeError:
             # Special keys don't have a char attribute
             pass
-    
+
     def extract(self, offset=0):
         """
         Extract and save data from all sources
@@ -367,19 +364,22 @@ class FrankaDataCollector(object):
                 self.storage_root, f"demonstration_{self.demo_num}"
             )
             make_dir(self.storage_path)
-        
+
         # Set up keyboard listener
         self.keyboard_listener = keyboard.Listener(on_press=self._on_press)
         self.keyboard_listener.start()
         cprint("Keyboard listener started", "blue")
-        
+
         counter = offset + 1
         try:
             # Initial prompt to user to start collection
-            cprint("Press any key to stop recording when ready, or Ctrl + | to exit", "yellow")
+            cprint(
+                "Press any key to stop recording when ready, or Ctrl + | to exit",
+                "yellow",
+            )
             cprint("Don't use Ctrl + C because cannot kill the camera process", "red")
             cprint("Starting data collection automatically...", "green")
-            
+
             cprint("Data collection in progress...", "green")
             while True:
                 # Check if all data is available
@@ -432,5 +432,5 @@ class FrankaDataCollector(object):
             sys.exit(0)
         finally:
             # Clean up keyboard listener
-            if hasattr(self, 'keyboard_listener') and self.keyboard_listener.running:
+            if hasattr(self, "keyboard_listener") and self.keyboard_listener.running:
                 self.keyboard_listener.stop()
