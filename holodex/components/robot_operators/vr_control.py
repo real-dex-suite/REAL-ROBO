@@ -62,7 +62,7 @@ class HamerDexArmTeleOp:
         """Get the TCP position based on the arm type"""
         if ARM_TYPE == "Flexiv":
             return self.robot.arm.get_tcp_position(euler=True, degree=False)
-        elif "Franka" in ARM_TYPE:
+        elif ARM_TYPE == "Franka":
             tcp_pose = self.robot.arm.get_tcp_position()  # w, x, y, z
             tcp_quat_wxyz = tcp_pose[3:7]
             tcp_quat_xyzw = [
@@ -91,14 +91,10 @@ class HamerDexArmTeleOp:
                 pose.position.x,
                 -pose.position.y,
                 pose.position.z,
-                0, 
-                0, 
-                0, 
-                1,
-                # -pose.orientation.x,
-                # pose.orientation.y,
-                # -pose.orientation.z,
-                # pose.orientation.w,
+                -pose.orientation.x,
+                pose.orientation.y,
+                -pose.orientation.z,
+                pose.orientation.w,
             ]
         )
 
@@ -184,6 +180,7 @@ class HamerDexArmTeleOp:
         composed_rotation = composed_transformation[:3, :3]
         composed_rotation_quat = R.from_matrix(composed_rotation).as_quat()
         current_arm_pose = self.arm_ee_pose
+
         current_arm_pose[:3] = composed_translation * self.trans_scale
         current_arm_pose[3:6] = R.from_quat(composed_rotation_quat).as_euler("xyz")
 
@@ -241,9 +238,10 @@ class HamerDexArmTeleOp:
             "xyz", self.init_arm_rot
         ).as_matrix()
         self.init_arm_transformation_matrix[:3, 3] = self.init_arm_pos
+
     def _set_correct_flange_rotation(self):
         """Set the correct flange rotation based on the arm type"""
-        if "Franka" in ARM_TYPE:
+        if ARM_TYPE == "Franka":
             self.correct_flange[:3, :3] = R.from_euler(
                 "xyz", [0, 0, 0], degrees=True
             ).as_matrix()
@@ -268,14 +266,11 @@ class HamerDexArmTeleOp:
 
                 # Generate desired joint angles based on current joystick pose
                 desired_joint_angles = self.motion(finger_configs)
-                desired_joint_angles[2] = np.clip(
-                    desired_joint_angles[2], 0.13, 5
-                )
                 x = np.array(self.robot.get_arm_tcp_position())
                 np.set_printoptions(precision=5, suppress=True)
-                # print(f"current_joint{self.robot.get_arm_position()}")
+                print(f"current_joint{self.robot.get_arm_position()}")
                 self.robot.move_arm(desired_joint_angles)
 
                 # Move the gripper based on the current finger distance
-                # print(f"gripper: {self.finger_distance}")
+                print(f"gripper: {self.finger_distance}")
                 self.robot.move_gripper(self.finger_distance)

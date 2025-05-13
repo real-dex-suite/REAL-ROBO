@@ -22,8 +22,6 @@ except:
     from kinematics_solver import FrankaSolver
 from scipy.spatial.transform import Rotation as R
 
-
-
 class FrankaEnvWrapper:
     """
     Wrapper class for controlling Franka robot arm.
@@ -56,8 +54,10 @@ class FrankaEnvWrapper:
         # Set up the robot control configuration based on the specified mode
         if control_mode == "joint":
             # TODO: make these configurable
-            self.joint_k_gains = [100.0, 100.0, 150.0, 400.0, 400.0, 600.0, 80.0]
-            self.joint_d_gains = [30.0, 30.0, 40.0, 150.0, 100.0, 30.0, 15.0]
+            self.joint_k_gains = [400.0, 350.0, 400.0, 400.0, 400.0,150.0,80.0]
+            self.joint_d_gains = [100.0,  100.0,  80.0,  80.0,  80.0, 50.0,  15.0]
+            # self.joint_k_gains  = [100.0, 100.0, 100.0, 100.0, 250.0, 150.0, 50.0]
+            # self.joint_d_gains = [50.0, 50.0, 50.0, 50.0, 30.0, 25.0, 15.0]
 
             self._initialize_joint_control_config()
         elif control_mode == "cartesian":
@@ -159,18 +159,18 @@ class FrankaEnvWrapper:
             raise ValueError("IK solution not found")
         return ik_res
 
-    def open_gripper(self):
+    def open_gripper(self, block=True):
         """
         Open gripper to maximum width.
 
         Returns:
             None
         """
-        self.arm.open_gripper(block=True, skill_desc="OpenGripper")
+        self.arm.open_gripper(block=block, skill_desc="OpenGripper")
 
-    def close_gripper(self):
+    def close_gripper(self, block=True):
         """Close gripper and attempt to grasp object."""
-        self.arm.close_gripper(grasp=True, block=True, skill_desc="CloseGripper")
+        self.arm.close_gripper(grasp=True, block=block, skill_desc="CloseGripper")
 
     def get_gripper_width(self) -> float:
         """
@@ -198,9 +198,10 @@ class FrankaEnvWrapper:
             target_width (float): Target gripper width in meters
 
         """
-        raise NotImplementedError(
-            "Gripper control not implemented yet. Contact Jinzhou"
-        )
+        self.arm.goto_gripper(target_width)
+        # raise NotImplementedError(
+        #     "Gripper control not implemented yet. Contact Jinzhou"
+        # )
 
     #! We need testing for this
     def move_cartesian(self, target_pose: list):
@@ -265,6 +266,21 @@ class FrankaEnvWrapper:
             )
         )
         self.cmd_pub.publish(ros_msg)
+
+    def joint_reset(self, reset_joints):
+        timestamp = rospy.Time.now().to_time() - self._init_time
+
+        self._fa_cmd_id += 1
+        traj_gen_proto_msg = JointPositionSensorMessage(
+            id=self._fa_cmd_id, timestamp=timestamp, joints=reset_joints
+        )
+        ros_msg = make_sensor_group_msg(
+            trajectory_generator_sensor_msg=sensor_proto2ros_msg(
+                traj_gen_proto_msg, SensorDataMessageType.JOINT_POSITION
+            )
+        )
+        self.cmd_pub.publish(ros_msg)
+
 
     def run(self):
         """

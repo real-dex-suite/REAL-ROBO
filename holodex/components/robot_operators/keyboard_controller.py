@@ -12,7 +12,6 @@ try:
 except:
     from robot import RobotController
 
-from pykalman import KalmanFilter
 from scipy.interpolate import CubicSpline
 from scipy.special import comb
 from scipy.spatial.transform import Slerp

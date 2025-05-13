@@ -93,12 +93,16 @@ class FrankaSolver:
 
     def _initialize_motion_gen(self):
         """Initialize the motion generator."""
+        config_file = load_yaml(join_path(os.path.dirname(__file__), "franka.yml"))
+        urdf_file = config_file["robot_cfg"]["kinematics"]["urdf_path"]
+        base_link = config_file["robot_cfg"]["kinematics"]["base_link"]
+        ee_link = config_file["robot_cfg"]["kinematics"]["ee_link"]
         self.plan_config = MotionGenConfig.load_from_robot_config(
             self.robot_cfg,
             None,
             tensor_args=self.tensor_args,
             interpolation_dt=0.02,
-            ee_link_name="panda_hand",
+            ee_link_name=ee_link,
         )
         self.motion_gen = MotionGen(self.plan_config)
         cprint("warming up motion gen solver", "green")
