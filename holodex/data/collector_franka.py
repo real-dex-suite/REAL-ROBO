@@ -167,7 +167,7 @@ class FrankaDataCollector(object):
     def _setup_gripper_state_collection(self):
         """Set up gripper state collection"""
         rospy.Subscriber(
-            "/franka_gripper/joint_states",
+            "/franka_gripper_1/joint_states",
             JointState,
             self._callback_gripper_state,
             queue_size=1,
@@ -212,7 +212,8 @@ class FrankaDataCollector(object):
             dict: Dictionary containing all collected state data
         """
         state = {}
-        state["gripper_joint_positions"] = self.gripper_state.position()
+
+        state["gripper_joint_positions"] = self.gripper_state.position
 
         # Full robot state if available
         if getattr(self, "robot_state", None) is not None:

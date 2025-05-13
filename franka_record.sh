@@ -3,7 +3,7 @@ python franka_record.py \
     offset=0 \
     demo_num=1 \
     keyboard_control=False \
-    storage_path='expert_dataset/test_ros/recorded_data' \
+    storage_path='expert_dataset/twin_pushing_lying_oreo_new/recorded_data' \
 
 
 # frequency setup

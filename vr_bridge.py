@@ -9,7 +9,7 @@ from termcolor import cprint
 IP_ADDRESS = "172.21.11.178"
 PORT = 5555
 
-DEBUG = False
+DEBUG = True
 
 class ZMQSubscriber:
     def __init__(self, ip_address=IP_ADDRESS, port=PORT):

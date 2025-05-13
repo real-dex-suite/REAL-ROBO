@@ -91,7 +91,7 @@ class RobotController(object):
         if self.home is True:
             self.home_robot()
         self.home_robot()
-        self.arm.reset()
+        #self.arm.reset()
     def home_robot(self):
         # if ARM_TYPE is not None:
         #     self.arm.home_robot()
@@ -191,6 +191,14 @@ class RobotController(object):
             if self._gripper_state != 'closed':
                 self.arm.close_gripper()
                 self._gripper_state = 'closed'
+
+    def control_gripper(self, gripper_cmd):
+        status = self.get_gripper_state()
+        if not status:
+            self.arm.open_gripper()
+        else:
+            self.arm.close_gripper()
+        
 
     def get_gripper_state(self):
         return self.arm.get_gripper_is_grasped()

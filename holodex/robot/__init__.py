@@ -11,3 +11,4 @@ from .hand.leap.leap import *
 
 from .arm.flexiv.flexiv import *
 from .arm.franka.franka_env_wrapper import FrankaEnvWrapper as FrankaArm
+from .arm.franka.kinematics_solver import *

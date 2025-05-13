@@ -33,7 +33,8 @@ robot_cfg:
     urdf_path: "robot/franka_description/franka_panda.urdf"
     asset_root_path: "robot/franka_description"
     base_link: "panda_link0"
-    ee_link: "ee_link"
+    ee_link: "panda_hand" # sim
+    # ee_link: "ee_link" # real
     collision_link_names:
       [
         "panda_link0",
@@ -100,7 +101,7 @@ robot_cfg:
         "panda_leftfinger",
         "panda_rightfinger",
       ]
-    lock_joints: {"panda_finger_joint1": 0.04, "panda_finger_joint2": 0.04}
+    lock_joints: {"panda_finger_joint1": 0.04, "panda_finger_joint2": 0.04, "panda_joint6": 1.15488531}
     extra_links: {"attached_object":{"parent_link_name": "panda_hand" ,"link_name": "attached_object", "fixed_transform": [0,0,0,1,0,0,0], "joint_type":"FIXED","joint_name": "attach_joint" }}
     cspace:
       joint_names: ["panda_joint1","panda_joint2","panda_joint3","panda_joint4", "panda_joint5","panda_joint6","panda_joint7","panda_finger_joint1", "panda_finger_joint2"]
