@@ -10,11 +10,8 @@ def main(configs):
     multiprocessing.set_start_method('spawn')
     
     # robot_camera_processes, robot_camera_stream_processes = get_camera_stream_processes(configs)
-    print("good")
     detection_process, keypoint_transform_processes, plotter_processes = get_detector_processes(configs)
-    print("bad")
     teleop_process = get_teleop_process(configs)
-    print("ugly")
     # tactile_visualizer_process = get_tactile_visualizer_process()
 
     # Starting all the processes

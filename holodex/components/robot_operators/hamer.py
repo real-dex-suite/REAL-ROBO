@@ -86,15 +86,62 @@ class HamerDexArmTeleOp:
             This is based on the assumption that the VR end-effector pose is in the left hand coordinate system.
             Please modify the callback function if the VR end-effector pose is in a different coordinate system.
         """
+        # euler_angles=[ 3.11884, -0.98609, 1.5863]
+        # rotation = R.from_euler('xyz', euler_angles)
+        # quaternion = rotation.as_quat() 
+        # transformation_matrix = np.eye(4)  # 初始化为单位矩阵
+        # transformation_matrix[:3, :3] = rotation_matrix  # 设置旋转部分
+        # transformation_matrix[:3, 3] = translation_vector  # 设置平移部分
+        # xyz = np.array([pose.position.x, -pose.position.y, pose.position.z])
+
+        # # # 给定的欧拉角 (单位：弧度)
+        # #         euler_angles = [3.11884, -0.98609, 1.5863]
+
+        # #         # 将欧拉角转换为旋转矩阵
+        # #         rotation_matrix = R.from_euler('xyz', euler_angles).as_matrix()
+
+
+
+        # # # 给定的欧拉角 (单位：弧度)
+        # quat=[-0.3302,  0.6218,  0.6239,  0.3392]
+        # #quat =  [-0.5071, 0.5139, 0.4904, 0.4882]
+        # quat = np.array([quat[1], quat[2], quat[3], quat[0]])
+
+        # # 将欧拉角转换为旋转矩阵
+        # rotation_matrix = R.from_quat(quat).as_matrix()
+        
+        # # 旋转矩阵的逆矩阵
+        # print("rotation_matrix", rotation_matrix)
+        # rotation_matrix = np.linalg.inv(rotation_matrix)
+        
+        # rotation_matrix_1 = rotation_matrix[:3, :3].copy()
+        # rotation_matrix_1[:,0] = -rotation_matrix[:,1]
+        # rotation_matrix_1[:,1] = -rotation_matrix[:,2]
+        # rotation_matrix_1[:,2] = rotation_matrix[:,0]
+        # # 应用旋转矩阵到 xyz 坐标
+        # rotated_xyz = rotation_matrix_1 @ xyz
+        # print("rotation_matrix", rotation_matrix)
+        # # self.joystick_pose = np.array(
+        
+        # print(xyz)
+        # # 应用旋转矩阵到 xyz 坐标
+        # rotated_xyz = rotation_matrix @ xyz
         self.joystick_pose = np.array(
             [
                 pose.position.x,
                 -pose.position.y,
                 pose.position.z,
-                -pose.orientation.x,
-                pose.orientation.y,
-                -pose.orientation.z,
-                pose.orientation.w,
+                # rotated_xyz[0],
+                # rotated_xyz[1],
+                # rotated_xyz[2],
+                0, 
+                0, 
+                0, 
+                1,
+                # -pose.orientation.x,
+                # pose.orientation.y,
+                # -pose.orientation.z,
+                # pose.orientation.w,
             ]
         )
 
@@ -180,7 +227,6 @@ class HamerDexArmTeleOp:
         composed_rotation = composed_transformation[:3, :3]
         composed_rotation_quat = R.from_matrix(composed_rotation).as_quat()
         current_arm_pose = self.arm_ee_pose
-
         current_arm_pose[:3] = composed_translation * self.trans_scale
         current_arm_pose[3:6] = R.from_quat(composed_rotation_quat).as_euler("xyz")
 
@@ -238,7 +284,6 @@ class HamerDexArmTeleOp:
             "xyz", self.init_arm_rot
         ).as_matrix()
         self.init_arm_transformation_matrix[:3, 3] = self.init_arm_pos
-
     def _set_correct_flange_rotation(self):
         """Set the correct flange rotation based on the arm type"""
         if "Franka" in ARM_TYPE:
@@ -266,11 +311,14 @@ class HamerDexArmTeleOp:
 
                 # Generate desired joint angles based on current joystick pose
                 desired_joint_angles = self.motion(finger_configs)
+                desired_joint_angles[2] = np.clip(
+                    desired_joint_angles[2], 0.13, 5
+                )
                 x = np.array(self.robot.get_arm_tcp_position())
                 np.set_printoptions(precision=5, suppress=True)
-                print(f"current_joint{self.robot.get_arm_position()}")
+                # print(f"current_joint{self.robot.get_arm_position()}")
                 self.robot.move_arm(desired_joint_angles)
 
                 # Move the gripper based on the current finger distance
-                print(f"gripper: {self.finger_distance}")
+                # print(f"gripper: {self.finger_distance}")
                 self.robot.move_gripper(self.finger_distance)

@@ -186,14 +186,14 @@ class RobotController(object):
             
         # Debounce logic - only send commands when state actually changes
         if float(gripper_cmd) > 0.05:
+            self.arm.open_gripper()
             # Open gripper command
             if self._gripper_state != 'open':
-                self.arm.open_gripper()
                 self._gripper_state = 'open'
         else:
+            self.arm.close_gripper()
             # Close gripper command
             if self._gripper_state != 'closed':
-                self.arm.close_gripper()
                 self._gripper_state = 'closed'
 
     def get_gripper_state(self):
