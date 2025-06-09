@@ -27,11 +27,13 @@ Collecting tele-operation data with Real-Robo!
     - [x] Mediapipe
     - [x] Leapmotion
     - [x] Oculus VR
+    - [x] HAMER
   - gripper
     - [x] Spacemouse (tested)
     - [x] Keyboard (tested)
     - [x] PICO VR (tested)
-
+    - [x] HAMER (tested)
+    
 ## Installation
 
 ```bash
