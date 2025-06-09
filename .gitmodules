@@ -1,3 +1,6 @@
 [submodule "dependencies/curobo"]
 	path = dependencies/curobo
 	url = https://github.com/NVlabs/curobo.git
+[submodule "dependencies/hamer"]
+	path = dependencies/hamer
+	url = https://github.com/hwfan/hamer
