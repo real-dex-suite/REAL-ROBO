@@ -3,7 +3,7 @@ robot_cam_serial_numbers:
   # - "207222071050"
   # - "207122078785"
   # - "f1230963"             # L515 -> must donwload pyrealsense2 2.54.2.xxxx
-  - "311322301369"           # L455 -> hongwei's setup
+  - "311322301369"           # D455 -> hongwei's setup
 
 
 # Robot camera stream resolution

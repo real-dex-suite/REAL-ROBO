@@ -106,7 +106,25 @@ class TransformHandCoords(object):
                 self.arm_keypoint_publisher = FloatArrayPublisher(
                     HAMER_ARM_TRANSFORM_COORDS_TOPIC
                 )
-
+                
+        elif detector_type == "PICO":
+            self.num_keypoints = HAMER_NUM_KEYPOINTS
+            rospy.Subscriber(
+                HAMER_HAND_KEYPOINT_TOPIC,
+                Float64MultiArray,
+                self._callback_hand_coords,
+                queue_size=1,
+            )
+            self.keypoint_publisher = FloatArrayPublisher(
+                HAMER_HAND_TRANSFORM_COORDS_TOPIC
+            )
+            if ARM_TYPE is not None:
+                self.num_arm_keypoints = HAMER_ARM_NUM_KEYPOINTS
+                # rospy.Subscriber(HAMER_ARM_KEYPOINT_TOPIC, Float64MultiArray, self._callback_arm_coords, queue_size = 1)
+                self.arm_keypoint_publisher = FloatArrayPublisher(
+                    HAMER_ARM_TRANSFORM_COORDS_TOPIC
+                )
+                
         else:
             raise NotImplementedError(
                 "There are no other detectors available. \
@@ -122,7 +140,9 @@ class TransformHandCoords(object):
             self.frequency_timer = frequency_timer(VR_FREQ)
         elif detector_type == "HAMER":
             self.frequency_timer = frequency_timer(HAMER_FREQ)
-
+        elif detector_type == "PICO":
+            self.frequency_timer = frequency_timer(HAMER_FREQ)
+            
         # Moving average queue
         self.moving_average_limit = moving_average_limit
         self.moving_average_queue = []
@@ -142,7 +162,14 @@ class TransformHandCoords(object):
                 .copy()
                 .reshape(self.num_arm_keypoints, 3)
             )
-
+        elif self.detector_type == "PICO" and ARM_TYPE is not None:
+            # print("HAMER arm coords")
+            self.arm_coords = (
+                self.hand_coords[[0, 5, 17], :]
+                .copy()
+                .reshape(self.num_arm_keypoints, 3)
+            )
+            
     def _callback_arm_coords(self, coords):
         self.arm_coords = np.array(list(coords.data)).reshape(self.num_arm_keypoints, 3)
 
@@ -273,7 +300,11 @@ class TransformHandCoords(object):
                 transformed_coords = self.transform_lp_right_keypoints(self.hand_coords)
                 if ARM_TYPE is not None:
                     transformed_arm_coords = self.arm_coords.copy()
-
+            elif self.detector_type == "PICO":
+                transformed_coords = self.transform_lp_right_keypoints(self.hand_coords)
+                if ARM_TYPE is not None:
+                    transformed_arm_coords = self.arm_coords.copy()
+                    
             # TODO why moving average?
             if self.detector_type == "LP":
                 averaged_coords = transformed_coords
@@ -293,6 +324,8 @@ class TransformHandCoords(object):
                 elif self.detector_type == "VR_RIGHT":
                     averaged_arm_coords = transformed_arm_coords
                 elif self.detector_type == "HAMER":
+                    averaged_arm_coords = transformed_arm_coords
+                elif self.detector_type == "PICO":
                     averaged_arm_coords = transformed_arm_coords
                 self.arm_keypoint_publisher.publish(
                     averaged_arm_coords.flatten().tolist()

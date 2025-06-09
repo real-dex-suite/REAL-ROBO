@@ -6,8 +6,6 @@ import pyrealsense2.pyrealsense2 as rs
 from holodex.utils.network import ImagePublisher, FloatArrayPublisher
 from holodex.utils.images import *
 from holodex.constants import *
-from holodex.camera.realsense_helper import get_profiles
-
 
 class RealSenseRobotStream(object):
     def __init__(self, cam_serial_num, robot_cam_num, rotation_angle = 0, mode='rgbd'):
