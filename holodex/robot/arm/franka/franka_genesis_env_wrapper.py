@@ -1,16 +1,10 @@
 #!/usr/bin/env python
-import time
 import numpy as np
 try:
     from holodex.robot.arm.franka.kinematics_solver import FrankaSolver
 except:
     from kinematics_solver import FrankaSolver
 from scipy.spatial.transform import Rotation as R
-import os
-os.environ['MUJOCO_GL'] = 'glx'
-os.environ['PYOPENGL_PLATFORM'] = 'glx'
-import torch
-
 from std_msgs.msg import Float64MultiArray, Bool
 import rospy
 

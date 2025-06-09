@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import time
 import rospy
 import numpy as np
 import roslib
@@ -15,7 +14,7 @@ try:
         CartesianImpedanceSensorMessage,
     )
 except:
-    rospy.logwarn("frankapy not loaded! Please check whether is in Sim mode.")
+    rospy.logwarn("frankapy not loaded! Please check whether we are doing teleop in simulation.")
 try:
     from holodex.robot.arm.franka.kinematics_solver import FrankaSolver
 except:
