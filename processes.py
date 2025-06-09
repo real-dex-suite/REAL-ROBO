@@ -187,15 +187,15 @@ def get_detector_processes(teleop_configs):
     return detection_process, keypoint_transform_processes, plotter_processes
 
 def get_teleop_process(teleop_configs):
-    if teleop_configs.tracker.type == 'MP':
+    if teleop_configs.tracker.type == 'MP': # mediapipe
         teleop_process = Process(target = mp_teleop, args = (teleop_configs, ))
-    elif teleop_configs.tracker.type == 'LP':
+    elif teleop_configs.tracker.type == 'LP': # leapmotion
         teleop_process = Process(target = lp_teleop, args = (teleop_configs, ))
-    elif teleop_configs.tracker.type == 'VR':
+    elif teleop_configs.tracker.type == 'VR': # Oculus VR
         teleop_process = Process(target = vr_teleop, args = (teleop_configs, ))
-    elif teleop_configs.tracker.type == 'HAMER':
+    elif teleop_configs.tracker.type == 'HAMER': # HAMER detection, now pico VR
         teleop_process = Process(target = hamer_teleop, args = (teleop_configs, ))
-    elif teleop_configs.tracker.type == 'KB':
+    elif teleop_configs.tracker.type == 'KB': # Keyboard
         teleop_process = Process(target = kb_teleop, args = (teleop_configs, ), daemon=False)
 
     return teleop_process

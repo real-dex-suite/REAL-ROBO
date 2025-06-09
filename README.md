@@ -4,7 +4,26 @@ This repository contains code for controlling real robot arms / hands.
 
 ## Supported Devices
 
-- [ ]
+- Robot Arms
+  - [x] JAKA
+  - [x] Kinova
+  - [x] Flexiv
+  - [x] Franka
+- Robot Hands
+  - hand
+    - [x] Allegro
+    - [x] Leaphand
+  - gripper
+    - [x] Franka Gripper
+- Tele-operation Devices
+  - hand
+    - [x] Mediapipe
+    - [x] Leapmotion
+    - [x] Oculus VR
+  - gripper
+    - [x] Spacemouse
+    - [x] Keyboard
+    - [x] PICO VR
 
 ## Installation
 
@@ -20,8 +39,25 @@ cd curobo && pip install -e . --no-build-isolation && cd ..
 ln -sf /usr/lib/x86_64-linux-gnu/libffi.so.7 $CONDA_PREFIX/lib/libffi.so.7
 ```
 
-## Teleop
+## Tele-operation
 
+### Real-world
+
+```bash
+python teleop.py
+```
+
+### Simulation
 ```bash
 python teleop_sim.py
 ```
+
+## Data Collection
+
+```bash
+bash franka_record.sh
+```
+
+## Acknowledgement
+
+This branch is maintained by Jinzhou Li (@kingchou007) and Hongwei Fan (@hwfan).
