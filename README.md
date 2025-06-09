@@ -46,6 +46,8 @@ ln -sf /usr/lib/x86_64-linux-gnu/libffi.so.7 $CONDA_PREFIX/lib/libffi.so.7
 
 ## Tele-operation
 
+Follow [](vr/pico_streamer) first if use PICO VR.
+
 ### Real-world
 
 ```bash
