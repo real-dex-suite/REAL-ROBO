@@ -2,28 +2,35 @@
 
 Collecting tele-operation data with Real-Robo!
 
+## Dependencies
+
+- Ubuntu 22.04
+- CUDA 11.8
+- ROS 1 and ROS 2 ([Installing ROS 1 in Ubuntu 22.04 (Chinese)](https://www.bilibili.com/opus/890840405512290392))
+- Teleoperation device (optional)
+
 ## Supported Devices
 
 - Robot Arms
   - [x] JAKA
   - [x] Kinova
   - [x] Flexiv
-  - [x] Franka (verified)
+  - [x] Franka (tested)
 - Robot Hands
   - hand
     - [x] Allegro
     - [x] Leaphand
   - gripper
-    - [x] Franka Gripper (verified)
+    - [x] Franka Gripper (tested)
 - Tele-operation Devices
   - hand
     - [x] Mediapipe
     - [x] Leapmotion
     - [x] Oculus VR
   - gripper
-    - [x] Spacemouse (verified)
-    - [x] Keyboard (verified)
-    - [x] PICO VR (verified)
+    - [x] Spacemouse (tested)
+    - [x] Keyboard (tested)
+    - [x] PICO VR (tested)
 
 ## Installation
 
