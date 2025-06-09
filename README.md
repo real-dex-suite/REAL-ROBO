@@ -1,6 +1,6 @@
-# REAL-ROBOT
+# Real-Robo
 
-This repository contains code for controlling real robot arms / hands.
+Collecting tele-operation data with Real-Robo!
 
 ## Supported Devices
 
@@ -60,4 +60,6 @@ bash franka_record.sh
 
 ## Acknowledgement
 
-This branch is maintained by Jinzhou Li (@kingchou007) and Hongwei Fan (@hwfan).
+Real-Robo mainly borrows [Holo-dex](https://github.com/SridharPandian/Holo-Dex). Thanks for their wonderful job!
+
+Maintained by Jinzhou Li (@kingchou007) and Hongwei Fan (@hwfan).
