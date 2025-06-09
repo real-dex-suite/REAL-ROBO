@@ -31,7 +31,7 @@ class FrankaGenesisEnvWrapper:
         rospy.init_node('genesis_tele', anonymous=True)
         rospy.sleep(1.0)
 
-        self.ik_solver = FrankaSolver()
+        self.ik_solver = FrankaSolver(ik_type="motion_gen", ik_sim=True)
         self.current_joint_state = None
         self.current_ee_state = None
         self.joint_control_pub = rospy.Publisher(
