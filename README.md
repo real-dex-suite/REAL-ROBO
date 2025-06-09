@@ -8,22 +8,22 @@ Collecting tele-operation data with Real-Robo!
   - [x] JAKA
   - [x] Kinova
   - [x] Flexiv
-  - [x] Franka (verified by @hwfan)
+  - [x] Franka (verified)
 - Robot Hands
   - hand
     - [x] Allegro
     - [x] Leaphand
   - gripper
-    - [x] Franka Gripper (verified by @hwfan)
+    - [x] Franka Gripper (verified)
 - Tele-operation Devices
   - hand
     - [x] Mediapipe
     - [x] Leapmotion
     - [x] Oculus VR
   - gripper
-    - [x] Spacemouse (verified by @hwfan)
-    - [x] Keyboard (verified by @hwfan)
-    - [x] PICO VR (verified by @hwfan)
+    - [x] Spacemouse (verified)
+    - [x] Keyboard (verified)
+    - [x] PICO VR (verified)
 
 ## Installation
 
