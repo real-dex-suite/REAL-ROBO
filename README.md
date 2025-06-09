@@ -62,4 +62,4 @@ bash franka_record.sh
 
 Real-Robo mainly borrows [Holo-dex](https://github.com/SridharPandian/Holo-Dex). Thanks for their wonderful job!
 
-Maintained by Jinzhou Li (@kingchou007) and Hongwei Fan (@hwfan).
+Maintained by Jinzhou Li ([@kingchou007](https://github.com/kingchou007)) and Hongwei Fan ([@hwfan](https://github.com/hwfan)).
