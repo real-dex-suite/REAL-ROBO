@@ -36,17 +36,19 @@ Collecting tele-operation data with Real-Robo!
 
 ```bash
 git clone --recurse-submodules git@github.com:real-dex-suite/REAL-ROBO.git -b hwfan-dev-genesis
-conda create -n real-robo python=3.10
+conda create -n real-robo python=3.8
 conda activate real-robo
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 pip install -r requirements.txt
-pip install -e dependencies/curobo --no-build-isolation.
+pip install -e dependencies/curobo --no-build-isolation
 ln -sf /usr/lib/x86_64-linux-gnu/libffi.so.7 $CONDA_PREFIX/lib/libffi.so.7
 ```
 
+For controlling real robot, please follow [Frankapy](https://iamlab-cmu.github.io/frankapy/install.html) documents for installing frankapy.
+
 ## Tele-operation
 
-Follow [](vr/pico_streamer) first if use PICO VR.
+Follow [pico_streamer](vr/pico_streamer) first if use PICO VR.
 
 ### Real-world
 
