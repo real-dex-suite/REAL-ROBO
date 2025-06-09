@@ -33,7 +33,7 @@ robot_cfg:
     urdf_path: "robot/franka_description/franka_panda.urdf"
     asset_root_path: "robot/franka_description"
     base_link: "panda_link0"
-    ee_link: "ee_link" # real
+    ee_link: "panda_hand" # sim
     collision_link_names:
       [
         "panda_link0",

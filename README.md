@@ -35,12 +35,16 @@ Collecting tele-operation data with Real-Robo!
 ## Installation
 
 ```bash
+export PATH=/usr/local/cuda-11.8/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/cuda-11.8/lib64:$LD_LIBRARY_PATH
+export CUDA_HOME=/usr/local/cuda-11.8
+
 git clone --recurse-submodules git@github.com:real-dex-suite/REAL-ROBO.git -b hwfan-dev-genesis
 conda create -n real-robo python=3.8
 conda activate real-robo
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 pip install -r requirements.txt
-pip install -e dependencies/curobo --no-build-isolation
+pip install -e dependencies/curobo --no-build-isolation --verbose
 ln -sf /usr/lib/x86_64-linux-gnu/libffi.so.7 $CONDA_PREFIX/lib/libffi.so.7
 ```
 
