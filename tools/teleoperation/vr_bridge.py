@@ -6,7 +6,7 @@ import re
 from termcolor import cprint
 
 # Modify these parameters to match your setup
-IP_ADDRESS = "172.21.11.178"
+IP_ADDRESS = "localhost"
 PORT = 5555
 
 DEBUG = True

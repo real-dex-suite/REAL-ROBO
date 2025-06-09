@@ -3,7 +3,7 @@ import time
 from holodex.processes import get_camera_stream_processes, get_detector_processes, get_teleop_process
 import multiprocessing
 
-@hydra.main(version_base = '1.2', config_path='configs', config_name='teleop')
+@hydra.main(version_base = '1.2', config_path='../../configs', config_name='teleop')
 def main(configs):    
     # Obtaining all the robot streams
     multiprocessing.set_start_method('spawn')

@@ -3,7 +3,7 @@ import time
 from holodex.processes import get_tactile_stream_processes, get_camera_stream_processes, get_detector_processes, get_teleop_process, get_tactile_visualizer_process
 import multiprocessing
 
-@hydra.main(version_base = '1.2', config_path='configs', config_name='teleop')
+@hydra.main(version_base = '1.2', config_path='../../configs', config_name='teleop')
 def main(configs):    
     # Obtaining all the robot streams
     # tactile_processes = get_tactile_stream_processes(configs)
@@ -26,7 +26,7 @@ def main(configs):
     # for process in robot_camera_stream_processes:
     #     process.start()
 
-    if configs.tracker.type != 'HAMER': # only for temporal
+    if configs.tracker.type not in ['HAMER', 'PICO']: # only for temporal
         # # Detection processes
         detection_process.start()
 

@@ -3,7 +3,7 @@ import time
 import hydra
 from holodex.processes import get_camera_stream_processes
 
-@hydra.main(version_base = '1.2', config_path='configs', config_name='teleop')
+@hydra.main(version_base = '1.2', config_path='../../configs', config_name='teleop')
 def main(configs):    
     # Obtaining all the robot streams
     robot_camera_processes, robot_stream_processes = get_camera_stream_processes(configs)

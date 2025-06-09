@@ -89,6 +89,11 @@ def hamer_teleop(detector_config):
     teleop = HamerDexArmTeleOp()
     teleop.move(detector_config['finger_configs'])
 
+def pico_teleop(detector_config):
+    notify_process_start("Starting Teleoperation Process")
+    teleop = PICODexArmTeleOp()
+    teleop.move(detector_config['finger_configs'])
+
 def kb_teleop(detector_config):
     notify_process_start("Starting Teleoperation Process")
     teleop = KBArmTeleop()
@@ -172,6 +177,14 @@ def get_detector_processes(teleop_configs):
         plotter_processes = []
         if teleop_configs.tracker['visualize_graphs']:
             plotter_processes.append(Process(target = plot_3d, args = (teleop_configs.tracker.type, ))),
+            
+    elif teleop_configs.tracker.type == 'PICO':
+        detection_process = None # outside for now
+        keypoint_transform_processes = [Process(target = keypoint_transform, args = ('PICO', ))]
+        
+        plotter_processes = []
+        if teleop_configs.tracker['visualize_graphs']:
+            plotter_processes.append(Process(target = plot_3d, args = (teleop_configs.tracker.type, ))),
 
     else:
         raise NotImplementedError("No such detector exists!")
@@ -187,6 +200,8 @@ def get_teleop_process(teleop_configs):
         teleop_process = Process(target = vr_teleop, args = (teleop_configs, ))
     elif teleop_configs.tracker.type == 'HAMER': # HAMER detection, now pico VR
         teleop_process = Process(target = hamer_teleop, args = (teleop_configs, ))
+    elif teleop_configs.tracker.type == 'PICO': # HAMER detection, now pico VR
+        teleop_process = Process(target = pico_teleop, args = (teleop_configs, ))
     elif teleop_configs.tracker.type == 'KB': # Keyboard
         teleop_process = Process(target = kb_teleop, args = (teleop_configs, ), daemon=False)
 

@@ -45,7 +45,8 @@ conda activate real-robo
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 pip install -r requirements.txt
 pip install -e dependencies/curobo --no-build-isolation --verbose
-ln -sf /usr/lib/x86_64-linux-gnu/libffi.so.7 $CONDA_PREFIX/lib/libffi.so.7
+pip install -e .
+# ln -sf /usr/lib/x86_64-linux-gnu/libffi.so.7 $CONDA_PREFIX/lib/libffi.so.7
 ```
 
 For controlling real robot, please follow [Frankapy](https://iamlab-cmu.github.io/frankapy/install.html) documents for installing frankapy.
@@ -57,6 +58,7 @@ Follow [pico_streamer](vr/pico_streamer) first if use PICO VR.
 ### Real-world
 
 ```bash
+unset ROS_DISTRO && source /opt/ros/noetic/local_setup.bash
 python teleop.py
 ```
 

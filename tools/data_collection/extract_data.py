@@ -22,7 +22,7 @@ warnings.filterwarnings(
     category=UserWarning
 )
 
-@hydra.main(version_base = '1.2', config_path='configs', config_name='demo_extract')
+@hydra.main(version_base = '1.2', config_path='../../configs', config_name='demo_extract')
 def main(configs):
     if not configs.ssl_data:
         configs.target_path = os.path.join(configs.target_path, 'filtered') # When we sample and extract min_action data 

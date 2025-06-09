@@ -2,7 +2,7 @@ import time
 import hydra
 from holodex.processes import get_detector_processes
 
-@hydra.main(version_base = '1.2', config_path='configs', config_name='teleop')
+@hydra.main(version_base = '1.2', config_path='../../configs', config_name='teleop')
 def main(configs):
     detection_process, keypoint_transform_processes, plotter_processes = get_detector_processes(configs)
 

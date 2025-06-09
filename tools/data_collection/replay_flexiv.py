@@ -10,7 +10,7 @@ from holodex.components.robot_operators.replay_robot import (
 from holodex.data.replay_extractor import ColorImageExtractor
 
 
-@hydra.main(version_base="1.2", config_path="configs", config_name="replay")
+@hydra.main(version_base="1.2", config_path="../../configs", config_name="replay")
 def main(configs):
     rospy.init_node("replay_node", anonymous=True)
     if configs.replay_robot:
