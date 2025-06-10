@@ -23,6 +23,7 @@ Collecting tele-operation data with Real-Robo!
     - [x] Franka Gripper (tested)
 - Tele-operation Devices
   - hand
+    - [x] Mediapipe
     - [x] Leapmotion
     - [x] Oculus VR
     - [x] HAMER
