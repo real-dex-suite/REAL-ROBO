@@ -20,6 +20,7 @@ Collecting tele-operation data with Real-Robo!
   - hand
     - [x] Allegro
     - [x] Leaphand
+    - [x] paxini
   - gripper
     - [x] Franka Gripper (tested)
 - Tele-operation Devices
@@ -57,19 +58,12 @@ For controlling real robot, please follow [Frankapy](https://iamlab-cmu.github.i
 
 Follow [pico_streamer](vr/pico_streamer) first if use PICO VR.
 
-### Real-world
-
 ```bash
 unset ROS_DISTRO && source /opt/ros/noetic/local_setup.bash
 python teleop.py
 ```
 
-### Simulation (Genesis)
-```bash
-python teleop_sim.py
-```
-
-## Data Collection
+## Real Data Recording
 
 ```bash
 bash franka_record.sh

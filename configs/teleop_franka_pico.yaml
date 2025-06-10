@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - robot_camera
-  - tactile: paxini
+  - tactile: null # paxini
   - tracker: pico # hamer # oculus 
   - override hydra/hydra_logging: disabled  
   - override hydra/job_logging: disabled  

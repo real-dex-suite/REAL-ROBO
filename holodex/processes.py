@@ -208,10 +208,12 @@ def get_teleop_process(teleop_configs):
     return teleop_process
 
 def start_tactile_visualizer():
+    notify_process_start("Starting Tactile Visualizer")
     viewer = TactileDataViewer("2D")
     viewer.run()
 
-def get_tactile_visualizer_process():
-    notify_process_start("Starting Tactile Visualizer")
-    tactile_visualizer_process = Process(target = start_tactile_visualizer)
+def get_tactile_visualizer_process(configs):
+    tactile_visualizer_process = None
+    if configs['tactile']['type'] == 'paxini':
+        tactile_visualizer_process = Process(target = start_tactile_visualizer)
     return tactile_visualizer_process
