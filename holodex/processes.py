@@ -1,5 +1,4 @@
 from multiprocessing import Process
-from holodex.utils.files import get_yaml_data
 from holodex.components import *
 from holodex.viz import Hand2DVisualizer, Hand3DVisualizer, MPImageVisualizer
 from holodex.viz.visualizer_3d import OculusLeftHandDirVisualizer
@@ -87,6 +86,11 @@ def vr_teleop(detector_config):
 def hamer_teleop(detector_config):
     notify_process_start("Starting Teleoperation Process")
     teleop = HamerDexArmTeleOp()
+    teleop.move(detector_config['finger_configs'])
+
+def hamer_gripper_teleop(detector_config):
+    notify_process_start("Starting Teleoperation Process")
+    teleop = HamerGripperDexArmTeleOp()
     teleop.move(detector_config['finger_configs'])
 
 def pico_teleop(detector_config):
@@ -201,6 +205,8 @@ def get_teleop_process(teleop_configs):
         teleop_process = Process(target = vr_teleop, args = (teleop_configs, ))
     elif teleop_configs.tracker.type == 'HAMER': # HAMER detection, now pico VR
         teleop_process = Process(target = hamer_teleop, args = (teleop_configs, ))
+    elif teleop_configs.tracker.type == 'HAMER_GRIPPER': # HAMER detection, now pico VR
+        teleop_process = Process(target = hamer_gripper_teleop, args = (teleop_configs, ))
     elif teleop_configs.tracker.type == 'PICO': # HAMER detection, now pico VR
         teleop_process = Process(target = pico_teleop, args = (teleop_configs, ))
     elif teleop_configs.tracker.type == 'KB': # Keyboard
