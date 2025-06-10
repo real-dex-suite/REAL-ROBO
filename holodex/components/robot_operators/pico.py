@@ -86,10 +86,6 @@ class PICODexArmTeleOp:
         self.init_arm_ee_to_world[:3, :3] = quat2mat(self.init_arm_ee_pose[3:7])
         self.arm_ee_pose = None
         self.joystick_pose = np.array([0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]) # xyz, wxyz
-        
-        # Calibrate arm bounds and set correct flange rotation if ARM_TYPE is defined
-        # if ARM_TYPE:
-        #     self._calibrate_arm_bounds()
 
     def _setup_subscribers(self):
         """Set up all ROS subscribers"""
