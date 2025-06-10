@@ -113,12 +113,12 @@ def get_tactile_stream_processes(configs):
 def get_camera_stream_processes(configs):
     robot_camera_processes = []
     robot_camera_stream_processes = []
-
-    for idx, cam_serial_num in enumerate(configs['robot_cam_serial_numbers']):
-        robot_camera_processes.append(
-            Process(target = start_robot_cam_stream, args = (cam_serial_num, idx + 1, ))
-        )
-        print("cam_serial_num: ", cam_serial_num)
+    if "robot_cam_serial_numbers" in configs.keys():
+        for idx, cam_serial_num in enumerate(configs['robot_cam_serial_numbers']):
+            robot_camera_processes.append(
+                Process(target = start_robot_cam_stream, args = (cam_serial_num, idx + 1, ))
+            )
+            print("cam_serial_num: ", cam_serial_num)
 
     if 'tracker' in configs.keys(): # Since we use this for deployment as well
         if configs.tracker.type == 'VR':

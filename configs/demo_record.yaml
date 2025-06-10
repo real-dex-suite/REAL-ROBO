@@ -10,10 +10,10 @@ demo_num: 1
 storage_path: 'expert_dataset/recorded_data/'
 
 # Number of tactile sensor board
-num_tactiles: 2
+num_tactiles: 0
 
 # Number of view images 
-num_cams: 2
+num_cams: 1
 
 # State Offset
 offset: 0

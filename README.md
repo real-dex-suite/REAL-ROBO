@@ -60,7 +60,10 @@ Follow [pico_streamer](vr/pico_streamer) first if use PICO VR.
 
 ```bash
 unset ROS_DISTRO && source /opt/ros/noetic/local_setup.bash
-python teleop.py
+# Simulation
+python teleop.py --config-name=teleop_sim_franka_pico
+# Real
+python teleop.py --config-name=teleop_real_franka_pico
 ```
 
 ## Real Data Recording
