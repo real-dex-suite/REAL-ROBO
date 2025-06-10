@@ -10,38 +10,33 @@ warnings.filterwarnings(
     message="Link .* is of type 'fixed' but set as active in the active_links_mask.*",
 )
 # load module according to hand type
-# hand_module = __import__("holodex.robot.hand")
-# KDLControl_module_name = f"{HAND_TYPE}KDLControl" 
-# JointControl_module_name = f"{HAND_TYPE}JointControl" 
-# Hand_module_name = f"{HAND_TYPE}Hand" 
-# get relevant classes
-# KDLControl = (
-#     getattr(hand_module.robot, KDLControl_module_name)
-#     if HAND_TYPE is not None
-#     else None
-# )
-# JointControl = (
-#     getattr(hand_module.robot, JointControl_module_name)
-#     if HAND_TYPE is not None
-#     else None
-# )
-# Hand = getattr(hand_module.robot, Hand_module_name) 
-
+if HAND_TYPE is not None:
+    hand_module = __import__("holodex.robot.hand")
+    KDLControl_module_name = f"{HAND_TYPE}KDLControl" 
+    JointControl_module_name = f"{HAND_TYPE}JointControl" 
+    Hand_module_name = f"{HAND_TYPE}Hand" 
+    # get relevant classes
+    KDLControl = (
+        getattr(hand_module.robot, KDLControl_module_name)
+    )
+    JointControl = (
+        getattr(hand_module.robot, JointControl_module_name)
+    )
+    Hand = getattr(hand_module.robot, Hand_module_name) 
+    # load constants according to hand type
+    hand_type = HAND_TYPE.lower() 
+    JOINTS_PER_FINGER = (
+        eval(f"{hand_type.upper()}_JOINTS_PER_FINGER") 
+    )
+    JOINT_OFFSETS = (
+        eval(f"{hand_type.upper()}_JOINT_OFFSETS") 
+    )
+    
 if ARM_TYPE is not None:
     # load module according to arm type
     arm_module = __import__("holodex.robot.arm")
     Arm_module_name = f"{ARM_TYPE}Arm"
     Arm = getattr(arm_module.robot, Arm_module_name)
-
-# load constants according to hand type
-# hand_type = HAND_TYPE.lower() 
-# JOINTS_PER_FINGER = (
-#     eval(f"{hand_type.upper()}_JOINTS_PER_FINGER") 
-# )
-# JOINT_OFFSETS = (
-#     eval(f"{hand_type.upper()}_JOINT_OFFSETS") 
-# )
-
 
 class RobotController(object):
     def __init__(
@@ -80,33 +75,34 @@ class RobotController(object):
         self.arm_control_mode = arm_control_mode
         cprint(f"self.arm_control_mode: {self.arm_control_mode}", "red")
 
-        # self.hand_control_mode = hand_control_mode
-
-        # self.hand = (
-        #     Hand() 
-        # )  # TODO add different control mode for hand
-        # self.hand_KDLControl = KDLControl() 
-        # self.hand_JointControl = JointControl() 
-        # self.joints_per_finger = JOINTS_PER_FINGER
-        # self.joint_offsets = JOINT_OFFSETS
+        if HAND_TYPE is not None:
+            self.hand_control_mode = hand_control_mode
+            self.hand = (
+                Hand() 
+            )  # TODO add different control mode for hand
+            self.hand_KDLControl = KDLControl() 
+            self.hand_JointControl = JointControl() 
+            self.joints_per_finger = JOINTS_PER_FINGER
+            self.joint_offsets = JOINT_OFFSETS
+        else:
+            self.hand = None
         self.teleop = teleop
-
-        self.home = home
-        if self.home is True:
-            self.home_robot()
-        self.home_robot()
+        # self.home = home
+        # if self.home is True:
+        #     self.home_robot()
+        # self.home_robot()
+        
     def home_robot(self):
-        # if ARM_TYPE is not None:
-        #     self.arm.home_robot()
-        # if HAND_TYPE is not None:
-        #     self.hand.home_robot()
-        pass
+        if ARM_TYPE is not None:
+            self.arm.home_robot()
+        if HAND_TYPE is not None:
+            self.hand.home_robot()
 
     def reset_robot(self):
         if ARM_TYPE is not None:
             self.arm.reset()
-        # if HAND_TYPE is not None:
-        #     self.hand.reset()
+        if HAND_TYPE is not None:
+            self.hand.reset()
 
     def get_arm_position(self):
         return self.arm.get_arm_position()
@@ -155,7 +151,6 @@ class RobotController(object):
         '''
         Any movement, including arm and hand.
         '''
-        print(f"input_cmd: {input_cmd}")
         if self.arm is not None:
             # TODO: add flexiv support
             self.move_arm(input_cmd[: self.arm.dof])

@@ -299,4 +299,4 @@ class PICODexArmTeleOp:
 
                 # Generate desired joint angles based on current joystick pose
                 desired_cmd = self.motion(finger_configs)
-                self.robot.move(np.concatenate([desired_cmd, self.finger_distance]))
+                self.robot.move(np.concatenate([desired_cmd, np.expand_dims(self.finger_distance, axis=0)]))

@@ -95,6 +95,9 @@ class FrankaGenesisEnvWrapper:
         # Retrieve the current end-effector pose and return it as a concatenated array
         return np.array(self.current_ee_state)
 
+    def home_robot(self):
+        pass
+    
     def open_gripper(self):
         # Open the robot's gripper
         gripper_msg = Bool(data=True)
@@ -180,7 +183,6 @@ class FrankaGenesisEnvWrapper:
         Returns:
             None
         """
-        # if self.teleop else target_joint
         target_joint = self.solve_ik(target_ee)
         self.move_joint(target_joint)
         

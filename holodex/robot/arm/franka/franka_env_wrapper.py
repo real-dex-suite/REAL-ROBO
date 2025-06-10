@@ -214,7 +214,6 @@ class FrankaEnvWrapper:
         Returns:
             None
         """
-        # if self.teleop else target_joint
         target_joint = self.solve_ik(target_ee)
         self.move_joint(target_joint)
         
