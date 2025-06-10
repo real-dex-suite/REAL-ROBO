@@ -31,7 +31,7 @@ Collecting tele-operation data with Real-Robo!
     - [x] Spacemouse
     - [x] Keyboard
     - [x] PICO 4 (tested)
-    - [x] HAMER
+    - [ ] HAMER
     - [ ] Meta Quest 3
     
 ## Installation

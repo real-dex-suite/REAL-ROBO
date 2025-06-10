@@ -7,5 +7,6 @@ from .keypoint_transforms import *
 from .robot_operators.leapmotion import *
 from .robot_operators.oculus import *
 from .robot_operators.hamer import *
+from .robot_operators.hamer_gripper import *
 from .robot_operators.pico import *
 from .robot_operators.keyboard_controller import *
