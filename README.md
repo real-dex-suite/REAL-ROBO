@@ -30,8 +30,9 @@ Collecting tele-operation data with Real-Robo!
   - gripper
     - [x] Spacemouse
     - [x] Keyboard
-    - [x] PICO VR (tested)
+    - [x] PICO 4 (tested)
     - [x] HAMER
+    - [ ] Meta Quest 3
     
 ## Installation
 
