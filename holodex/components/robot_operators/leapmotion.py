@@ -446,6 +446,6 @@ class LPDexArmTeleOp(object):
                 and self.robot.get_hand_position() is not None
             ):
                 # Obtaining the desired angles
-                desired_joint_angles = self.motion(finger_configs)
+                desired_cmd = self.motion(finger_configs)
                 # Move the hand based on the desired angles
-                self.robot.move(desired_joint_angles)
+                self.robot.move(desired_cmd)

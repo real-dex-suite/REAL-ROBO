@@ -13,19 +13,16 @@ Collecting tele-operation data with Real-Robo!
 
 - Robot Arms
   - [x] JAKA
-  - [x] Kinova
   - [x] Flexiv
   - [x] Franka (tested)
 - Robot Hands
   - hand
-    - [x] Allegro
     - [x] Leaphand
     - [x] paxini
   - gripper
     - [x] Franka Gripper (tested)
 - Tele-operation Devices
   - hand
-    - [x] Mediapipe
     - [x] Leapmotion
     - [x] Oculus VR
     - [x] HAMER
@@ -61,9 +58,9 @@ Follow [pico_streamer](vr/pico_streamer) first if use PICO VR.
 ```bash
 unset ROS_DISTRO && source /opt/ros/noetic/local_setup.bash
 # Simulation
-python teleop.py --config-name=teleop_sim_franka_pico
+python tools/teleoperation/teleop.py --config-name=teleop_sim_franka_pico
 # Real
-python teleop.py --config-name=teleop_real_franka_pico
+python tools/teleoperation/teleop.py --config-name=teleop_real_franka_pico
 ```
 
 ## Real Data Recording

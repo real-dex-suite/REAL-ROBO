@@ -469,23 +469,10 @@ class HamerDexArmTeleOp(object):
                     continue
                 if self.end_robot:
                     break
-
-                desired_joint_angles = self.motion(finger_configs)
-                x = np.array(self.robot.get_arm_tcp_position())
-                np.set_printoptions(precision=5, suppress=True)
-                # print(f"current_tcp{x}")
-                print(f"desired_joint_angles: {desired_joint_angles}")
-                print(f"current_joint: {x}")
-                # time.sleep(3)
+                # Generate desired joint angles based on current joystick pose
+                desired_cmd = self.motion(finger_configs)
+                self.robot.move(np.concatenate([desired_cmd, self.finger_distance]))
                 
-
-
-                self.robot.move_arm(desired_joint_angles)
-
-                # print(f"gripper: {self.finger_distance}")
-                self.robot.move_gripper(self.finger_distance)
-
-
 if __name__ == "__main__":
     hamer = HamerDexArmTeleOp()
     hamer.move()

@@ -13,3 +13,4 @@ nlopt
 anytree
 numpy==1.22.0
 matplotlib
+open3d

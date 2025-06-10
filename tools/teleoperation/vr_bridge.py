@@ -33,10 +33,8 @@ class ZMQSubscriber:
 
     def _create_pose_message(self, ee_pose):
         pose_msg = Pose()
-        if len(ee_pose) >= 6:
-            pose_msg.position.x, pose_msg.position.y, pose_msg.position.z = ee_pose[:3]
-            pose_msg.orientation.x, pose_msg.orientation.y, pose_msg.orientation.z = ee_pose[3:6]
-            pose_msg.orientation.w = ee_pose[6] if len(ee_pose) > 6 else 0.0
+        pose_msg.position.x, pose_msg.position.y, pose_msg.position.z = ee_pose[:3]
+        pose_msg.orientation.x, pose_msg.orientation.y, pose_msg.orientation.z, pose_msg.orientation.w = ee_pose[3:7]
         return pose_msg
 
     def _create_trigger_message(self, trigger):

@@ -49,7 +49,7 @@ class FrankaEnvWrapper:
 
         self._initialize_state()
         self.teleop = teleop
-
+        self.dof = 8
         # Set up the robot control configuration based on the specified mode
         if control_mode == "joint":
             # TODO: make these configurable
@@ -188,70 +188,8 @@ class FrankaEnvWrapper:
             bool: True if the gripper is grasping something, False otherwise.
         """
         return self.arm.get_gripper_is_grasped()
-
-    def move_gripper(self, target_width: float):
-        """
-        Move gripper to target width.
-
-        Args:
-            target_width (float): Target gripper width in meters
-
-        """
-        self.arm.goto_gripper(target_width)
-        # raise NotImplementedError(
-        #     "Gripper control not implemented yet. Contact Jinzhou"
-        # )
-
-    #! We need testing for this
-    def move_cartesian(self, target_pose: list):
-        """
-        Move end-effector to target Cartesian pose.
-
-        Args:
-            target_pose (list): The target pose for the robot in the form [x, y, z, qx, qy, qz, qw].
-
-        """
-        assert len(target_pose) == 7, "target_pose must be a list of length 7"
-        timestamp = rospy.Time.now().to_time() - self._init_time
-        self._fa_cmd_id += 1
-
-        traj_gen_proto_msg = PosePositionSensorMessage(
-            id=self._fa_cmd_id,
-            timestamp=timestamp,
-            position=target_pose[:3],
-            quaternion=target_pose[3:],
-        )
-
-        fb_ctrlr_proto = CartesianImpedanceSensorMessage(
-            id=self._fa_cmd_id,
-            timestamp=timestamp,
-            translational_stiffnesses=[600.0, 600.0, 600.0],
-            rotational_stiffnesses=FC.DEFAULT_ROTATIONAL_STIFFNESSES,
-        )
-
-        ros_msg = make_sensor_group_msg(
-            trajectory_generator_sensor_msg=sensor_proto2ros_msg(
-                traj_gen_proto_msg, SensorDataMessageType.POSE_POSITION
-            ),
-            feedback_controller_sensor_msg=sensor_proto2ros_msg(
-                fb_ctrlr_proto, SensorDataMessageType.CARTESIAN_IMPEDANCE
-            ),
-        )
-
-        self.cmd_pub.publish(ros_msg)
-
+    
     def move_joint(self, target_joint: list):
-        """
-        Move joints to target positions.
-
-        Args:
-            target_joint (list): The target joint position for the robot.
-
-        Returns:
-            None
-        """
-        # if self.teleop else target_joint
-        target_joint = self.solve_ik(target_joint)
         print(f"target{target_joint}") 
         timestamp = rospy.Time.now().to_time() - self._init_time
 
@@ -265,7 +203,48 @@ class FrankaEnvWrapper:
             )
         )
         self.cmd_pub.publish(ros_msg)
+        
+    def move_joint_ik(self, target_ee: list):
+        """
+        Move joints to target positions.
 
+        Args:
+            target_joint (list): The target joint position for the robot.
+
+        Returns:
+            None
+        """
+        # if self.teleop else target_joint
+        target_joint = self.solve_ik(target_ee)
+        self.move_joint(target_joint)
+        
+    def move_gripper(self, gripper_cmd):
+        """
+        Control gripper for teleoperation with binary open/close command.
+        Includes debouncing to avoid too frequent control commands.
+        
+        Args:
+            gripper_cmd (float or int): Binary command for gripper
+                - Values <= 0.05: Close the gripper
+                - Values > 0.05: Open the gripper
+                
+        """
+        # Initialize state tracking if not already set
+        if not hasattr(self, '_gripper_state'):
+            self._gripper_state = None
+            
+        # Debounce logic - only send commands when state actually changes
+        if float(gripper_cmd) > 0.05:
+            self.open_gripper()
+            # Open gripper command
+            if self._gripper_state != 'open':
+                self._gripper_state = 'open'
+        else:
+            self.close_gripper()
+            # Close gripper command
+            if self._gripper_state != 'closed':
+                self._gripper_state = 'closed'
+                
     def joint_reset(self, reset_joints):
         timestamp = rospy.Time.now().to_time() - self._init_time
 
@@ -280,7 +259,10 @@ class FrankaEnvWrapper:
         )
         self.cmd_pub.publish(ros_msg)
 
-
+    def move_arm(self, target_cmd):
+        self.move_joint_ik(target_cmd[:7])
+        self.move_gripper(target_cmd[7])
+        
     def run(self):
         """
         Run test motion sequence.

@@ -11,17 +11,38 @@ from termcolor import cprint
 from typing import Tuple
 import spdlog
 import numpy as np
+from transforms3d.quaternions import quat2mat, mat2quat
 
 try:
     from .robot import RobotController
 except ImportError:
     from robot import RobotController
 
+def swap_y_z_axis(T):
+    """
+    Swap Y and Z axes in a 4x4 transformation matrix.
+    
+    Args:
+        T (np.ndarray): 4x4 transformation matrix
+    
+    Returns:
+        np.ndarray: New transformation matrix with Y and Z swapped
+    """
+    # Make a copy to avoid modifying the original
+    T_new = T.copy()
+    
+    # Swap rotation rows (Y and Z)
+    T_new[1, :], T_new[2, :] = T[2, :], T[1, :]
+    
+    # Swap rotation columns (Y and Z)
+    T_new[:, 1], T_new[:, 2] = T_new[:, 2], T_new[:, 1].copy()
+    
+    return T_new
 
 class PICODexArmTeleOp:
     def __init__(self):
         self.trans_scale = 1
-        self.finger_distance = 1.0
+        self.finger_distance = np.array([1.0])
         self.logger = spdlog.ConsoleLogger("RobotController")
 
         # Initialize state variables
@@ -37,7 +58,8 @@ class PICODexArmTeleOp:
         self.robot = RobotController(teleop=True)
         self.init_tcp = np.array(self._get_tcp_position())
         self.arm_ee_pose = self._get_tcp_position()
-
+        self.joystick_pose = np.array([0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]) # xyz, wxyz
+        
         # Calibrate arm bounds and set correct flange rotation if ARM_TYPE is defined
         if ARM_TYPE:
             self._calibrate_arm_bounds()
@@ -86,21 +108,29 @@ class PICODexArmTeleOp:
             This is based on the assumption that the VR end-effector pose is in the left hand coordinate system.
             Please modify the callback function if the VR end-effector pose is in a different coordinate system.
         """
-        self.joystick_pose = np.array(
-            [
-                pose.position.x,
-                -pose.position.y,
-                pose.position.z,
-                0, 
-                0, 
-                0, 
-                1,
-                # -pose.orientation.x,
-                # pose.orientation.y,
-                # -pose.orientation.z,
-                # pose.orientation.w,
-            ]
-        )
+        pos = np.array([
+            pose.position.x,
+            pose.position.y,
+            pose.position.z
+        ])
+        
+        # 转换四元数为旋转矩阵
+        quat = [
+            pose.orientation.w,
+            pose.orientation.x,
+            pose.orientation.y,
+            pose.orientation.z
+        ]
+            
+        rot = quat2mat(quat)
+        transmat = np.zeros((4,4))
+        transmat[:3, :3] = rot
+        transmat[:3, 3] = pos
+        transmat = swap_y_z_axis(transmat)
+        rot = transmat[:3, :3]
+        pos = transmat[:3, 3]
+        rot = mat2quat(rot)
+        self.joystick_pose = np.concatenate([pos, rot], axis=0)
 
     def _callback_finger_distance(self, data):
         """Callback function to update finger distance from VR data"""
@@ -133,7 +163,7 @@ class PICODexArmTeleOp:
         """Convert joystick end-effector pose to robot coordinates"""
         translation_vector = pose[:3]
         rotation_quat = pose[3:7]
-        rotation_matrix = R.from_quat(rotation_quat).as_matrix()
+        rotation_matrix = quat2mat(rotation_quat)
         forward_vector = normalize_vector(rotation_matrix[:, 0])
         up_vector = normalize_vector(rotation_matrix[:, 1])
         side_vector = normalize_vector(rotation_matrix[:, 2])
@@ -241,6 +271,7 @@ class PICODexArmTeleOp:
             "xyz", self.init_arm_rot
         ).as_matrix()
         self.init_arm_transformation_matrix[:3, 3] = self.init_arm_pos
+        
     def _set_correct_flange_rotation(self):
         """Set the correct flange rotation based on the arm type"""
         if "Franka" in ARM_TYPE:
@@ -267,15 +298,5 @@ class PICODexArmTeleOp:
                     break
 
                 # Generate desired joint angles based on current joystick pose
-                desired_joint_angles = self.motion(finger_configs)
-                desired_joint_angles[2] = np.clip(
-                    desired_joint_angles[2], 0.13, 5
-                )
-                x = np.array(self.robot.get_arm_tcp_position())
-                np.set_printoptions(precision=5, suppress=True)
-                # print(f"current_joint{self.robot.get_arm_position()}")
-                self.robot.move_arm(desired_joint_angles)
-
-                # Move the gripper based on the current finger distance
-                # print(f"gripper: {self.finger_distance}")
-                self.robot.move_gripper(self.finger_distance)
+                desired_cmd = self.motion(finger_configs)
+                self.robot.move(np.concatenate([desired_cmd, self.finger_distance]))

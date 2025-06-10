@@ -179,17 +179,17 @@ class FlexivArm(object):
         self.move_queue.put(list(target_pose))
         self.publish_state(target_pose)
 
-    def move(self, target_arm_pose):
+    def move(self, target_ee_pose):
         # input 7
-        print(f"move to {target_arm_pose}")
+        print(f"move to {target_ee_pose}")
         try:
             # self.flexiv.ExecutePrimitive(
             #     f"MovePTP(target={target_arm_pose[0]} {target_arm_pose[1]} {target_arm_pose[2]} {target_arm_pose[3]} {target_arm_pose[4]} {target_arm_pose[5]} WORLD WORLD_ORIGIN)" #vel={self.vel})"
             # )
             # self.flexiv.SendCartesianMotionForce(target_arm_pose, [0]*6, 0.12, 1.0) # space mouse
-            self.publish_state(target_arm_pose)  # TODO maybe change to use cros
+            self.publish_state(target_ee_pose)  # TODO maybe change to use cros
             self.flexiv.SendCartesianMotionForce(
-                target_arm_pose, [0] * 6, 0.2, 1.0, 0.2, 0.4
+                target_ee_pose, [0] * 6, 0.2, 1.0, 0.2, 0.4
             )  # 0.4
             tcp_position = self.get_tcp_position()
             # cprint(f"tcp_position: {tcp_position}", "yellow")

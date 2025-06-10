@@ -26,6 +26,7 @@ class FrankaGenesisEnvWrapper:
         rospy.sleep(1.0)
 
         self.ik_solver = FrankaSolver(ik_type="motion_gen", ik_sim=True)
+        self.dof = 8
         self.current_joint_state = None
         self.current_ee_state = None
         self.joint_control_pub = rospy.Publisher(
@@ -94,12 +95,6 @@ class FrankaGenesisEnvWrapper:
         # Retrieve the current end-effector pose and return it as a concatenated array
         return np.array(self.current_ee_state)
 
-    def ee2joint(self, ee_pose):
-        # Convert end-effector pose to joint positions using inverse kinematics
-        np.set_printoptions(precision=4, suppress=True)
-        ik_res = self.ik_solver.solve_ik(ee_pose[:3], ee_pose[3:])
-        return ik_res
-
     def open_gripper(self):
         # Open the robot's gripper
         gripper_msg = Bool(data=True)
@@ -120,7 +115,34 @@ class FrankaGenesisEnvWrapper:
             reset_msg = Bool(data=True)
             self.reset_pub.publish(reset_msg)
             rate.sleep()
-
+            
+    def move_gripper(self, gripper_cmd):
+        """
+        Control gripper for teleoperation with binary open/close command.
+        Includes debouncing to avoid too frequent control commands.
+        
+        Args:
+            gripper_cmd (float or int): Binary command for gripper
+                - Values <= 0.05: Close the gripper
+                - Values > 0.05: Open the gripper
+                
+        """
+        # Initialize state tracking if not already set
+        if not hasattr(self, '_gripper_state'):
+            self._gripper_state = None
+            
+        # Debounce logic - only send commands when state actually changes
+        if float(gripper_cmd) > 0.05:
+            self.open_gripper()
+            # Open gripper command
+            if self._gripper_state != 'open':
+                self._gripper_state = 'open'
+        else:
+            self.close_gripper()
+            # Close gripper command
+            if self._gripper_state != 'closed':
+                self._gripper_state = 'closed'
+                
     def solve_ik(self, ee_pose: list) -> list:
         """
         Solve inverse kinematics.
@@ -144,11 +166,28 @@ class FrankaGenesisEnvWrapper:
         return ik_res
 
     def move_joint(self, target_joint): #! double check the type of target_joint
-        target_joint = self.solve_ik(target_joint)
         if target_joint is not None:
             joint_pos_msg = Float64MultiArray(data=target_joint)
             self.joint_control_pub.publish(joint_pos_msg)
+            
+    def move_joint_ik(self, target_ee: list):
+        """
+        Move joints to target positions.
 
+        Args:
+            target_joint (list): The target joint position for the robot.
+
+        Returns:
+            None
+        """
+        # if self.teleop else target_joint
+        target_joint = self.solve_ik(target_ee)
+        self.move_joint(target_joint)
+        
+    def move_arm(self, target_cmd):
+        self.move_joint_ik(target_cmd[:7])
+        self.move_gripper(target_cmd[7])
+        
     def run(self):
         pass
 

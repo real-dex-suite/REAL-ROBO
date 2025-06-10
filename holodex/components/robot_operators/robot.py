@@ -136,28 +136,33 @@ class RobotController(object):
             ]
         self.hand.move(input_angles)
 
-    def move_arm(self, input_angles: np.ndarray):
-        self.arm.move_joint(input_angles)
-        # self.arm.move_cartesian(input_angles)
+    def move_arm(self, input_cmd: np.ndarray):
+        self.arm.move(input_cmd)
         rospy.sleep(SLEEP_TIME)
 
-    def move_arm_and_hand(self, input_angles):
+    def move_arm_and_hand(self, input_cmd):
+        '''
+        First arm then hand.
+        '''
         assert (
             self.arm is not None and self.hand is not None
         ), "Arm and hand are not initialized"
         # TODO simultaneous movement
-        self.move_arm(input_angles[: self.arm.dof])
-        self.move_hand(input_angles[self.arm.dof :])
+        self.move_arm(input_cmd[: self.arm.dof])
+        self.move_hand(input_cmd[self.arm.dof :])
 
-    def move(self, input_angles):
-        print(f"input_angles: {input_angles}")
+    def move(self, input_cmd):
+        '''
+        Any movement, including arm and hand.
+        '''
+        print(f"input_cmd: {input_cmd}")
         if self.arm is not None:
             # TODO: add flexiv support
-            self.move_arm(input_angles[: self.arm.dof])
+            self.move_arm(input_cmd[: self.arm.dof])
             if self.hand is not None:
-                self.move_hand(input_angles[self.arm.dof :])
+                self.move_hand(input_cmd[self.arm.dof :])
         elif self.hand is not None:
-            self.move_hand(input_angles)
+            self.move_hand(input_cmd)
             rospy.sleep(SLEEP_TIME)
 
     def move_seperate(self, action: dict):
@@ -167,45 +172,7 @@ class RobotController(object):
         if self.hand is not None:
             self.move_hand(action["hand"])
         rospy.sleep(1/5)
-        
-    def move_gripper(self, gripper_cmd):
-        """
-        Control gripper for teleoperation with binary open/close command.
-        Includes debouncing to avoid too frequent control commands.
-        
-        Args:
-            gripper_cmd (float or int): Binary command for gripper
-                - Values <= 0.05: Close the gripper
-                - Values > 0.05: Open the gripper
                 
-        """
-        # Initialize state tracking if not already set
-        if not hasattr(self, '_gripper_state'):
-            self._gripper_state = None
-            
-        # Debounce logic - only send commands when state actually changes
-        if float(gripper_cmd) > 0.05:
-            self.arm.open_gripper()
-            # Open gripper command
-            if self._gripper_state != 'open':
-                self._gripper_state = 'open'
-        else:
-            self.arm.close_gripper()
-            # Close gripper command
-            if self._gripper_state != 'closed':
-                self._gripper_state = 'closed'
-
-    def control_gripper(self, gripper_cmd):
-        status = self.get_gripper_state()
-        if not status:
-            self.arm.open_gripper()
-        else:
-            self.arm.close_gripper()
-        
-
-    def get_gripper_state(self):
-        return self.arm.get_gripper_is_grasped()
-
     def servo_move(self, action: dict, n_interpolations: int = 30):
         # hand interpolation
         if self.hand_control_mode == "joint":

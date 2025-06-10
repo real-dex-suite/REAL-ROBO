@@ -101,13 +101,14 @@ def kb_teleop(detector_config):
 
 def get_tactile_stream_processes(configs):
     tactile_processes = []
-    if configs['tactile']['type'] == 'paxini':
-        if len(configs['tactile']['serial_port_number']) > 0:
-            for idx, serial_port_number in enumerate(configs['tactile']['serial_port_number']):
-                tactile_num = int(serial_port_number[serial_port_number.find("USB")+3])
-                tactile_processes.append(
-                    Process(target = start_paxini_tactile_stream, args = (serial_port_number, tactile_num+1, configs['tactile']['baudrate']))
-                )
+    if "tactile" in configs.keys():
+        if configs['tactile']['type'] == 'paxini':
+            if len(configs['tactile']['serial_port_number']) > 0:
+                for idx, serial_port_number in enumerate(configs['tactile']['serial_port_number']):
+                    tactile_num = int(serial_port_number[serial_port_number.find("USB")+3])
+                    tactile_processes.append(
+                        Process(target = start_paxini_tactile_stream, args = (serial_port_number, tactile_num+1, configs['tactile']['baudrate']))
+                    )
     return tactile_processes
 
 def get_camera_stream_processes(configs):
@@ -214,6 +215,7 @@ def start_tactile_visualizer():
 
 def get_tactile_visualizer_process(configs):
     tactile_visualizer_process = None
-    if configs['tactile']['type'] == 'paxini':
-        tactile_visualizer_process = Process(target = start_tactile_visualizer)
+    if "tactile" in configs.keys():
+        if configs['tactile']['type'] == 'paxini':
+            tactile_visualizer_process = Process(target = start_tactile_visualizer)
     return tactile_visualizer_process
