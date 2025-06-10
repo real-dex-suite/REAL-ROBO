@@ -259,7 +259,7 @@ class FrankaEnvWrapper:
         )
         self.cmd_pub.publish(ros_msg)
 
-    def move_arm(self, target_cmd):
+    def move(self, target_cmd):
         self.move_joint_ik(target_cmd[:7])
         self.move_gripper(target_cmd[7])
         
