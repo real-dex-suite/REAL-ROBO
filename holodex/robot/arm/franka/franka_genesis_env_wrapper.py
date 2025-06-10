@@ -21,12 +21,15 @@ class LowPassFilter:
         return self.prev_value
     
 class FrankaGenesisEnvWrapper:
-    def __init__(self, control_mode="joint", teleop=False):
+    def __init__(self, control_mode="joint", teleop=False, with_gripper=True):
         rospy.init_node('genesis_tele', anonymous=True)
         rospy.sleep(1.0)
 
         self.ik_solver = FrankaSolver(ik_type="motion_gen", ik_sim=True)
-        self.dof = 8
+        self.dof = 7
+        self.with_gripper = with_gripper
+        if with_gripper:
+            self.dof += 1
         self.current_joint_state = None
         self.current_ee_state = None
         self.joint_control_pub = rospy.Publisher(
@@ -89,26 +92,32 @@ class FrankaGenesisEnvWrapper:
         """
         # Retrieve the current end-effector pose and return it as a concatenated array
         return np.array(self.current_ee_state)
-
+    
+    def get_gripper_position(self):
+        if self.with_gripper:
+            return self.current_joint_state[7]
+        else:
+            raise RuntimeError("No gripper equipped in Franka. get_gripper_position should not work.")
+    
     def home_robot(self):
         pass
     
     def open_gripper(self):
-        # Open the robot's gripper
-        gripper_msg = Bool(data=True)
-        self.gripper_control_pub.publish(gripper_msg)
+        if self.with_gripper:
+            # Open the robot's gripper
+            gripper_msg = Bool(data=True)
+            self.gripper_control_pub.publish(gripper_msg)
+        else:
+            raise RuntimeError("No gripper equipped in Franka. open_gripper should not work.")
         
     def close_gripper(self):
-        # Open the robot's gripper
-        gripper_msg = Bool(data=False)
-        self.gripper_control_pub.publish(gripper_msg)
-
-    def reset(self):
-        """
-        This function is used to reset the robot to the home position from the frankapy.
-        """
-        pass
-            
+        if self.with_gripper:
+            # Open the robot's gripper
+            gripper_msg = Bool(data=False)
+            self.gripper_control_pub.publish(gripper_msg)
+        else:
+            raise RuntimeError("No gripper equipped in Franka. close_gripper should not work.")
+        
     def move_gripper(self, gripper_cmd):
         """
         Control gripper for teleoperation with binary open/close command.
@@ -120,22 +129,33 @@ class FrankaGenesisEnvWrapper:
                 - Values > 0.05: Open the gripper
                 
         """
-        # Initialize state tracking if not already set
-        if not hasattr(self, '_gripper_state'):
-            self._gripper_state = None
-            
-        # Debounce logic - only send commands when state actually changes
-        if float(gripper_cmd) > 0.05:
-            self.open_gripper()
-            # Open gripper command
-            if self._gripper_state != 'open':
-                self._gripper_state = 'open'
-        else:
-            self.close_gripper()
-            # Close gripper command
-            if self._gripper_state != 'closed':
-                self._gripper_state = 'closed'
+        if self.with_gripper:
+            # Initialize state tracking if not already set
+            if not hasattr(self, '_gripper_state'):
+                self._gripper_state = None
                 
+            # Debounce logic - only send commands when state actually changes
+            if float(gripper_cmd) > 0.05:
+                self.open_gripper()
+                # Open gripper command
+                if self._gripper_state != 'open':
+                    self._gripper_state = 'open'
+            else:
+                self.close_gripper()
+                # Close gripper command
+                if self._gripper_state != 'closed':
+                    self._gripper_state = 'closed'
+        else:
+            raise RuntimeError("No gripper equipped in Franka. move_gripper should not work.")
+          
+        
+    def reset(self):
+        """
+        This function is used to reset the robot to the home position from the frankapy.
+        """
+        pass
+            
+
     def solve_ik(self, ee_pose: list) -> list:
         """
         Solve inverse kinematics.
@@ -178,7 +198,8 @@ class FrankaGenesisEnvWrapper:
         
     def move(self, target_cmd):
         self.move_joint_ik(target_cmd[:7])
-        self.move_gripper(target_cmd[7])
+        if self.with_gripper:
+            self.move_gripper(target_cmd[7])
         
     def run(self):
         pass

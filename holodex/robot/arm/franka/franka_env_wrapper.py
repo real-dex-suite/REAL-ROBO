@@ -36,7 +36,7 @@ class FrankaEnvWrapper:
     operations while handling the underlying ROS communication and state management.
     """
 
-    def __init__(self, control_mode: str = "joint", teleop: bool = False):
+    def __init__(self, control_mode: str = "joint", teleop: bool = False, with_gripper=True):
         """
         Initialize robot arm controller.
 
@@ -44,12 +44,17 @@ class FrankaEnvWrapper:
             control_mode (str): Control mode for the robot arm.
                 Options: "joint" (default) or "cartesian"
         """
-        self.arm = FrankaArm(rosnode_name="franka_arm_reader", with_gripper=True)
+        self.arm = FrankaArm(rosnode_name="franka_arm_reader", with_gripper=with_gripper)
         rospy.loginfo("Initializing FrankaWrapper...")
 
         self._initialize_state()
         self.teleop = teleop
-        self.dof = 8
+        self.dof = 7
+        
+        self.with_gripper = with_gripper
+        if with_gripper:
+            self.dof += 1
+            
         # Set up the robot control configuration based on the specified mode
         if control_mode == "joint":
             # TODO: make these configurable
@@ -171,14 +176,18 @@ class FrankaEnvWrapper:
         """Close gripper and attempt to grasp object."""
         self.arm.close_gripper(grasp=True, block=block, skill_desc="CloseGripper")
 
-    def get_gripper_width(self) -> float:
+    def get_gripper_position(self) -> float:
         """
         Get current gripper width.
 
         Returns:
             float: The current width of the gripper.
         """
-        return self.arm.get_gripper_width()
+        if self.with_gripper:
+            return self.arm.get_gripper_width()
+        else:
+            raise RuntimeError("No gripper equipped in Franka. get_gripper_position should not work.")
+    
 
     def get_gripper_is_grasped(self) -> bool:
         """
@@ -187,7 +196,11 @@ class FrankaEnvWrapper:
         Returns:
             bool: True if the gripper is grasping something, False otherwise.
         """
-        return self.arm.get_gripper_is_grasped()
+        
+        if self.with_gripper:
+            return self.arm.get_gripper_is_grasped()
+        else:
+            raise RuntimeError("No gripper equipped in Franka. get_gripper_is_grasped should not work.")
     
     def move_joint(self, target_joint: list):
         print(f"target{target_joint}") 
@@ -228,22 +241,25 @@ class FrankaEnvWrapper:
                 - Values > 0.05: Open the gripper
                 
         """
-        # Initialize state tracking if not already set
-        if not hasattr(self, '_gripper_state'):
-            self._gripper_state = None
-            
-        # Debounce logic - only send commands when state actually changes
-        if float(gripper_cmd) > 0.05:
-            self.open_gripper()
-            # Open gripper command
-            if self._gripper_state != 'open':
-                self._gripper_state = 'open'
-        else:
-            self.close_gripper()
-            # Close gripper command
-            if self._gripper_state != 'closed':
-                self._gripper_state = 'closed'
+        if self.with_gripper:
+            # Initialize state tracking if not already set
+            if not hasattr(self, '_gripper_state'):
+                self._gripper_state = None
                 
+            # Debounce logic - only send commands when state actually changes
+            if float(gripper_cmd) > 0.05:
+                self.open_gripper()
+                # Open gripper command
+                if self._gripper_state != 'open':
+                    self._gripper_state = 'open'
+            else:
+                self.close_gripper()
+                # Close gripper command
+                if self._gripper_state != 'closed':
+                    self._gripper_state = 'closed'
+        else:
+            raise RuntimeError("No gripper equipped in Franka. move_gripper should not work.")
+    
     def joint_reset(self, reset_joints):
         timestamp = rospy.Time.now().to_time() - self._init_time
 
@@ -260,7 +276,8 @@ class FrankaEnvWrapper:
 
     def move(self, target_cmd):
         self.move_joint_ik(target_cmd[:7])
-        self.move_gripper(target_cmd[7])
+        if self.with_gripper:
+            self.move_gripper(target_cmd[7])
         
     def run(self):
         """
@@ -278,7 +295,8 @@ class FrankaEnvWrapper:
             self.move_joint(x)
             print(self.current_joint_state)
             rate.sleep()
-        self.open_gripper()
+        if self.with_gripper:
+            self.open_gripper()
 
     def shutdown(self):
         """

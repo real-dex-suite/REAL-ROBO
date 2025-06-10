@@ -18,7 +18,7 @@ from collections import deque
 
 
 class FlexivArm(object):
-    def __init__(self):
+    def __init__(self, with_gripper=False):
         self.robot_sn = "Rizon4-062521"
         self.logger = spdlog.ConsoleLogger("RobotController")
         self.mode = flexivrdk.Mode
@@ -27,7 +27,11 @@ class FlexivArm(object):
         self.initialize_connection()
         self.vel = 1.0
         self.dof = 7
-
+        
+        self.with_gripper = with_gripper
+        if with_gripper:
+            self.dof += 1
+            
         # Control parameters
         self.control_freq = 30
         self.control_period = 1 / self.control_freq
@@ -143,7 +147,29 @@ class FlexivArm(object):
         except Exception as e:
             self.logger.error(f"Failed to get TCP position: {e}")
             return None
-
+        
+    def get_gripper_position(self):
+        raise NotImplementedError("Flexiv with gripper is not implemented now.")
+    
+    def open_gripper(self):
+        raise NotImplementedError("Flexiv with gripper is not implemented now.")
+    
+    def close_gripper(self):
+        raise NotImplementedError("Flexiv with gripper is not implemented now.")
+    
+    def move_gripper(self, gripper_cmd):
+        """
+        Control gripper for teleoperation with binary open/close command.
+        Includes debouncing to avoid too frequent control commands.
+        
+        Args:
+            gripper_cmd (float or int): Binary command for gripper
+                - Values <= 0.05: Close the gripper
+                - Values > 0.05: Open the gripper
+                
+        """
+        raise NotImplementedError("Flexiv with gripper is not implemented now.")
+    
     def read_tcp_position(self):
         while not self.stop_event.is_set():
             try:
@@ -194,7 +220,7 @@ class FlexivArm(object):
             tcp_position = self.get_tcp_position()
             # cprint(f"tcp_position: {tcp_position}", "yellow")
             # time.sleep(1 / 30)
-
+            # TODO: add gripper
         except Exception as e:
             self.logger.error(f"Failed to move the robot: {e}")
 

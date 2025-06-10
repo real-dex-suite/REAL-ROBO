@@ -1,9 +1,5 @@
 import numpy as np
 import rospy
-from sensor_msgs.msg import JointState
-
-# from holodex.constants import JAKA_JOINT_STATE_TOPIC, JAKA_POSITIONS
-from jkrc import jkrc
 from holodex.constants import (
     JAKA_IP,
     JAKA_POSITIONS,
@@ -25,6 +21,7 @@ class JakaArm(object):
         teleop=False,
         safety_moving_trans=100,
         random_jaka_home=False,
+        with_gripper=False,
     ):
         # rospy.init_node('jaka_arm_controller')
 
@@ -36,7 +33,9 @@ class JakaArm(object):
             publisher_name=JAKA_COMMANDED_JOINT_STATE_TOPIC
         )
         self.ee_pose_publisher = FloatArrayPublisher(publisher_name=JAKA_EE_POSE_TOPIC)
-
+        
+        from jkrc import jkrc
+        
         self.robot = jkrc.RC(JAKA_IP)
         ret = self.robot.login()
         print("Robot logging: ", ret)
@@ -61,6 +60,11 @@ class JakaArm(object):
         self.acc = 5
         self.tol = 0.01
         self.dof = JAKA_DOF
+
+        self.with_gripper = with_gripper
+        if with_gripper:
+            self.dof += 1
+            
         self.safety_moving_trans = safety_moving_trans
         self.joint_vel_limit = 0.5  # TODO configureable
         self.joint_pos_limit = np.array([6.28, 2.09, 2.27, 6.28, 2.09, 6.28])
@@ -92,7 +96,29 @@ class JakaArm(object):
         if len(output) == 1:
             print(output)
         return np.array(output[1])
-
+    
+    def get_gripper_position(self):
+        raise NotImplementedError("JAKA with gripper is not implemented now.")
+    
+    def open_gripper(self):
+        raise NotImplementedError("JAKA with gripper is not implemented now.")
+    
+    def close_gripper(self):
+        raise NotImplementedError("JAKA with gripper is not implemented now.")
+    
+    def move_gripper(self, gripper_cmd):
+        """
+        Control gripper for teleoperation with binary open/close command.
+        Includes debouncing to avoid too frequent control commands.
+        
+        Args:
+            gripper_cmd (float or int): Binary command for gripper
+                - Values <= 0.05: Close the gripper
+                - Values > 0.05: Open the gripper
+                
+        """
+        raise NotImplementedError("JAKA with gripper is not implemented now.")
+    
     def set_tcp_position(self, input_pose):
         self.robot.linear_move_extend(
             input_pose, self.move_mode, self.is_block, self.speed, self.acc, self.tol

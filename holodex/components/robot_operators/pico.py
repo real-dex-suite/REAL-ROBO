@@ -84,6 +84,7 @@ class PICODexArmTeleOp:
         self.init_arm_ee_to_world = np.eye(4)
         self.init_arm_ee_to_world[:3, 3] = self.init_arm_ee_pose[:3]
         self.init_arm_ee_to_world[:3, :3] = quat2mat(self.init_arm_ee_pose[3:7])
+        self.init_gripper_width = np.array(self._get_finger_distance())
         self.arm_ee_pose = None
         self.joystick_pose = np.array([0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]) # xyz, wxyz
 
@@ -108,6 +109,9 @@ class PICODexArmTeleOp:
         else:
             return self.robot.arm.get_tcp_position()
 
+    def _get_finger_distance(self):
+        return self.robot.arm.get_gripper_position()
+    
     def _callback_ee_pose(self, pose):
         """Callback function to update joystick pose from VR data
         
@@ -161,14 +165,11 @@ class PICODexArmTeleOp:
 
     def _callback_reset_robot(self, msg):
         """Callback function to reset robot position"""
-        if msg.data:
-            self.robot.home_robot()
-        # TODO: get back to initial
+        self.robot.move(np.concatenate([self.init_arm_ee_pose, np.expand_dims(self.init_gripper_width, axis=0)]))
         
     def _callback_reset_done(self, msg):
         """Callback function to handle reset done event"""
-        self.robot.home_robot()
-        # TODO: get back to initial
+        self.robot.move(np.concatenate([self.init_arm_ee_pose, np.expand_dims(self.init_gripper_width, axis=0)]))
 
     def _retarget_base(self):
         """Retarget the base position of the robot arm"""
