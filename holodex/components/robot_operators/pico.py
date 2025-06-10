@@ -39,6 +39,32 @@ def swap_y_z_axis(T):
     
     return T_new
 
+def rfu_to_flu(T_rfu):
+    """
+    Convert a transformation matrix from RFU (Right, Front, Up) to FLU (Front, Left, Up).
+    
+    Args:
+        T_rfu (np.ndarray): 4x4 transformation matrix in RFU coordinates
+    
+    Returns:
+        np.ndarray: 4x4 transformation matrix in FLU coordinates
+    """
+    # Transformation matrix C (RFU -> FLU)
+    C = np.array([
+        [0, 1, 0, 0],
+        [-1, 0, 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1]
+    ])
+    
+    # Compute T_flu = C @ T_rfu @ C^{-1}
+    # Since C is orthonormal, C^{-1} = C.T
+    C_inv = C.T
+    
+    T_flu = C @ T_rfu @ C_inv
+    
+    return T_flu
+    
 class PICODexArmTeleOp:
     def __init__(self):
         self.trans_scale = 1
@@ -46,25 +72,24 @@ class PICODexArmTeleOp:
         self.logger = spdlog.ConsoleLogger("RobotController")
 
         # Initialize state variables
-        self.arm_ee_pose = None
         self.stop_move = False
         self.end_robot = False
-        self.translation_state = None
 
         # Set up ROS subscribers
         self._setup_subscribers()
 
         # Initialize robot controller
         self.robot = RobotController(teleop=True)
-        self.init_tcp = np.array(self._get_tcp_position())
-        self.arm_ee_pose = self._get_tcp_position()
+        self.init_arm_ee_pose = self._get_tcp_position()
+        self.init_arm_ee_to_world = np.eye(4)
+        self.init_arm_ee_to_world[:3, 3] = self.init_arm_ee_pose[:3]
+        self.init_arm_ee_to_world[:3, :3] = quat2mat(self.init_arm_ee_pose[3:7])
+        self.arm_ee_pose = None
         self.joystick_pose = np.array([0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]) # xyz, wxyz
         
         # Calibrate arm bounds and set correct flange rotation if ARM_TYPE is defined
-        if ARM_TYPE:
-            self._calibrate_arm_bounds()
-            self.correct_flange = np.eye(4)
-            self._set_correct_flange_rotation()
+        # if ARM_TYPE:
+        #     self._calibrate_arm_bounds()
 
     def _setup_subscribers(self):
         """Set up all ROS subscribers"""
@@ -83,18 +108,7 @@ class PICODexArmTeleOp:
     def _get_tcp_position(self):
         """Get the TCP position based on the arm type"""
         if ARM_TYPE == "Flexiv":
-            return self.robot.arm.get_tcp_position(euler=True, degree=False)
-        elif "Franka" in ARM_TYPE:
-            tcp_pose = self.robot.arm.get_tcp_position()  # w, x, y, z
-            tcp_quat_wxyz = tcp_pose[3:7]
-            tcp_quat_xyzw = [
-                tcp_quat_wxyz[1],
-                tcp_quat_wxyz[2],
-                tcp_quat_wxyz[3],
-                tcp_quat_wxyz[0],
-            ]
-            tcp_rot = R.from_quat(tcp_quat_xyzw).as_euler("xyz", degrees=False)
-            return np.concatenate([tcp_pose[:3], tcp_rot])
+            return self.robot.arm.get_tcp_position(euler=False, degree=False)
         else:
             return self.robot.arm.get_tcp_position()
 
@@ -127,6 +141,7 @@ class PICODexArmTeleOp:
         transmat[:3, :3] = rot
         transmat[:3, 3] = pos
         transmat = swap_y_z_axis(transmat)
+        transmat = rfu_to_flu(transmat)
         rot = transmat[:3, :3]
         pos = transmat[:3, 3]
         rot = mat2quat(rot)
@@ -152,137 +167,20 @@ class PICODexArmTeleOp:
         """Callback function to reset robot position"""
         if msg.data:
             self.robot.home_robot()
-
+        # TODO: get back to initial
+        
     def _callback_reset_done(self, msg):
         """Callback function to handle reset done event"""
         self.robot.home_robot()
-        if msg.data and ARM_TYPE:
-            self._calibrate_arm_bounds()
-
-    def vr_to_robot(self, pose):
-        """Convert joystick end-effector pose to robot coordinates"""
-        translation_vector = pose[:3]
-        rotation_quat = pose[3:7]
-        rotation_matrix = quat2mat(rotation_quat)
-        forward_vector = normalize_vector(rotation_matrix[:, 0])
-        up_vector = normalize_vector(rotation_matrix[:, 1])
-        side_vector = normalize_vector(rotation_matrix[:, 2])
-
-        return translation_vector, side_vector, forward_vector, up_vector
-
-    def _compute_transformation(self, init_hand_transformation, hand2vr_transformation):
-        """Compute the transformation matrix for the robot arm"""
-        new_hand2init_hand = init_hand_transformation @ hand2vr_transformation
-        init_flange2base = self.init_arm_transformation_matrix @ self.correct_flange
-        return init_flange2base @ new_hand2init_hand @ np.linalg.inv(self.correct_flange)
-
-    def _get_transformation(self, points_in_hand_space, points_in_vr_space):
-        """Get transformation matrices between hand space and VR space"""
-        vr2init_hand_transformation, _, _ = best_fit_transform(
-            self.init_points_in_vr_space, points_in_hand_space
-        )
-        hand2vr_transformation, _, _ = best_fit_transform(
-            points_in_hand_space, points_in_vr_space
-        )
-        return vr2init_hand_transformation, hand2vr_transformation
+        # TODO: get back to initial
 
     def _retarget_base(self):
         """Retarget the base position of the robot arm"""
-        base_center, x_vector, y_vector, z_vector = self.vr_to_robot(self.joystick_pose)
-
-        reference_points_in_base = np.array(
-            [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
-        )
-        reference_points_in_vr = np.array(
-            [
-                base_center,
-                base_center + x_vector,
-                base_center + y_vector,
-                base_center + z_vector,
-            ]
-        )
-
-        vr_to_base_transformation, base_to_vr_transformation = self._get_transformation(
-            reference_points_in_base, reference_points_in_vr
-        )
-
-        composed_transformation = self._compute_transformation(
-            vr_to_base_transformation, base_to_vr_transformation
-        )
-
-        composed_translation = composed_transformation[:3, 3]
-        composed_rotation = composed_transformation[:3, :3]
-        composed_rotation_quat = R.from_matrix(composed_rotation).as_quat()
-        current_arm_pose = self.arm_ee_pose
-        current_arm_pose[:3] = composed_translation * self.trans_scale
-        current_arm_pose[3:6] = R.from_quat(composed_rotation_quat).as_euler("xyz")
-
+        current_arm_pose = self.init_arm_ee_pose.copy()
+        current_arm_pose[:3]  = self.joystick_pose[:3] * self.trans_scale + self.init_arm_ee_to_world[:3, 3]
+        current_arm_pose[3:7] = mat2quat(quat2mat(self.joystick_pose[3:7]) @ self.init_arm_ee_to_world[:3, :3])
         return current_arm_pose
-
-    def motion(self, finger_configs):
-        """Generate motion commands for the robot"""
-        if ARM_TYPE:
-            desired_arm_pose = self._retarget_base()
-            tmp_desired_arm_euler = desired_arm_pose[3:6]
-            tmp_desired_arm_quat = self.robot.arm.eulerZYX2quat(tmp_desired_arm_euler)
-            return np.concatenate([desired_arm_pose[:3], tmp_desired_arm_quat])
-        return []
-
-    def _calibrate_arm_bounds(self):
-        """Calibrate the arm bounds based on initial positions"""
-        initial_centers, initial_xs, initial_ys, initial_zs = (
-            [],
-            [],
-            [],
-            [],
-        )
-        initial_arm_poss, initial_arm_rots = [], []
-
-        for _ in range(1):
-            center, x, y, z = self.vr_to_robot(self.joystick_pose)
-            initial_centers.append(center)
-            initial_xs.append(x)
-            initial_ys.append(y)
-            initial_zs.append(z)
-
-            initial_arm_poss.append(
-                np.array(self._get_tcp_position()[:3]) / self.trans_scale
-            )
-            initial_arm_rots.append(np.array(self._get_tcp_position()[3:6]))
-
-        avg_center = np.mean(initial_centers, axis=0)
-        avg_x = np.mean(initial_xs, axis=0)
-        avg_y = np.mean(initial_ys, axis=0)
-        avg_z = np.mean(initial_zs, axis=0)
-
-        self.init_points_in_vr_space = np.array(
-            [
-                avg_center,
-                avg_center + avg_x,
-                avg_center + avg_y,
-                avg_center + avg_z,
-            ]
-        )
-
-        self.init_arm_pos = np.mean(initial_arm_poss, axis=0)
-        self.init_arm_rot = np.mean(initial_arm_rots, axis=0)
-        self.init_arm_transformation_matrix = np.eye(4)
-        self.init_arm_transformation_matrix[:3, :3] = R.from_euler(
-            "xyz", self.init_arm_rot
-        ).as_matrix()
-        self.init_arm_transformation_matrix[:3, 3] = self.init_arm_pos
-        
-    def _set_correct_flange_rotation(self):
-        """Set the correct flange rotation based on the arm type"""
-        if "Franka" in ARM_TYPE:
-            self.correct_flange[:3, :3] = R.from_euler(
-                "xyz", [0, 0, 0], degrees=True
-            ).as_matrix()
-        else:
-            self.correct_flange[:3, :3] = R.from_euler(
-                "xyz", [0, 0, 90], degrees=True
-            ).as_matrix()
-
+    
     def move(self, finger_configs):
         """Main control loop for robot movement"""
         print("\n" + "*" * 78)
@@ -296,7 +194,6 @@ class PICODexArmTeleOp:
                     continue
                 if self.end_robot:
                     break
-
                 # Generate desired joint angles based on current joystick pose
-                desired_cmd = self.motion(finger_configs)
+                desired_cmd = self._retarget_base()
                 self.robot.move(np.concatenate([desired_cmd, np.expand_dims(self.finger_distance, axis=0)]))

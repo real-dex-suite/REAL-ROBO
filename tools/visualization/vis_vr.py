@@ -87,6 +87,32 @@ class EEPoseVisualizer:
                 transmat[:3, :3] = rot
                 transmat[:3, 3] = pos
                 transmat = swap_y_z_axis(transmat)
+                def rfu_to_flu(T_rfu):
+                    """
+                    Convert a transformation matrix from RFU (Right, Front, Up) to FLU (Front, Left, Up).
+                    
+                    Args:
+                        T_rfu (np.ndarray): 4x4 transformation matrix in RFU coordinates
+                    
+                    Returns:
+                        np.ndarray: 4x4 transformation matrix in FLU coordinates
+                    """
+                    # Transformation matrix C (RFU -> FLU)
+                    C = np.array([
+                        [0, 1, 0, 0],
+                        [-1, 0, 0, 0],
+                        [0, 0, 1, 0],
+                        [0, 0, 0, 1]
+                    ])
+                    
+                    # Compute T_flu = C @ T_rfu @ C^{-1}
+                    # Since C is orthonormal, C^{-1} = C.T
+                    C_inv = C.T
+                    
+                    T_flu = C @ T_rfu @ C_inv
+                    
+                    return T_flu
+                transmat = rfu_to_flu(transmat)
                 rot = transmat[:3, :3]
                 pos = transmat[:3, 3]
                 self.coordinate_frame.translate(pos - self.pos)

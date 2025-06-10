@@ -39,11 +39,6 @@ class FrankaGenesisEnvWrapper:
             Bool,
             queue_size=1,
         )
-        self.reset_pub = rospy.Publisher(
-            "/genesis/reset_robot",
-            Bool,
-            queue_size=1,
-        )
         self.joint_state_sub = rospy.Subscriber(
             "/genesis/joint_states",
             Float64MultiArray,
@@ -112,12 +107,7 @@ class FrankaGenesisEnvWrapper:
         """
         This function is used to reset the robot to the home position from the frankapy.
         """
-        print("publishing...")
-        rate = rospy.Rate(10)
-        for _ in range(5):
-            reset_msg = Bool(data=True)
-            self.reset_pub.publish(reset_msg)
-            rate.sleep()
+        pass
             
     def move_gripper(self, gripper_cmd):
         """
