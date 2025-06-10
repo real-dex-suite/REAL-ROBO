@@ -13,4 +13,6 @@ nlopt
 anytree
 numpy==1.22.0
 matplotlib
+mediapipe
+pyspacemouse
 open3d
