@@ -240,54 +240,7 @@ class RobotController(object):
         arm_position = self.get_arm_tcp_position()
         arm_position_diff = np.linalg.norm(action["arm"][:3] - arm_position[:3])
         arm_orientation_diff = np.linalg.norm(action["arm"][3:] - arm_position[3:])
-
-
-import sensor_msgs
-
-
-class A:
-    def __init__(self) -> None:
-        self.robot = RobotController(teleop=False)
-        self.joint_position_commands = [
-            -1.5707487,
-            0.24192421,
-            -1.4037328,
-            0.02739489,
-            -1.8208425,
-            -2.1729174,
-        ]
-        rospy.Timer(rospy.Duration(0.1), self._main_loop)
-        self.publisher = rospy.Publisher(
-            "/holodex/joint_states", sensor_msgs.msg.JointState, queue_size=10
-        )
-        rospy.Subscriber(
-            "/holodex/joint_commands",
-            sensor_msgs.msg.JointState,
-            self._joint_commands_callback,
-        )
-        rospy.spin()
-
-    def _main_loop(self, event):
-        # joins states
-        arm_position = self.robot.get_arm_position()
-        js = sensor_msgs.msg.JointState()
-        js.header.stamp = rospy.Time.now()
-        js.header.frame_id = "link_0"
-        js.position = arm_position
-        js.name = ["joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6"]
-        self.publisher.publish(js)
-
-        # joint commands
-        self.robot.arm.move_joint(self.joint_position_commands)
-
-    def _joint_commands_callback(self, msg):
-        self.joint_position_commands = msg.position
-
-
-def joint_commands_callback(data):
-    joint_position_commands = data.position
-
-
+        
 if __name__ == "__main__":
     rospy.init_node("test")
     robot = RobotController(teleop=False, random_arm_home=False, home=True)
