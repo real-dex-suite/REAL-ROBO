@@ -6,8 +6,9 @@ Collecting tele-operation data with Real-Robo!
 
 - Ubuntu 20.04 / 22.04
 - CUDA 11.8
-- ROS noetic and galatic / humble ([Installing ROS 1 in Ubuntu 22.04 (Chinese)](https://www.bilibili.com/opus/890840405512290392))
-- Teleoperation device (optional)
+- ROS noetic (necessary)
+  - [Installing ROS 1 in Ubuntu 22.04 (Chinese)](https://www.bilibili.com/opus/890840405512290392)
+- ROS humble (optional)
 
 ## Supported Devices
 
@@ -60,7 +61,40 @@ cd dependencies/frankapy && ./bash_scripts/make_catkin.sh
 
 ## Tele-operation
 
-Follow [pico_streamer](vr/pico_streamer) first if use PICO VR.
+### Run VR Streamer
+
+#### Run on Workstation (ROS 2 Enabled)
+
+- Dependencies
+
+```bash
+bash install.sh
+```
+
+- Run
+
+```bash
+pushd vr/pico_streamer
+bash start_streaming_local.sh
+popd
+```
+
+#### Run on Docker (Any Setting)
+
+```bash
+pushd vr/pico_streamer
+# First time to run
+bash start_streaming_docker.sh --init
+# If not
+bash start_streaming_docker.sh
+popd
+```
+
+### Run VR Publisher
+
+```bash
+bash pipelines/vr_bridge.sh 
+```
 
 ### Simulation (Genesis)
 
