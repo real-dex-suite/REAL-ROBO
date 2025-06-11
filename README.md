@@ -63,7 +63,18 @@ cd dependencies/frankapy && ./bash_scripts/make_catkin.sh
 
 ### Run VR Streamer
 
-#### Run on Workstation (ROS 2 Enabled)
+#### Run on Docker (Recommended)
+
+```bash
+pushd vr/pico_streamer
+# First time to run
+bash start_streaming_docker.sh --init
+# If not
+bash start_streaming_docker.sh
+popd
+```
+
+#### Run on Workstation (ROS 2 Installed)
 
 - Dependencies
 
@@ -76,17 +87,6 @@ bash install.sh
 ```bash
 pushd vr/pico_streamer
 bash start_streaming_local.sh
-popd
-```
-
-#### Run on Docker (Any Setting)
-
-```bash
-pushd vr/pico_streamer
-# First time to run
-bash start_streaming_docker.sh --init
-# If not
-bash start_streaming_docker.sh
 popd
 ```
 
