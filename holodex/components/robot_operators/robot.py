@@ -36,12 +36,7 @@ class RobotController(object):
     def __init__(
         self,
         teleop,
-        servo_mode=True,
         arm_type="franka",
-        arm_control_mode="ik",
-        hand_control_mode="joint",
-        home=True,
-        random_arm_home=False,
         simulator=None,
         gripper=None,
     ) -> None:
@@ -66,22 +61,19 @@ class RobotController(object):
             from holodex.robot.arm.jaka.jaka import JakaArm
             self.arm = (
                 JakaArm(
-                    servo_mode=servo_mode,
+                    servo_mode=True,
                     teleop=teleop,
-                    control_mode=arm_control_mode,
+                    control_mode="joint",
                     safety_moving_trans=JAKA_SAFE_MOVING_TRANS,
-                    random_jaka_home=random_arm_home,
+                    random_jaka_home=False,
                     gripper=gripper
                 )
             )
             cprint("Call JakaArm", "red")
         else:
             raise NotImplementedError("Unknown arm_type")
-        self.arm_control_mode = arm_control_mode
-        cprint(f"self.arm_control_mode: {self.arm_control_mode}", "red")
 
         if HAND_TYPE is not None:
-            self.hand_control_mode = hand_control_mode
             self.hand = (
                 Hand() 
             )  # TODO add different control mode for hand
@@ -96,7 +88,7 @@ class RobotController(object):
         # if self.home is True:
         #     self.home_robot()
         # self.home_robot()
-        
+        cprint("RobotController init OK", "yellow")
     def home_robot(self):
         if self.arm_type is not None:
             self.arm.home_robot()
@@ -173,79 +165,6 @@ class RobotController(object):
             self.move_hand(action["hand"])
         rospy.sleep(1/5)
                 
-    def servo_move(self, action: dict, n_interpolations: int = 30):
-        # hand interpolation
-        if self.hand_control_mode == "joint":
-            start_hand_pos = self.get_hand_position()
-            end_hand_pos = action["hand"]
-
-        # arm interpolation
-        if self.arm_control_mode == "interpo_ik":
-            start_arm_pos = self.get_arm_tcp_position()
-            current_joint = self.get_arm_position()
-            start_arm_pos = np.array(self.arm.compute_ik(current_joint, start_arm_pos))
-            end_arm_pos = np.array(self.arm.compute_ik(current_joint, action["arm"]))
-        elif self.arm_control_mode == "joint":
-            start_arm_pos = self.get_arm_position()
-            end_arm_pos = action["arm"]
-
-        # make the robot move
-        for step in range(1, n_interpolations + 1):
-            interpolated_hand_pos = (
-                start_hand_pos
-                + (end_hand_pos - start_hand_pos) * step / n_interpolations
-            )
-            interpolated_arm_pos = (
-                start_arm_pos + (end_arm_pos - start_arm_pos) * step / n_interpolations
-            )
-
-            self.move_arm(interpolated_arm_pos)
-            self.move_hand(interpolated_hand_pos)
-            rospy.sleep(SLEEP_TIME)
-
-    def servo_move_self_interpo(self, action: dict, loop_time: int = 0.4):
-        # hand interpolation
-        if self.hand_control_mode == "joint":
-            start_hand_pos = self.get_hand_position()
-            end_hand_pos = action["hand"]
-
-        # arm interpolation
-        if self.arm_control_mode == "interpo_ik":
-            start_arm_pos = self.get_arm_tcp_position()
-            current_joint = self.get_arm_position()
-            start_arm_pos = np.array(self.arm.compute_ik(current_joint, start_arm_pos))
-            end_arm_pos = np.array(self.arm.compute_ik(current_joint, action["arm"]))
-        elif self.arm_control_mode == "joint":
-            start_arm_pos = self.get_arm_position()
-            end_arm_pos = action["arm"]
-
-        n_interpolations = int(loop_time / (SLEEP_TIME))
-        hand_control_step = int(loop_time / (0.05))
-
-        # make the robot move
-        for step in range(1, n_interpolations + 1):
-            interpolated_hand_pos = (
-                start_hand_pos
-                + (end_hand_pos - start_hand_pos) * step / n_interpolations
-            )
-            interpolated_arm_pos = (
-                start_arm_pos + (end_arm_pos - start_arm_pos) * step / n_interpolations
-            )
-            # st = time.time()
-            self.move_arm(interpolated_arm_pos)
-
-            if step % hand_control_step == 0:
-                self.move_hand(end_hand_pos)
-
-            # print(f"Time taken: {time.time() - st}")
-        # compute the difference between the desired and actual position
-        hand_position = self.get_hand_position()
-        hand_position_diff = np.linalg.norm(end_hand_pos - hand_position)
-        # print(f"Hand position difference: {hand_position_diff}")
-        arm_position = self.get_arm_tcp_position()
-        arm_position_diff = np.linalg.norm(action["arm"][:3] - arm_position[:3])
-        arm_orientation_diff = np.linalg.norm(action["arm"][3:] - arm_position[3:])
-        
 if __name__ == "__main__":
     rospy.init_node("test")
     robot = RobotController(teleop=False, random_arm_home=False, home=True)

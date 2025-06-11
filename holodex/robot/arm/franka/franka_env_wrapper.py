@@ -44,10 +44,8 @@ class FrankaEnvWrapper:
             control_mode (str): Control mode for the robot arm.
                 Options: "joint" (default) or "cartesian"
         """
-        cprint("Starting FrankaArm", "yellow")
         assert gripper in ["ctek", "panda"] or gripper is None, f"Gripper {gripper} is not supported for FrankaEnvWrapper."
         self.arm = FrankaArm(rosnode_name="franka_arm_reader", with_gripper=gripper == "franka")
-        cprint("Done.", "yellow")
         rospy.loginfo("Initializing FrankaWrapper...")
 
         self._initialize_state()
