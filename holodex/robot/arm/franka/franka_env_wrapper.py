@@ -45,7 +45,7 @@ class FrankaEnvWrapper:
                 Options: "joint" (default) or "cartesian"
         """
         assert gripper in ["ctek", "panda"] or gripper is None, f"Gripper {gripper} is not supported for FrankaEnvWrapper."
-        self.arm = FrankaArm(rosnode_name="franka_arm_reader", with_gripper=gripper == "franka")
+        self.arm = FrankaArm(rosnode_name="franka_arm_reader", with_gripper=gripper == "panda")
         rospy.loginfo("Initializing FrankaWrapper...")
 
         self._initialize_state()
@@ -79,7 +79,7 @@ class FrankaEnvWrapper:
 
         self._fa_cmd_id = 0
         self._init_time = rospy.Time.now().to_time()
-        self.ik_solver = FrankaSolver(ik_type="motion_gen", ik_sim=False)
+        self.ik_solver = FrankaSolver(ik_type="motion_gen", ik_sim=not (gripper=="panda"))
         
     def _initialize_state(self):
         """Initialize robot state variables."""
@@ -138,7 +138,7 @@ class FrankaEnvWrapper:
         Returns:
             np.ndarray: [x, y, z, qw, qx, qy, qz]
         """
-        self.current_ee_pose = self.arm.get_pose()
+        self.current_ee_pose = self.arm.get_pose(self.gripper == "franka")
         trans = self.current_ee_pose.translation
         rot_quat = self.current_ee_pose.quaternion
         return np.concatenate([trans, rot_quat])
@@ -148,7 +148,7 @@ class FrankaEnvWrapper:
         Solve inverse kinematics.
 
         Args:
-            ee_pose (list): The end-effector pose in the form [x, y, z, qx, qy, qz, qw].
+            ee_pose (list): The end-effector pose in the form [x, y, z, qw, qx, qy, qz].
 
         Returns:
             list: The joint positions that achieve the desired end-effector pose.
@@ -339,10 +339,13 @@ if __name__ == "__main__":
         # TODO: run the robot, and test at local side
         i = 1
         while i < 100:
-            solved_joint = controller.solve_ik(controller.get_tcp_position())
-            print("original_joint", controller.get_arm_position())
+            target_pose = controller.get_tcp_position()
+            solved_joint = controller.solve_ik(target_pose)
+            print(f"----------------i={i}--------------------------------")
+            print("original_joint:", controller.get_arm_position())
             print("solved_joint:", solved_joint)
-            print(f"gripper_status: {controller.get_gripper_is_grasped()}")
+            print("target_pose:", target_pose)
+            print("------------------------------------------------------")
             i += 1
 
     except rospy.ROSInterruptException:
