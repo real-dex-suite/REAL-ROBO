@@ -84,9 +84,6 @@ class FrankaEnvWrapper:
     def _initialize_state(self):
         """Initialize robot state variables."""
         self.current_joint_state = self.arm.get_joints()
-        self.joint_state = self.current_joint_state[:]
-        self.current_ee_pose = self.arm.get_pose()
-        self.ee_pose = self.current_ee_pose
 
     def _initialize_joint_control_config(self):
         """Configure joint control parameters."""
@@ -131,16 +128,19 @@ class FrankaEnvWrapper:
         """
         return self.arm.get_joints()
 
-    def get_tcp_position(self) -> np.ndarray:
+    def get_tcp_position(self, fk_pose=True) -> np.ndarray:
         """
         Get TCP position and orientation.
 
         Returns:
             np.ndarray: [x, y, z, qw, qx, qy, qz]
         """
-        self.current_ee_pose = self.arm.get_pose(self.gripper == "franka")
-        trans = self.current_ee_pose.translation
-        rot_quat = self.current_ee_pose.quaternion
+        if fk_pose:
+            trans, rot_quat = self.ik_solver.compute_fk(self.get_arm_position())
+        else:
+            current_ee_pose = self.arm.get_pose()
+            trans = current_ee_pose.translation
+            rot_quat = current_ee_pose.quaternion
         return np.concatenate([trans, rot_quat])
 
     def solve_ik(self, ee_pose: list) -> list:
@@ -277,20 +277,6 @@ class FrankaEnvWrapper:
         else:
             raise RuntimeError("No gripper equipped in Franka. move_gripper should not work.")
     
-    def joint_reset(self, reset_joints):
-        timestamp = rospy.Time.now().to_time() - self._init_time
-
-        self._fa_cmd_id += 1
-        traj_gen_proto_msg = JointPositionSensorMessage(
-            id=self._fa_cmd_id, timestamp=timestamp, joints=reset_joints
-        )
-        ros_msg = make_sensor_group_msg(
-            trajectory_generator_sensor_msg=sensor_proto2ros_msg(
-                traj_gen_proto_msg, SensorDataMessageType.JOINT_POSITION
-            )
-        )
-        self.cmd_pub.publish(ros_msg)
-
     def move(self, target_cmd):
         self.move_joint_ik(target_cmd[:7])
         if self.with_gripper:
@@ -340,10 +326,13 @@ if __name__ == "__main__":
         while i < 100:
             target_pose = controller.get_tcp_position()
             solved_joint = controller.solve_ik(target_pose)
+            solved_pose = controller.ik_solver.compute_fk(solved_joint)
             print(f"----------------i={i}--------------------------------")
             print("original_joint:", controller.get_arm_position())
             print("solved_joint:", solved_joint)
             print("target_pose:", target_pose)
+            print("solved pose:", solved_pose)
+            print("current pose:", controller.ik_solver.compute_fk(controller.get_arm_position()))
             print("------------------------------------------------------")
             i += 1
 

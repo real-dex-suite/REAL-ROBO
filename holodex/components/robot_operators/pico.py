@@ -105,7 +105,7 @@ class PICODexArmTeleOp:
 
     def _get_tcp_position(self):
         """Get the TCP position based on the arm type"""
-        if self.arm_type == "Flexiv":
+        if self.arm_type == "flexiv":
             return self.robot.arm.get_tcp_position(euler=False, degree=False)
         else:
             return self.robot.arm.get_tcp_position()
