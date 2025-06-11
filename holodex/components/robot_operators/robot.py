@@ -88,7 +88,7 @@ class RobotController(object):
         # if self.home is True:
         #     self.home_robot()
         # self.home_robot()
-        cprint("RobotController init OK", "yellow")
+
     def home_robot(self):
         if self.arm_type is not None:
             self.arm.home_robot()

@@ -196,7 +196,10 @@ class FrankaEnvWrapper:
             float: The current width of the gripper.
         """
         if self.with_gripper:
-            return self.arm.get_gripper_width()
+            if self.gripper == "panda":
+                return self.arm.get_gripper_width()
+            else:
+                return 1
         else:
             raise RuntimeError("No gripper equipped in Franka. get_gripper_position should not work.")
     
@@ -210,7 +213,10 @@ class FrankaEnvWrapper:
         """
         
         if self.with_gripper:
-            return self.arm.get_gripper_is_grasped()
+            if self.gripper == "panda":
+                return self.arm.get_gripper_is_grasped()
+            else:
+                return False
         else:
             raise RuntimeError("No gripper equipped in Franka. get_gripper_is_grasped should not work.")
     
