@@ -11,8 +11,8 @@ finger_configs:
   freeze_middle: false # Keep middle finger fixed at [0, 0, 0, 0]
   three_dim: true
 simulator: null
-gripper: ctek_120s # panda, null
-arm: null # TODO
+gripper: ctek # panda, null
+arm: franka
 hand: null # TODO
 hydra:  
   output_subdir: null  

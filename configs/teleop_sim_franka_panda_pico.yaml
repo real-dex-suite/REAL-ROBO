@@ -11,7 +11,7 @@ finger_configs:
   three_dim: true
 simulator: genesis
 gripper: panda # ctek_120s, null
-arm: null # TODO
+arm: franka
 hand: null # TODO
 hydra:  
   output_subdir: null  
