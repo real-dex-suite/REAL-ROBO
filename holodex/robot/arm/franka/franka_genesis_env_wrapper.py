@@ -21,14 +21,15 @@ class LowPassFilter:
         return self.prev_value
     
 class FrankaGenesisEnvWrapper:
-    def __init__(self, control_mode="joint", teleop=False, with_gripper=True):
+    def __init__(self, control_mode="joint", teleop=False, gripper="panda"):
+        assert gripper in ["panda"] or gripper is None, f"Gripper {gripper} is not supported for FrankaGenesisWrapper."
         rospy.init_node('genesis_tele', anonymous=True)
         rospy.sleep(1.0)
 
         self.ik_solver = FrankaSolver(ik_type="motion_gen", ik_sim=True, simulator="genesis")
         self.dof = 7
-        self.with_gripper = with_gripper
-        if with_gripper:
+        self.with_gripper = gripper is not None
+        if self.with_gripper:
             self.dof += 1
         self.current_joint_state = None
         self.current_ee_state = None

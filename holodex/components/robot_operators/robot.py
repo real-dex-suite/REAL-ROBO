@@ -48,13 +48,16 @@ class RobotController(object):
         self.arm_type = arm_type
         if arm_type == "flexiv":
             from holodex.robot.arm.flexiv.flexiv import FlexivArm
-            self.arm = FlexivArm()
+            self.arm = FlexivArm(gripper=gripper)
             cprint("Call FlexivArm", "red")
         elif arm_type == "franka":
-            if simulator == "genesis":
-                from holodex.robot.arm.franka.franka_genesis_env_wrapper import FrankaGenesisEnvWrapper
-                self.arm = FrankaGenesisEnvWrapper(control_mode="joint", gripper=gripper) # modify this 
-                cprint("Call FrankaGenesisEnvWrapper", "red")
+            if simulator is not None:
+                if simulator == "genesis":
+                    from holodex.robot.arm.franka.franka_genesis_env_wrapper import FrankaGenesisEnvWrapper
+                    self.arm = FrankaGenesisEnvWrapper(control_mode="joint", gripper=gripper) # modify this 
+                    cprint("Call FrankaGenesisEnvWrapper", "red")
+                else:
+                    raise NotImplementedError(f"Robot controller under simulator {simulator} is not implemented.")
             else:
                 from holodex.robot.arm.franka.franka_env_wrapper import FrankaEnvWrapper
                 self.arm = FrankaEnvWrapper(control_mode="joint", gripper=gripper) # modify this 
@@ -68,6 +71,7 @@ class RobotController(object):
                     control_mode=arm_control_mode,
                     safety_moving_trans=JAKA_SAFE_MOVING_TRANS,
                     random_jaka_home=random_arm_home,
+                    gripper=gripper
                 )
             )
             cprint("Call JakaArm", "red")

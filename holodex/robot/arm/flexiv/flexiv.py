@@ -18,7 +18,7 @@ from collections import deque
 
 
 class FlexivArm(object):
-    def __init__(self, with_gripper=False):
+    def __init__(self, gripper=None):
         self.robot_sn = "Rizon4-062521"
         self.logger = spdlog.ConsoleLogger("RobotController")
         self.mode = flexivrdk.Mode
@@ -28,8 +28,8 @@ class FlexivArm(object):
         self.vel = 1.0
         self.dof = 7
         
-        self.with_gripper = with_gripper
-        if with_gripper:
+        self.with_gripper = gripper is not None
+        if self.with_gripper:
             self.dof += 1
             
         # Control parameters

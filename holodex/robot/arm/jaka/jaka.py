@@ -21,7 +21,7 @@ class JakaArm(object):
         teleop=False,
         safety_moving_trans=100,
         random_jaka_home=False,
-        with_gripper=False,
+        gripper=None,
     ):
         # rospy.init_node('jaka_arm_controller')
 
@@ -61,8 +61,8 @@ class JakaArm(object):
         self.tol = 0.01
         self.dof = JAKA_DOF
 
-        self.with_gripper = with_gripper
-        if with_gripper:
+        self.with_gripper = gripper is not None
+        if self.with_gripper:
             self.dof += 1
             
         self.safety_moving_trans = safety_moving_trans

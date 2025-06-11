@@ -36,7 +36,7 @@ class FrankaEnvWrapper:
     operations while handling the underlying ROS communication and state management.
     """
 
-    def __init__(self, control_mode: str = "joint", teleop: bool = False, with_gripper=True):
+    def __init__(self, control_mode: str = "joint", teleop: bool = False, gripper="ctek"):
         """
         Initialize robot arm controller.
 
@@ -45,16 +45,17 @@ class FrankaEnvWrapper:
                 Options: "joint" (default) or "cartesian"
         """
         cprint("Starting FrankaArm", "yellow")
-        self.arm = FrankaArm(rosnode_name="franka_arm_reader", with_gripper=with_gripper)
+        assert gripper in ["ctek", "panda"] or gripper is None, f"Gripper {gripper} is not supported for FrankaEnvWrapper."
+        self.arm = FrankaArm(rosnode_name="franka_arm_reader", with_gripper=gripper == "franka")
         cprint("Done.", "yellow")
         rospy.loginfo("Initializing FrankaWrapper...")
 
         self._initialize_state()
         self.teleop = teleop
         self.dof = 7
-        
-        self.with_gripper = with_gripper
-        if with_gripper:
+        self.gripper = gripper
+        self.with_gripper = gripper is not None
+        if self.with_gripper:
             self.dof += 1
             
         # Set up the robot control configuration based on the specified mode
@@ -172,11 +173,22 @@ class FrankaEnvWrapper:
         Returns:
             None
         """
-        self.arm.open_gripper(block=block, skill_desc="OpenGripper")
+        if self.gripper == "panda":
+            self.arm.open_gripper(block=block, skill_desc="OpenGripper")
+        elif self.gripper == "ctek":
+            pass
+        else:
+            pass
 
     def close_gripper(self, block=True):
         """Close gripper and attempt to grasp object."""
-        self.arm.close_gripper(grasp=True, block=block, skill_desc="CloseGripper")
+        if self.gripper == "panda":
+            self.arm.close_gripper(grasp=True, block=block, skill_desc="CloseGripper")
+        elif self.gripper == "ctek":
+            pass
+        else:
+            pass
+
 
     def get_gripper_position(self) -> float:
         """
