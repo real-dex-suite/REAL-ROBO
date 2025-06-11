@@ -4,9 +4,9 @@ Collecting tele-operation data with Real-Robo!
 
 ## Dependencies
 
-- Ubuntu 22.04
+- Ubuntu 20.04 / 22.04
 - CUDA 11.8
-- ROS 1 and ROS 2 ([Installing ROS 1 in Ubuntu 22.04 (Chinese)](https://www.bilibili.com/opus/890840405512290392))
+- ROS noetic and galatic / humble ([Installing ROS 1 in Ubuntu 22.04 (Chinese)](https://www.bilibili.com/opus/890840405512290392))
 - Teleoperation device (optional)
 
 ## Supported Devices
@@ -48,21 +48,33 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 pip install -r requirements.txt
 pip install -e dependencies/curobo --no-build-isolation --verbose
 pip install -e .
-# ln -sf /usr/lib/x86_64-linux-gnu/libffi.so.7 $CONDA_PREFIX/lib/libffi.so.7
 ```
 
-For controlling real robot, please follow [Frankapy](https://iamlab-cmu.github.io/frankapy/install.html) documents for installing frankapy.
+### Franka Control
+
+```bash
+unset ROS_DISTRO && source /opt/ros/noetic/local_setup.bash
+pip install -e dependencies/frankapy
+cd dependencies/frankapy && ./bash_scripts/make_catkin.sh
+```
 
 ## Tele-operation
 
 Follow [pico_streamer](vr/pico_streamer) first if use PICO VR.
 
+### Simulation (Genesis)
+
 ```bash
-unset ROS_DISTRO && source /opt/ros/noetic/local_setup.bash
-# Simulation
-python tools/teleoperation/teleop.py --config-name=teleop_sim_franka_pico
-# Real
-python tools/teleoperation/teleop.py --config-name=teleop_real_franka_pico
+bash pipelines/teleop_sim.sh
+```
+
+### Real (Franka)
+
+```bash
+# Step 1: start franka daemon processes
+bash pipelines/start_franka.sh
+# Step 2: start teleop process
+bash pipelines/teleop_real.sh
 ```
 
 ## Real Data Recording

@@ -16,3 +16,4 @@ matplotlib
 mediapipe
 pyspacemouse
 open3d
+ninja
