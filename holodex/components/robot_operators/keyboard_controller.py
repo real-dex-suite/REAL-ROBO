@@ -26,7 +26,7 @@ rotation_step = 0.05
 
 
 class KBArmTeleop(object):
-    def __init__(self):
+    def __init__(self, simulator=None):
         rospy.init_node("keyboard_arm_teleop")
 
         rospy.Subscriber(
@@ -45,7 +45,7 @@ class KBArmTeleop(object):
         )
 
         # Initializing the robot controller
-        self.robot = RobotController(teleop=True)
+        self.robot = RobotController(teleop=True, simulator=simulator)
 
         # Initializing the arm pose
         self.arm_ee_pose = self.robot.arm.get_tcp_position(euler=False)

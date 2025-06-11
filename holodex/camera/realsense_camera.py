@@ -6,6 +6,31 @@ import pyrealsense2.pyrealsense2 as rs
 from holodex.utils.network import ImagePublisher, FloatArrayPublisher
 from holodex.utils.images import *
 from holodex.constants import *
+from termcolor import cprint
+
+def get_device_by_serial(serial_number):
+    # Create a RealSense context object
+    context = rs.context()
+    
+    # Get the list of connected devices
+    devices = context.query_devices()
+    
+    # Search for the device with the specified serial number
+    for device in devices:
+        if device.get_info(rs.camera_info.serial_number) == serial_number:
+            return device
+    raise RuntimeError(f"Device with serial number {serial_number} not found.")
+
+def reset_cameras():
+    # Create a RealSense context object
+    context = rs.context()
+    
+    # Get the list of connected devices
+    devices = context.query_devices()
+    
+    # Search for the device with the specified serial number
+    for device in devices:
+        device.hardware_reset()
 
 class RealSenseRobotStream(object):
     def __init__(self, cam_serial_num, robot_cam_num, rotation_angle = 0, mode='rgbd'):
@@ -36,21 +61,15 @@ class RealSenseRobotStream(object):
         print(f"Started the Realsense pipeline for camera: {self.cam_serial_num}!")
 
     def _start_realsense(self, processing_preset):
-        
         config = rs.config()
         pipeline = rs.pipeline()
         config.enable_device(self.cam_serial_num)
-
+        device = get_device_by_serial(self.cam_serial_num)
+        cprint(device, "red")
+        camera_name = device.get_info(rs.camera_info.name)
+        self.camera_name = camera_name
         # Enabling camera streams
-        if self.cam_serial_num == "211422061450": # D415
-            config.enable_stream(rs.stream.color, WIDTH, HEIGHT, rs.format.bgr8, CAM_FPS)
-            if self.mode == 'rgbd':
-                config.enable_stream(rs.stream.depth, WIDTH, HEIGHT,rs.format.z16, CAM_FPS)
-        elif self.cam_serial_num in ["311322301369"]: # D455, case for TwinAligner
-            config.enable_stream(rs.stream.color, WIDTH, HEIGHT, rs.format.bgr8, CAM_FPS)
-            if self.mode == 'rgbd':
-                config.enable_stream(rs.stream.depth, WIDTH, HEIGHT,rs.format.z16, CAM_FPS)
-        elif self.cam_serial_num == "f1230963": # L515
+        if "L515" in camera_name: # L515
             # color_profiles, depth_profiles = get_profiles(self.cam_serial_num)
             # w, h, fps, fmt = color_profiles[26]
             # config.enable_stream(rs.stream.color, w, h, fmt, fps)
@@ -62,12 +81,14 @@ class RealSenseRobotStream(object):
                 # config.enable_stream(rs.stream.depth, w, h, fmt, fps)
                 # 1024, 768, 30, <format.z16: 1>
                 config.enable_stream(rs.stream.depth, 1024, 768, rs.format.z16, 30)
-
+        else:
+            config.enable_stream(rs.stream.color, WIDTH, HEIGHT, rs.format.bgr8, CAM_FPS)
+            if self.mode == 'rgbd':
+                config.enable_stream(rs.stream.depth, WIDTH, HEIGHT,rs.format.z16, CAM_FPS)
 
         # Starting the pipeline
         cfg = pipeline.start(config)
-        device = cfg.get_device()
-
+        
         # if self.cam_serial_num == "211422061450": # D415
         #     device.hardware_reset()
 
@@ -89,28 +110,33 @@ class RealSenseRobotStream(object):
         # print(f"Camera {self.cam_serial_num} intrinsics matrix: {self.intrinsics_matrix}")
 
         # Align function - aligns other frames with the color frame
-        if self.cam_serial_num == "211422061450": # D415
-            self.align = rs.align(rs.stream.color)
-        elif self.cam_serial_num in ["311322301369"]: # D455, case for TwinAligner
-            self.align = rs.align(rs.stream.color)
-        elif self.cam_serial_num == "f1230963":
-            self.align = rs.align(rs.stream.color)
+        self.align = rs.align(rs.stream.color)
+        sensor = profile.get_device().query_sensors()[1]
+        sensor.set_option(rs.option.auto_exposure_priority, True)
+        # print(sensor.get_option(rs.option.exposure)) 
 
-        if self.cam_serial_num == "211422061450": # D415
-            sensor = profile.get_device().query_sensors()[1]
-            # sensor.set_option(rs.option.exposure, 87.000)
-            sensor.set_option(rs.option.auto_exposure_priority, True)
-            print(sensor.get_option(rs.option.exposure)) 
-        elif self.cam_serial_num in ["311322301369"]: # D455, case for TwinAligner
-            sensor = profile.get_device().query_sensors()[1]
-            # sensor.set_option(rs.option.exposure, 217.000)
-            sensor.set_option(rs.option.auto_exposure_priority, True)
-            print(sensor.get_option(rs.option.exposure)) 
-        elif self.cam_serial_num == "f1230963":
-            sensor = profile.get_device().query_sensors()[1]
-            # sensor.set_option(rs.option.exposure, 217.000)
-            sensor.set_option(rs.option.auto_exposure_priority, True)
-            print(sensor.get_option(rs.option.exposure)) 
+        # if self.cam_serial_num == "211422061450": # D415
+        #     self.align = rs.align(rs.stream.color)
+        # elif self.cam_serial_num in ["311322301369"]: # D455, case for TwinAligner
+        #     self.align = rs.align(rs.stream.color)
+        # elif self.cam_serial_num == "f1230963":
+        #     self.align = rs.align(rs.stream.color)
+
+        # if self.cam_serial_num == "211422061450": # D415
+        #     sensor = profile.get_device().query_sensors()[1]
+        #     # sensor.set_option(rs.option.exposure, 87.000)
+        #     sensor.set_option(rs.option.auto_exposure_priority, True)
+        #     print(sensor.get_option(rs.option.exposure)) 
+        # elif self.cam_serial_num in ["311322301369"]: # D455, case for TwinAligner
+        #     sensor = profile.get_device().query_sensors()[1]
+        #     # sensor.set_option(rs.option.exposure, 217.000)
+        #     sensor.set_option(rs.option.auto_exposure_priority, True)
+        #     print(sensor.get_option(rs.option.exposure)) 
+        # elif self.cam_serial_num == "f1230963":
+        #     sensor = profile.get_device().query_sensors()[1]
+        #     # sensor.set_option(rs.option.exposure, 217.000)
+        #     sensor.set_option(rs.option.auto_exposure_priority, True)
+        #     print(sensor.get_option(rs.option.exposure)) 
         # if sensor.supports(rs.option.exposure):
         #     print("Exposure setting is supported.")
         # else:
@@ -134,13 +160,11 @@ class RealSenseRobotStream(object):
 
             # Getting the images from the frames
             if self.mode == 'rgbd':
-                if self.cam_serial_num == "f1230963": 
+                if "L515" in self.camera_name: 
                     depth_image = (
                         np.asanyarray(aligned_depth_frame.get_data()) // 4
                     )  # L515 camera need to divide by 4 to get metric in meter  
-                elif self.cam_serial_num in ["311322301369"] :
-                    depth_image = np.asanyarray(aligned_depth_frame.get_data()) 
-                elif self.cam_serial_num == "211422061450":
+                else:
                     depth_image = np.asanyarray(aligned_depth_frame.get_data()) 
             color_image = np.asanyarray(color_frame.get_data())
 

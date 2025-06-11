@@ -49,6 +49,7 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 pip install -r requirements.txt
 pip install -e dependencies/curobo --no-build-isolation --verbose
 pip install -e .
+ln -sf /usr/lib/x86_64-linux-gnu/libffi.so.7 $CONDA_PREFIX/lib/libffi.so.7
 ```
 
 ### Franka Control
@@ -99,12 +100,14 @@ bash pipelines/vr_bridge.sh
 #### Simulation (Genesis)
 
 ```bash
+conda activate real-robo
 bash pipelines/teleop_sim.sh
 ```
 
 #### Real (Franka)
 
 ```bash
+conda activate real-robo
 # Step 1: start franka daemon processes
 bash pipelines/start_franka.sh
 # Step 2: start teleop process

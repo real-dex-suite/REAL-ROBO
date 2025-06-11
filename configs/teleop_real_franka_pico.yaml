@@ -10,7 +10,7 @@ finger_configs:
   freeze_index: false # Keep index finger fixed at [0, 0, 0, 0]
   freeze_middle: false # Keep middle finger fixed at [0, 0, 0, 0]
   three_dim: true
-
+simulator: null
 hydra:  
   output_subdir: null  
   run:  

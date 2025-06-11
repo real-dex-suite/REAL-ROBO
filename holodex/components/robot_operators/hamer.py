@@ -84,7 +84,7 @@ def get_mano_coord_frame(keypoint_3d_array, oculus=False):
 
 
 class HamerDexArmTeleOp(object):
-    def __init__(self):
+    def __init__(self, simulator=None):
         # Initializing the ROS Node
         rospy.init_node("hamer_dexarm_teleop")
 
@@ -157,7 +157,7 @@ class HamerDexArmTeleOp(object):
 
 
         # Initializing the robot controller
-        self.robot = RobotController(teleop=True)
+        self.robot = RobotController(teleop=True, simulator=simulator)
 
         # self.arm_ee_pose = self.robot.arm.get_tcp_position()
         self.init_tcp = np.array(self._get_tcp_position())

@@ -1,10 +1,7 @@
 robot_cam_serial_numbers:
-  # - "211422061450"         # 435i
-  # - "207222071050"
-  # - "207122078785"
-  # - "f1230963"             # L515 -> must donwload pyrealsense2 2.54.2.xxxx
-  - "311322301369"           # D455 -> hongwei's setup
-
+  # - "311322301369" # D455 -> TwinAligner
+  - "125322060991" # D415, mobile franka left camera
+  - "211422061450" # D415, mobile franka right camera
 
 # Robot camera stream resolution
 resolution: [1280, 720]

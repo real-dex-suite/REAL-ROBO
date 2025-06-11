@@ -2,7 +2,7 @@ from multiprocessing import Process
 from holodex.components import *
 from holodex.viz import Hand2DVisualizer, Hand3DVisualizer, MPImageVisualizer
 from holodex.viz.visualizer_3d import OculusLeftHandDirVisualizer
-from holodex.camera.realsense_camera import RealSenseRobotStream
+from holodex.camera.realsense_camera import reset_cameras, RealSenseRobotStream
 from holodex.camera.camera_streamer import RobotCameraStreamer
 from holodex.tactile.paxini_tactile import PaxiniTactileStream
 from holodex.tactile_data.viewer import TactileDataViewer
@@ -68,39 +68,39 @@ def viz_hand_stream(rotation_angle):
     visualizer = MPImageVisualizer(rotation_angle)
     visualizer.stream()
 
-def mp_teleop(detector_config):
+def mp_teleop(teleop_configs):
     notify_process_start("Starting Teleoperation Process")
     teleop = MPDexArmTeleOp()
-    teleop.move(detector_config['finger_configs'])
+    teleop.move(teleop_configs['finger_configs'])
 
-def lp_teleop(detector_config):
+def lp_teleop(teleop_configs):
     notify_process_start("Starting Teleoperation Process")
-    teleop = LPDexArmTeleOp()
-    teleop.move(detector_config['finger_configs'])
+    teleop = LPDexArmTeleOp(simulator=teleop_configs.get("simulator", None))
+    teleop.move(teleop_configs['finger_configs'])
     
-def vr_teleop(detector_config):
+def vr_teleop(teleop_configs):
     notify_process_start("Starting Teleoperation Process")
-    teleop = VRDexArmTeleOp()
-    teleop.move(detector_config['finger_configs'])
+    teleop = VRDexArmTeleOp(simulator=teleop_configs.get("simulator", None))
+    teleop.move(teleop_configs['finger_configs'])
 
-def hamer_teleop(detector_config):
+def hamer_teleop(teleop_configs):
     notify_process_start("Starting Teleoperation Process")
-    teleop = HamerDexArmTeleOp()
-    teleop.move(detector_config['finger_configs'])
+    teleop = HamerDexArmTeleOp(simulator=teleop_configs.get("simulator", None))
+    teleop.move(teleop_configs['finger_configs'])
 
-def hamer_gripper_teleop(detector_config):
+def hamer_gripper_teleop(teleop_configs):
     notify_process_start("Starting Teleoperation Process")
-    teleop = HamerGripperDexArmTeleOp()
-    teleop.move(detector_config['finger_configs'])
+    teleop = HamerGripperDexArmTeleOp(simulator=teleop_configs.get("simulator", None))
+    teleop.move(teleop_configs['finger_configs'])
 
-def pico_teleop(detector_config):
+def pico_teleop(teleop_configs):
     notify_process_start("Starting Teleoperation Process")
-    teleop = PICODexArmTeleOp()
-    teleop.move(detector_config['finger_configs'])
+    teleop = PICODexArmTeleOp(simulator=teleop_configs.get("simulator", None))
+    teleop.move(teleop_configs['finger_configs'])
 
-def kb_teleop(detector_config):
+def kb_teleop(teleop_configs):
     notify_process_start("Starting Teleoperation Process")
-    teleop = KBArmTeleop()
+    teleop = KBArmTeleop(simulator=teleop_configs.get("simulator", None))
     teleop.move()
 
 def get_tactile_stream_processes(configs):
@@ -119,11 +119,11 @@ def get_camera_stream_processes(configs):
     robot_camera_processes = []
     robot_camera_stream_processes = []
     if "robot_cam_serial_numbers" in configs.keys():
+        reset_cameras()
         for idx, cam_serial_num in enumerate(configs['robot_cam_serial_numbers']):
             robot_camera_processes.append(
                 Process(target = start_robot_cam_stream, args = (cam_serial_num, idx + 1, ))
             )
-            print("cam_serial_num: ", cam_serial_num)
 
     if 'tracker' in configs.keys(): # Since we use this for deployment as well
         if configs.tracker.type == 'VR':

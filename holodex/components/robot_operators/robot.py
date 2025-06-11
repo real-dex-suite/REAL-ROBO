@@ -47,18 +47,20 @@ class RobotController(object):
         hand_control_mode="joint",
         home=True,
         random_arm_home=False,
+        simulator=None,
     ) -> None:
         if ARM_TYPE == "Flexiv":
             self.arm = Arm()
             cprint("Call Flexiv Arm", "red")
         elif ARM_TYPE == "Franka":
-            from holodex.robot.arm.franka.franka_env_wrapper import FrankaEnvWrapper
-            self.arm = FrankaEnvWrapper(control_mode="joint") # modify this 
-            cprint("Call Franka Arm", "red")
-        elif ARM_TYPE == "FrankaGenesis":
-            from holodex.robot.arm.franka.franka_genesis_env_wrapper import FrankaGenesisEnvWrapper
-            self.arm = FrankaGenesisEnvWrapper(control_mode="joint") # modify this 
-            cprint("Call FrankaGenesis Arm", "red")
+            if simulator == "genesis":
+                from holodex.robot.arm.franka.franka_genesis_env_wrapper import FrankaGenesisEnvWrapper
+                self.arm = FrankaGenesisEnvWrapper(control_mode="joint") # modify this 
+                cprint("Call FrankaGenesis Arm", "red")
+            else:
+                from holodex.robot.arm.franka.franka_env_wrapper import FrankaEnvWrapper
+                self.arm = FrankaEnvWrapper(control_mode="joint") # modify this 
+                cprint("Call Franka Arm", "red")
         else:
             self.arm = (
                 Arm(

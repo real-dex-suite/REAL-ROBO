@@ -77,7 +77,7 @@ class HamerGripperDexArmTeleOp(object):
     '''
     TODO
     '''
-    def __init__(self):
+    def __init__(self, simulator=None):
         raise NotImplementedError("HamerGripperDexArmTeleOp is not finished.")
         if RETARGET_TYPE == "dexpilot":
             print("Loading the retargeting configuration")
@@ -106,7 +106,7 @@ class HamerGripperDexArmTeleOp(object):
         self._setup_subscribers()
 
         # Initialize robot controller
-        self.robot = RobotController(teleop=True)
+        self.robot = RobotController(teleop=True, simulator=simulator)
         self.init_tcp = np.array(self._get_tcp_position())
         self.arm_ee_pose = self._get_tcp_position()
 

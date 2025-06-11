@@ -66,7 +66,7 @@ def rfu_to_flu(T_rfu):
     return T_flu
     
 class PICODexArmTeleOp:
-    def __init__(self):
+    def __init__(self, simulator=None):
         self.trans_scale = 1
         self.finger_distance = np.array([1.0])
         self.logger = spdlog.ConsoleLogger("RobotController")
@@ -79,7 +79,7 @@ class PICODexArmTeleOp:
         self._setup_subscribers()
 
         # Initialize robot controller
-        self.robot = RobotController(teleop=True)
+        self.robot = RobotController(teleop=True, simulator=simulator)
         self.init_arm_ee_pose = self._get_tcp_position()
         self.init_arm_ee_to_world = np.eye(4)
         self.init_arm_ee_to_world[:3, 3] = self.init_arm_ee_pose[:3]

@@ -52,7 +52,7 @@ def get_mano_coord_frame(keypoint_3d_array, oculus=False):
 
 
 class VRDexArmTeleOp(object):
-    def __init__(self):
+    def __init__(self, simulator=None):
         # Initializing the ROS Node
         rospy.init_node("vr_dexarm_teleop")
 
@@ -72,7 +72,7 @@ class VRDexArmTeleOp(object):
         )
 
         # Initializing the robot controller
-        self.robot = RobotController(teleop=True)
+        self.robot = RobotController(teleop=True, simulator=simulator)
         # Initializing the solvers
         self.fingertip_solver = self.robot.hand_KDLControl
         self.finger_joint_solver = self.robot.hand_JointControl
