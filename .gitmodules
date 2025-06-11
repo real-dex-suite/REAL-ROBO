@@ -4,3 +4,6 @@
 [submodule "dependencies/hamer"]
 	path = dependencies/hamer
 	url = https://github.com/hwfan/hamer
+[submodule "dependencies/frankapy"]
+	path = dependencies/frankapy
+	url = git@github.com:iamlab-cmu/frankapy.git
