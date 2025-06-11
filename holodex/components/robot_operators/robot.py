@@ -44,8 +44,8 @@ class RobotController(object):
         random_arm_home=False,
         simulator=None,
         gripper=None,
-        arm_type="franka",
     ) -> None:
+        self.arm_type = arm_type
         if arm_type == "flexiv":
             from holodex.robot.arm.flexiv.flexiv import FlexivArm
             self.arm = FlexivArm()
@@ -94,13 +94,13 @@ class RobotController(object):
         # self.home_robot()
         
     def home_robot(self):
-        if ARM_TYPE is not None:
+        if self.arm_type is not None:
             self.arm.home_robot()
         if HAND_TYPE is not None:
             self.hand.home_robot()
 
     def reset_robot(self):
-        if ARM_TYPE is not None:
+        if self.arm_type is not None:
             self.arm.reset()
         if HAND_TYPE is not None:
             self.hand.reset()

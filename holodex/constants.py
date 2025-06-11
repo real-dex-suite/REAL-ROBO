@@ -13,11 +13,9 @@ SMOOTH_FACTOR = 0.4 # 0.99
 # Robot type
 # HAND_TYPE = "Leap"
 HAND_TYPE = None
-# ARM_TYPE = "Jaka"
-# HAND_TYPE = None
-# ARM_TYPE = "Flexiv"
-ARM_TYPE = "Franka"
 
+# NOTE: ARM_TYPE will be deprecated.
+ARM_TYPE = "Flexiv"
 
 # Keyboard control
 # KEYBOARD_CONTROL_TOPIC = '/keyboard_control_node/keyboard_control'

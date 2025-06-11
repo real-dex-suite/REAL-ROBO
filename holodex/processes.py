@@ -162,7 +162,7 @@ def get_detector_processes(teleop_configs):
             plotter_processes.append(Process(target = viz_hand_stream, args = (teleop_configs.tracker['pred_stream_rotation_angle'], )))
     
     elif teleop_configs.tracker.type == 'LP':
-        detection_process = Process(target = start_lp_detector, args = (teleop_configs.tracker, ))
+        detection_process = Process(target = start_lp_detector, args = (teleop_configs.tracker, teleop_configs.get("arm", "flexiv")))
         keypoint_transform_processes = [Process(target = keypoint_transform, args = ('LP', ))]
         
         plotter_processes = []
@@ -170,7 +170,7 @@ def get_detector_processes(teleop_configs):
             plotter_processes.append(Process(target = plot_3d, args = (teleop_configs.tracker.type, ))),
 
     elif teleop_configs.tracker.type == 'VR':
-        detection_process = Process(target = start_oculus_detector, args = (teleop_configs.tracker, ))
+        detection_process = Process(target = start_oculus_detector, args = (teleop_configs.tracker, teleop_configs.get("arm", "flexiv")))
         keypoint_transform_processes = [
             Process(target = keypoint_transform, args = ('VR_RIGHT', )),
             Process(target = keypoint_transform, args = ('VR_LEFT', ))
@@ -186,22 +186,16 @@ def get_detector_processes(teleop_configs):
     
     elif teleop_configs.tracker.type == 'HAMER':
         detection_process = None # outside for now
-        keypoint_transform_processes = [Process(target = keypoint_transform, args = ('HAMER', ))]
+        keypoint_transform_processes = [Process(target = keypoint_transform, args = ('HAMER', teleop_configs.get("arm", "flexiv")))]
         
         plotter_processes = []
         if teleop_configs.tracker['visualize_graphs']:
             plotter_processes.append(Process(target = plot_3d, args = (teleop_configs.tracker.type, ))),
             
-    elif teleop_configs.tracker.type == 'PICO':
-        detection_process = None # outside for now
-        keypoint_transform_processes = [Process(target = keypoint_transform, args = ('PICO', ))]
-        
-        plotter_processes = []
-        if teleop_configs.tracker['visualize_graphs']:
-            plotter_processes.append(Process(target = plot_3d, args = (teleop_configs.tracker.type, ))),
-
     else:
-        raise NotImplementedError("No such detector exists!")
+        detection_process = None # outside for now
+        keypoint_transform_processes = []
+        plotter_processes = []
 
     return detection_process, keypoint_transform_processes, plotter_processes
 
