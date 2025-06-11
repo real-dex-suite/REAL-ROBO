@@ -61,7 +61,7 @@ cd dependencies/frankapy && ./bash_scripts/make_catkin.sh
 
 ## Tele-operation
 
-### Run VR Streamer
+### Step 1: Run VR Streamer
 
 #### Run on Docker (Recommended)
 
@@ -90,19 +90,21 @@ bash start_streaming_local.sh
 popd
 ```
 
-### Run VR Publisher
+### Step 2: Run VR Publisher
 
 ```bash
 bash pipelines/vr_bridge.sh 
 ```
 
-### Simulation (Genesis)
+### Step 3: Run Tele-operation
+
+#### Simulation (Genesis)
 
 ```bash
 bash pipelines/teleop_sim.sh
 ```
 
-### Real (Franka)
+#### Real (Franka)
 
 ```bash
 # Step 1: start franka daemon processes
@@ -111,10 +113,10 @@ bash pipelines/start_franka.sh
 bash pipelines/teleop_real.sh
 ```
 
-## Real Data Recording
+#### Real Data Recording
 
 ```bash
-bash franka_record.sh
+bash pipelines/franka_record.sh
 ```
 
 ## Acknowledgement
