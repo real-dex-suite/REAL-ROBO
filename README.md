@@ -68,7 +68,7 @@ cd dependencies/frankapy && ./bash_scripts/make_catkin.sh
 
 ```bash
 pushd vr/pico_streamer
-# de-comment if this is the first time of running
+# de-comment if no container exists
 bash start_streaming_docker.sh # --init
 popd
 ```
