@@ -15,23 +15,24 @@ Collecting tele-operation data with Real-Robo!
 - Robot Arms
   - [x] JAKA
   - [x] Flexiv
-  - [x] Franka Research 3 (tested)
+  - [x] Franka (tested)
 - Robot Hands
   - hand
     - [x] Leaphand
-    - [x] paxini
+    - [x] Paxini
   - gripper
-    - [x] Franka Gripper (tested)
+    - [x] Panda Gripper (tested)
 - Tele-operation Devices
-  - hand
+  - dexterous hand
     - [x] Mediapipe
+  - arm + dexterous hand
     - [x] Leapmotion
     - [x] Oculus VR
     - [x] HAMER
-  - gripper
-    - [x] Spacemouse
-    - [x] Keyboard
+  - arm + gripper
     - [x] PICO 4 (tested)
+    - [ ] Keyboard
+    - [ ] Spacemouse
     - [ ] HAMER
     - [ ] Meta Quest 3
     

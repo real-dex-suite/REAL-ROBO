@@ -4,6 +4,6 @@ from .hand.leap.leap_joint_controller import *
 from .hand.leap.leap import *
 from .arm.jaka.jaka import *
 from .arm.flexiv.flexiv import *
-from .arm.franka.franka_env_wrapper import FrankaEnvWrapper as FrankaArm
-from .arm.franka.franka_genesis_env_wrapper import FrankaGenesisEnvWrapper as FrankaGenesisArm
+from .arm.franka.franka_env_wrapper import FrankaEnvWrapper
+from .arm.franka.franka_genesis_env_wrapper import FrankaGenesisEnvWrapper
 from .arm.franka.kinematics_solver import *

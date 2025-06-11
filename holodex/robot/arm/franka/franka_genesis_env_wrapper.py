@@ -25,7 +25,7 @@ class FrankaGenesisEnvWrapper:
         rospy.init_node('genesis_tele', anonymous=True)
         rospy.sleep(1.0)
 
-        self.ik_solver = FrankaSolver(ik_type="motion_gen", ik_sim=True)
+        self.ik_solver = FrankaSolver(ik_type="motion_gen", ik_sim=True, simulator="genesis")
         self.dof = 7
         self.with_gripper = with_gripper
         if with_gripper:

@@ -66,7 +66,8 @@ def rfu_to_flu(T_rfu):
     return T_flu
     
 class PICODexArmTeleOp:
-    def __init__(self, simulator=None):
+    def __init__(self, simulator=None, gripper=None, arm_type="franka"):
+        self.arm_type = arm_type
         self.trans_scale = 1
         self.finger_distance = np.array([1.0])
         self.logger = spdlog.ConsoleLogger("RobotController")
@@ -79,7 +80,7 @@ class PICODexArmTeleOp:
         self._setup_subscribers()
 
         # Initialize robot controller
-        self.robot = RobotController(teleop=True, simulator=simulator)
+        self.robot = RobotController(teleop=True, simulator=simulator, gripper=gripper, arm_type=arm_type)
         self.init_arm_ee_pose = self._get_tcp_position()
         self.init_arm_ee_to_world = np.eye(4)
         self.init_arm_ee_to_world[:3, 3] = self.init_arm_ee_pose[:3]
@@ -104,7 +105,7 @@ class PICODexArmTeleOp:
 
     def _get_tcp_position(self):
         """Get the TCP position based on the arm type"""
-        if ARM_TYPE == "Flexiv":
+        if self.arm_type == "Flexiv":
             return self.robot.arm.get_tcp_position(euler=False, degree=False)
         else:
             return self.robot.arm.get_tcp_position()

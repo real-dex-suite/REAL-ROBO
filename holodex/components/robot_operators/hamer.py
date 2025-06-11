@@ -84,7 +84,7 @@ def get_mano_coord_frame(keypoint_3d_array, oculus=False):
 
 
 class HamerDexArmTeleOp(object):
-    def __init__(self, simulator=None):
+    def __init__(self, simulator=None, arm_type="flexiv"):
         # Initializing the ROS Node
         rospy.init_node("hamer_dexarm_teleop")
 
@@ -99,8 +99,8 @@ class HamerDexArmTeleOp(object):
             RetargetingConfig.set_default_urdf_dir("holodex/robot/hand")
             retarget_config = RetargetingConfig.load_from_file(config_path)
             self.retargeting = retarget_config.build()
-
-        self.trans_scale = 1 if ARM_TYPE == "Flexiv" else 1000
+        self.arm_type = arm_type
+        self.trans_scale = 1 if self.arm_type == "Flexiv" else 1000
 
         self.logger = spdlog.ConsoleLogger("RobotController")
 
@@ -157,8 +157,8 @@ class HamerDexArmTeleOp(object):
 
 
         # Initializing the robot controller
-        self.robot = RobotController(teleop=True, simulator=simulator)
-
+        self.robot = RobotController(teleop=True, simulator=simulator, arm_type=arm_type)
+        
         # self.arm_ee_pose = self.robot.arm.get_tcp_position()
         self.init_tcp = np.array(self._get_tcp_position())
         self.arm_ee_pose = self._get_tcp_position()
@@ -179,13 +179,13 @@ class HamerDexArmTeleOp(object):
 
         self.prev_hand_joint_angles = self.robot.get_hand_position()
 
-        if ARM_TYPE is not None:
+        if self.arm_type is not None:
             self._calibrate_arm_bounds()
-            # if ARM_TYPE == "Jaka":
+            # if self.arm_type == "Jaka":
             # TODO configureable
             self.leap2flange = np.eye(4)
 
-            if ARM_TYPE == "Jaka":
+            if self.arm_type == "Jaka":
                 self.leap2flange[:3, :3] = R.from_euler(
                     "xyz", [0, 0, 214.5], degrees=True
                 ).as_matrix()
@@ -223,7 +223,7 @@ class HamerDexArmTeleOp(object):
             self.process.start()
 
     def _get_tcp_position(self):
-        if ARM_TYPE == "Flexiv":
+        if self.arm_type == "Flexiv":
             return self.robot.arm.get_tcp_position(euler=True, degree=False)
         else:
             return self.robot.arm.get_tcp_position()
@@ -280,7 +280,7 @@ class HamerDexArmTeleOp(object):
     def _callback_reset_done(self, msg):
         self.robot.home_robot()
         if msg.data:
-            if ARM_TYPE is not None:
+            if self.arm_type is not None:
                 self._calibrate_arm_bounds()
 
     # Low-pass filter function to smooth translation values
@@ -407,7 +407,7 @@ class HamerDexArmTeleOp(object):
         # flexiv
         # this transformation is different from jaka, so we need to transform 180 degrees by z axis
 
-        if ARM_TYPE == "Flexiv":
+        if self.arm_type == "Flexiv":
             # F_X_J = np.eye(4)
             # # F_X_J[:3, :3] = R.from_euler('xyz', [0, 0, -90], degrees=True).as_matrix()
 
@@ -539,7 +539,7 @@ class HamerDexArmTeleOp(object):
     def motion(self, finger_configs):
         desired_cmd = []
 
-        if ARM_TYPE is not None:
+        if self.arm_type is not None:
             desired_arm_pose = self._retarget_base()
 
             if not SPACE_MOUSE_CONTROL:

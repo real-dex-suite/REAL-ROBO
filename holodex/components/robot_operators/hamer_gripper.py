@@ -77,7 +77,8 @@ class HamerGripperDexArmTeleOp(object):
     '''
     TODO
     '''
-    def __init__(self, simulator=None):
+    def __init__(self, simulator=None, gripper=None, arm_type="franka"):
+        self.arm_type = arm_type
         raise NotImplementedError("HamerGripperDexArmTeleOp is not finished.")
         if RETARGET_TYPE == "dexpilot":
             print("Loading the retargeting configuration")
@@ -106,7 +107,7 @@ class HamerGripperDexArmTeleOp(object):
         self._setup_subscribers()
 
         # Initialize robot controller
-        self.robot = RobotController(teleop=True, simulator=simulator)
+        self.robot = RobotController(teleop=True, simulator=simulator, gripper=gripper, arm_type=arm_type)
         self.init_tcp = np.array(self._get_tcp_position())
         self.arm_ee_pose = self._get_tcp_position()
 
@@ -117,15 +118,15 @@ class HamerGripperDexArmTeleOp(object):
             "middle": [],
             "ring": [],
         }
-        if ARM_TYPE is not None:
+        if self.arm_type is not None:
             self._calibrate_arm_bounds()
             self.leap2flange = np.eye(4)
 
-            if ARM_TYPE == "Jaka":
+            if self.arm_type == "jaka":
                 self.leap2flange[:3, :3] = R.from_euler(
                     "xyz", [0, 0, 214.5], degrees=True
                 ).as_matrix()
-            elif ARM_TYPE in ["Franka", "FrankaGenesis"]:
+            elif self.arm_type == "franka":
                 self.leap2flange[:3, :3] = R.from_euler(
                     "xyz", [0, 0, -90], degrees=True
                 ).as_matrix()
@@ -187,9 +188,9 @@ class HamerGripperDexArmTeleOp(object):
 
     def _get_tcp_position(self):
         """Get the TCP position based on the arm type"""
-        if ARM_TYPE == "Flexiv":
+        if self.arm_type == "flexiv":
             return self.robot.arm.get_tcp_position(euler=True, degree=False)
-        elif ARM_TYPE in ["Franka", "FrankaGenesis"]:
+        elif self.arm_type == "franka":
             tcp_pose = self.robot.arm.get_tcp_position()  # w, x, y, z
             # Convert to euler
             tcp_quat_wxyz = tcp_pose[3:7]
@@ -225,7 +226,7 @@ class HamerGripperDexArmTeleOp(object):
 
     def _callback_reset_done(self, msg):
         self.robot.home_robot()
-        if msg.data and ARM_TYPE is not None:
+        if msg.data and self.arm_type is not None:
             self._calibrate_arm_bounds()
 
     # Filter functions for smoothing
@@ -397,7 +398,7 @@ class HamerGripperDexArmTeleOp(object):
         """Generate motion commands for the robot"""
         desired_cmd = []
 
-        if ARM_TYPE is not None:
+        if self.arm_type is not None:
             desired_arm_pose = self._retarget_base()
             tmp_desired_arm_euler = desired_arm_pose[3:6]
             tmp_desired_arm_quat = self.robot.arm.eulerZYX2quat(

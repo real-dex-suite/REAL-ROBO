@@ -13,7 +13,7 @@ from scipy.spatial.transform import Rotation as R
 
 
 class LPDexArmTeleOp(object):
-    def __init__(self, simulator=None):
+    def __init__(self, simulator=None, arm_type="flexiv"):
         # Initializing the ROS Node
         rospy.init_node("lp_dexarm_teleop")
 
@@ -34,7 +34,8 @@ class LPDexArmTeleOp(object):
         )
 
         # Initializing the robot controller
-        self.robot = RobotController(teleop=True, simulator=simulator)
+        self.robot = RobotController(teleop=True, simulator=simulator, arm_type=arm_type)
+        self.arm_type = arm_type
         # Initializing the solvers
         self.fingertip_solver = self.robot.hand_KDLControl
         self.finger_joint_solver = self.robot.hand_JointControl
@@ -67,7 +68,7 @@ class LPDexArmTeleOp(object):
             with open(robohand_bounds_path, "r") as file:
                 self.robohand_bounds = yaml.safe_load(file)
 
-        if ARM_TYPE is not None:
+        if arm_type is not None:
             self._calibrate_lp_arm_bounds()
 
     def _calibrate_bounds(self):
@@ -356,7 +357,7 @@ class LPDexArmTeleOp(object):
     def motion(self, finger_configs):
         desired_cmd = []
 
-        if ARM_TYPE is not None:
+        if self.arm_type is not None:
             desired_arm_pose = self._retarget_base()
             desired_cmd = np.concatenate([desired_cmd, desired_arm_pose])
 

@@ -36,7 +36,7 @@ JS_NAMES = [
 class FrankaSolver:
     """Inverse Kinematics solver for Franka Emika Panda robot."""
 
-    def __init__(self, ik_type="motion_gen", ik_sim=False):
+    def __init__(self, ik_type="motion_gen", ik_sim=False, simulator="genesis"):
         """
         Initialize the Franka IK Solver.
 
@@ -44,8 +44,8 @@ class FrankaSolver:
             ik_type (str): Type of IK solver to use. Options: "ik_solver" or "motion_gen"
         """
         self.tensor_args = TensorDeviceType()
-        self._initialize_robot_config(ik_sim)
-        self._initialize_solver(ik_type, ik_sim)
+        self._initialize_robot_config(ik_sim, simulator=simulator)
+        self._initialize_solver(ik_type, ik_sim, simulator=simulator)
 
         # Pre-allocate tensors for efficiency
         self.pos_tensor_buffer = torch.zeros(
@@ -55,10 +55,10 @@ class FrankaSolver:
             4, device=self.tensor_args.device, dtype=torch.float32
         )
 
-    def _initialize_robot_config(self, ik_sim=False):
+    def _initialize_robot_config(self, ik_sim=False, simulator="genesis"):
         """Load and initialize robot configuration."""
         if ik_sim:
-            config_file = load_yaml(join_path(os.path.dirname(__file__), "franka_sim.yml"))
+            config_file = load_yaml(join_path(os.path.dirname(__file__), f"franka_{simulator}.yml"))
         else:
             config_file = load_yaml(join_path(os.path.dirname(__file__), "franka.yml"))
         urdf_file = config_file["robot_cfg"]["kinematics"]["urdf_path"]
@@ -70,12 +70,12 @@ class FrankaSolver:
         )
         self.kin_model = CudaRobotModel(self.robot_cfg.kinematics)
 
-    def _initialize_solver(self, ik_type, ik_sim=False):
+    def _initialize_solver(self, ik_type, ik_sim=False, simulator="genesis"):
         """Initialize the appropriate solver based on ik_type."""
         if ik_type == "ik_solver":
             self._initialize_ik_solver()
         elif ik_type == "motion_gen":
-            self._initialize_motion_gen(ik_sim=ik_sim)
+            self._initialize_motion_gen(ik_sim=ik_sim, simulator=simulator)
         else:
             raise ValueError(f"Unsupported IK type: {ik_type}")
 
@@ -94,10 +94,10 @@ class FrankaSolver:
         )
         self.ik_solver = IKSolver(self.ik_config)
 
-    def _initialize_motion_gen(self, ik_sim=False):
+    def _initialize_motion_gen(self, ik_sim=False, simulator="genesis"):
         """Initialize the motion generator."""
         if ik_sim:
-            config_file = load_yaml(join_path(os.path.dirname(__file__), "franka_sim.yml"))
+            config_file = load_yaml(join_path(os.path.dirname(__file__), f"franka_{simulator}.yml"))
         else:
             config_file = load_yaml(join_path(os.path.dirname(__file__), "franka.yml"))
         urdf_file = config_file["robot_cfg"]["kinematics"]["urdf_path"]

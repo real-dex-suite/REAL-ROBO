@@ -20,7 +20,7 @@ try:
 except:
     from kinematics_solver import FrankaSolver
 from scipy.spatial.transform import Rotation as R
-
+from termcolor import cprint
 class FrankaEnvWrapper:
     """
     Wrapper class for controlling Franka robot arm.
@@ -44,7 +44,9 @@ class FrankaEnvWrapper:
             control_mode (str): Control mode for the robot arm.
                 Options: "joint" (default) or "cartesian"
         """
+        cprint("Starting FrankaArm", "yellow")
         self.arm = FrankaArm(rosnode_name="franka_arm_reader", with_gripper=with_gripper)
+        cprint("Done.", "yellow")
         rospy.loginfo("Initializing FrankaWrapper...")
 
         self._initialize_state()

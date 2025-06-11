@@ -32,48 +32,47 @@ if HAND_TYPE is not None:
         eval(f"{hand_type.upper()}_JOINT_OFFSETS") 
     )
     
-if ARM_TYPE is not None:
-    # load module according to arm type
-    arm_module = __import__("holodex.robot.arm")
-    Arm_module_name = f"{ARM_TYPE}Arm"
-    Arm = getattr(arm_module.robot, Arm_module_name)
-
 class RobotController(object):
     def __init__(
         self,
         teleop,
         servo_mode=True,
+        arm_type="franka",
         arm_control_mode="ik",
         hand_control_mode="joint",
         home=True,
         random_arm_home=False,
         simulator=None,
+        gripper=None,
+        arm_type="franka",
     ) -> None:
-        if ARM_TYPE == "Flexiv":
-            self.arm = Arm()
-            cprint("Call Flexiv Arm", "red")
-        elif ARM_TYPE == "Franka":
+        if arm_type == "flexiv":
+            from holodex.robot.arm.flexiv.flexiv import FlexivArm
+            self.arm = FlexivArm()
+            cprint("Call FlexivArm", "red")
+        elif arm_type == "franka":
             if simulator == "genesis":
                 from holodex.robot.arm.franka.franka_genesis_env_wrapper import FrankaGenesisEnvWrapper
-                self.arm = FrankaGenesisEnvWrapper(control_mode="joint") # modify this 
-                cprint("Call FrankaGenesis Arm", "red")
+                self.arm = FrankaGenesisEnvWrapper(control_mode="joint", gripper=gripper) # modify this 
+                cprint("Call FrankaGenesisEnvWrapper", "red")
             else:
                 from holodex.robot.arm.franka.franka_env_wrapper import FrankaEnvWrapper
-                self.arm = FrankaEnvWrapper(control_mode="joint") # modify this 
-                cprint("Call Franka Arm", "red")
-        else:
+                self.arm = FrankaEnvWrapper(control_mode="joint", gripper=gripper) # modify this 
+                cprint("Call FrankaEnvWrapper", "red")
+        elif arm_type == "jaka":
+            from holodex.robot.arm.jaka.jaka import JakaArm
             self.arm = (
-                Arm(
+                JakaArm(
                     servo_mode=servo_mode,
                     teleop=teleop,
                     control_mode=arm_control_mode,
                     safety_moving_trans=JAKA_SAFE_MOVING_TRANS,
                     random_jaka_home=random_arm_home,
                 )
-                if ARM_TYPE is not None
-                else None
             )
-
+            cprint("Call JakaArm", "red")
+        else:
+            raise NotImplementedError("Unknown arm_type")
         self.arm_control_mode = arm_control_mode
         cprint(f"self.arm_control_mode: {self.arm_control_mode}", "red")
 
