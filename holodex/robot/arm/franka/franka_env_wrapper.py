@@ -221,7 +221,6 @@ class FrankaEnvWrapper:
             raise RuntimeError("No gripper equipped in Franka. get_gripper_is_grasped should not work.")
     
     def move_joint(self, target_joint: list):
-        print(f"target{target_joint}") 
         timestamp = rospy.Time.now().to_time() - self._init_time
 
         self._fa_cmd_id += 1

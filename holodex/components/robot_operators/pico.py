@@ -88,7 +88,7 @@ class PICODexArmTeleOp:
         self.init_gripper_width = np.array(self._get_finger_distance())
         self.arm_ee_pose = None
         self.joystick_pose = np.array([0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]) # xyz, wxyz
-        cprint("PICODexArmTeleOp OK", "yellow")
+
     def _setup_subscribers(self):
         """Set up all ROS subscribers"""
         topics_callbacks = [
