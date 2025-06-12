@@ -95,10 +95,6 @@ class AutoDataCollector(object):
         self.start = False
         self.stop = False
 
-        self.reset_publisher = rospy.Publisher("/data_collector/reset_robot", Bool, queue_size=1)
-        self.stop_publisher = rospy.Publisher("/data_collector/stop_move", Bool, queue_size=1)   
-        self.end_publisher = rospy.Publisher("/data_collector/end_robot", Bool, queue_size=1)
-
     def _setup_state_collection(self):
         self.arm_ee_pose = None
         rospy.Subscriber(f"/{self.data_collection_topic_type}/ee_pose", Float64MultiArray, self._callback_arm_ee_pose, queue_size = 1)
@@ -111,7 +107,7 @@ class AutoDataCollector(object):
 
         self.arm_commanded_joint_state = None
         rospy.Subscriber(f"/{self.data_collection_topic_type}/commanded_joint_states", JointState, self._callback_arm_commanded_joint_state, queue_size = 1)
-    
+
     def _callback_arm_commanded_ee_pose(self, data):
         self.arm_commanded_ee_pose = data
 
@@ -147,7 +143,7 @@ class AutoDataCollector(object):
             state['arm_commanded_ee_pose'] = self.arm_commanded_ee_pose.data
 
         return state
-   
+
     def extract(self, reset_timeout=10):
         def _on_press(key):
             nonlocal self
@@ -254,7 +250,7 @@ class AutoDataCollector(object):
                     bool_false_msg.data = False
 
                     # stop robot move
-                    self.stop_publisher.publish(bool_true_msg)
+                    rospy.set_param("/data_collector/stop_move", True)
 
                     # stuck here waiting for the next command, c for continue, d for delete, r for reset, s for stop
                     cprint('Waiting for the next command: ', 'yellow')
@@ -277,15 +273,12 @@ class AutoDataCollector(object):
                         self.storage_path = os.path.join(self.storage_root, f'demonstration_{self.demo_num}')
 
                         # reset
-                        self.reset_publisher.publish(bool_true_msg)
+                        rospy.set_param("/data_collector/reset_robot", True)
 
                         wait_reset_start = time.time()
                         while True:
-                            if self.reset_done:
-                                self.reset_publisher.publish(bool_false_msg)
-                                # start robot move
-                                self.stop_publisher.publish(bool_false_msg)
-                                self.reset_done = False
+                            if not rospy.get_param("/data_collector/reset_robot"):
+                                rospy.set_param("/data_collector/stop_move", False)
                                 break
                             if time.time() - wait_reset_start > reset_timeout:
                                 cprint(f"Reset failed after {reset_timeout} s. Turn to the next demo.")
@@ -297,23 +290,26 @@ class AutoDataCollector(object):
                         states = []
                         state_cnt = 0
                         # reset
-                        self.reset_publisher.publish(bool_true_msg)
-                        
+                        rospy.set_param("/data_collector/reset_robot", True)
+
+                        wait_reset_start = time.time()
                         while True:
-                            if self.reset_done:
-                                self.reset_publisher.publish(bool_false_msg)
-                                # start robot move
-                                self.stop_publisher.publish(bool_false_msg)
-                                self.reset_done = False
+                            if not rospy.get_param("/data_collector/reset_robot"):
+                                rospy.set_param("/data_collector/stop_move", False)
                                 break
                             if time.time() - wait_reset_start > reset_timeout:
-                                cprint(f"Reset failed after {reset_timeout} s. Turn to the next demo.")
+                                cprint(f"Reset failed after {reset_timeout} s. Please manually reset. Turn to the next demo by default.")
                                 break
 
                     elif input_cmd == 'q':
                         # quit the program
                         cprint(f'Finished recording! Data can be found in {self.storage_root}', 'green')
-                        self.end_publisher.publish(bool_true_msg)
+                        rospy.set_param("/data_collector/end_robot", True)
+                        while True:
+                            if not self.end_state:
+                                self.end_publisher.publish(bool_true_msg)
+                            else:
+                                break
                         sys.exit(0)
 
                     else:

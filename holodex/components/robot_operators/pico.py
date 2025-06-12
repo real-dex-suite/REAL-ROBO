@@ -5,7 +5,6 @@ from geometry_msgs.msg import Pose
 from holodex.utils.files import *
 from holodex.utils.vec_ops import coord_in_bound, best_fit_transform, normalize_vector
 from holodex.constants import *
-from holodex.components.robot_operators.collector_state_manager import CollectorStateManager
 
 from copy import deepcopy as copy
 from scipy.spatial.transform import Rotation as R
@@ -78,12 +77,12 @@ class PICODexArmTeleOp:
         self.stop_move = False
         self.end_robot = False
 
+        self._setup_params()
         # Set up ROS subscribers
         self._setup_subscribers()
 
         # Initialize robot controller
         self.robot = RobotController(teleop=True, simulator=simulator, gripper=gripper, arm_type=arm_type, gripper_init_state=gripper_init_state)
-        self.collector_state_manager = CollectorStateManager()
         self.init_arm_ee_pose = self._get_tcp_position()
         self.init_arm_ee_to_world = np.eye(4)
         self.init_arm_ee_to_world[:3, 3] = self.init_arm_ee_pose[:3]
@@ -91,6 +90,11 @@ class PICODexArmTeleOp:
         self.arm_ee_pose = None
         self.joystick_pose = np.array([0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]) # xyz, wxyz
 
+    def _setup_params(self):
+        rospy.set_param("/data_collector/stop_move", False)
+        rospy.set_param("/data_collector/end_robot", False)
+        rospy.set_param("/data_collector/reset_robot", False)
+        
     def _setup_subscribers(self):
         """Set up all ROS subscribers"""
         topics_callbacks = [
@@ -162,11 +166,11 @@ class PICODexArmTeleOp:
         print("Start controlling the robot hand using the PICO VR.\n")
 
         while True:
-            if self.collector_state_manager.stop_move:
+            if rospy.get_param("/data_collector/stop_move"):
                 continue
-            if self.collector_state_manager.end_robot:
+            if rospy.get_param("/data_collector/end_robot"):
                 break
-            if self.collector_state_manager.reset_robot:
+            if rospy.get_param("/data_collector/reset_robot"):
                 self.robot.home_robot()
                     
             # Generate desired joint angles based on current joystick pose
