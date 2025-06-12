@@ -107,6 +107,14 @@ def pico_teleop(teleop_configs):
                               gripper_init_state=teleop_configs.get("gripper_init_state", "open"))
     teleop.move()
 
+def dummy_teleop(teleop_configs):
+    notify_process_start("Starting Teleoperation Process")
+    teleop = DummyDexArmTeleOp(simulator=teleop_configs.get("simulator", None), 
+                              gripper=teleop_configs.get("gripper", "ctek"),
+                              arm_type=teleop_configs.get("arm", "franka"),
+                              gripper_init_state=teleop_configs.get("gripper_init_state", "open"))
+    teleop.move()
+    
 def kb_teleop(teleop_configs):
     notify_process_start("Starting Teleoperation Process")
     teleop = KBArmTeleop(simulator=teleop_configs.get("simulator", None), 
@@ -218,7 +226,7 @@ def get_teleop_process(teleop_configs):
     elif teleop_configs.tracker.type == 'KB': # Keyboard
         teleop_process = Process(target = kb_teleop, args = (teleop_configs, ), daemon=False)
     elif teleop_configs.tracker.type == 'DUMMY':
-        teleop_process = None
+        teleop_process = Process(target = dummy_teleop, args = (teleop_configs, ))
     else:
         raise NotImplementedError(f"Unknown tracker {teleop_configs.tracker.type}")
     return teleop_process
