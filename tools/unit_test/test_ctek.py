@@ -7,8 +7,8 @@ import time
 # 寄存器地址
 POSITION_HIGH_8 = 0x0102  # 位置寄存器高八位
 POSITION_LOW_8 = 0x0103  # 位置寄存器低八位
-SPEED = 0x0104
-FORCE = 0x0105
+SPEED = 0x0104 # 0 -- 100
+FORCE = 0x0105 # 0 -- 40
 MOTION_TRIGGER = 0x0108
 BAUD = 115200
 PORT = '/dev/ttyUSB0'  # 修改为您的COM口号
@@ -37,8 +37,7 @@ class Gripper:
     def write_position(self, value):
         with self.lock:
             self.instrument.write_long(POSITION_HIGH_8, value)
-            # self.instrument.read_long(POSITION_HIGH_8)
-    # FORCE = 0x0105
+
     def read_position(self):
             return self.instrument.read_register(0x060A)
     
@@ -60,66 +59,40 @@ class Gripper:
         with self.lock:
             self.instrument.write_register(MOTION_TRIGGER, 1, functioncode=6)
     
-    # open
-    def open_gripper(self, width=0.1):
-        self.write_position(8000) # 0 - 12cm 12000-->4000
-        self.write_speed(80) # 0-100%
+    # 开爪
+    def open_gripper(self, speed=100, force=40):
+        self.write_position(4000) # 0 - 12cm 12000-->4000
+        self.write_speed(speed)
         # 写输入
-        self.write_force(50)  # 
+        self.write_force(force)
         # 触发运动
         self.trigger_motion()
     
-    # close
-    def close_gripper(self, force=42):
-        self.write_position(12000) # 0 - 12cm 12000
-        self.write_speed(80) # 0-100%
+    # 关爪
+    def close_gripper(self, speed=100, force=40):
+        self.write_position(12000)
+        self.write_speed(speed)
         # 写输入
-        self.write_force(force)  # 
+        self.write_force(force)
         # 触发运动
         self.trigger_motion()
 
-    def gripper_digit(self,data):
-        self.write_position(data) # 0 - 12cm 12000
-        self.write_speed(80) # 0-100%
+    def move_gripper(self, position, speed=100, force=40):
+        self.write_position(position)
+        self.write_speed(speed)
         # 写输入
-        self.write_force(18)  # 
+        self.write_force(force)
         # 触发运动
         self.trigger_motion()
 
 if __name__ == '__main__':
-    # 写入高八位位置
-    # write_position_high8(instrument, 0x00)
-
-    # 写入低八位位置
-    # write_position_low8(instrument, 0x640)
-
-    #写入位置
-
     gripper = Gripper()
-    for i in range(20):
+    for i in range(1):
         gripper.open_gripper()
         print(gripper.read_force_state())
         print(gripper.read_position())
         time.sleep(3)
-        print("**********")
-
-     
-
-        
-        gripper.instrument.read_register(0x0612)
-
-        gripper.gripper_digit(6000)
-
+        gripper.close_gripper()
         print(gripper.read_force_state())
         print(gripper.read_position())
         time.sleep(3)
-        gripper.gripper_digit(8000)
-        print(gripper.read_force_state())
-        print(gripper.read_position())
-        time.sleep(3)
-        gripper.close_gripper() # 0 - 12cm 12000
-        print(gripper.read_force_state())
-        print(gripper.read_position())
-        time.sleep(3)
-    # time.sleep(3)
-    # gripper.open_gripper()
