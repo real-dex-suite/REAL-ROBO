@@ -259,24 +259,30 @@ class FrankaEnvWrapper:
                 
         """
         if self.with_gripper:
-            # Initialize state tracking if not already set
-            if not hasattr(self, '_gripper_state'):
-                self._gripper_state = None
-                
-            # Debounce logic - only send commands when state actually changes
-            if float(gripper_cmd) > 0.05:
-                self.open_gripper()
-                # Open gripper command
-                if self._gripper_state != 'open':
-                    self._gripper_state = 'open'
+            if self.gripper == "panda":
+                # Initialize state tracking if not already set
+                if not hasattr(self, '_gripper_state'):
+                    if self.get_gripper_position() > 0.02:
+                        self._gripper_state = "open"
+                    else:
+                        self._gripper_state = "closed"
+                    
+                # Debounce logic - only send commands when state actually changes
+                if float(gripper_cmd) > 0.05:
+                    self.open_gripper()
+                    # Open gripper command
+                    if self._gripper_state != 'open':
+                        self._gripper_state = 'open'
+                else:
+                    self.close_gripper()
+                    # Close gripper command
+                    if self._gripper_state != 'closed':
+                        self._gripper_state = 'closed'
             else:
-                self.close_gripper()
-                # Close gripper command
-                if self._gripper_state != 'closed':
-                    self._gripper_state = 'closed'
+                raise NotImplementedError(f"Gripper {self.gripper} is not implemented.")
         else:
             raise RuntimeError("No gripper equipped in Franka. move_gripper should not work.")
-    
+          
     def move(self, target_cmd):
         self.move_joint_ik(target_cmd[:7])
         if self.with_gripper:
