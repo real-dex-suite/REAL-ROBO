@@ -166,13 +166,13 @@ class PICODexArmTeleOp:
         print("Start controlling the robot hand using the PICO VR.\n")
 
         while True:
-            if rospy.get_param("/data_collector/stop_move"):
-                continue
-            if rospy.get_param("/data_collector/end_robot"):
-                break
             if rospy.get_param("/data_collector/reset_robot"):
                 self.robot.home_robot()
-                    
+                rospy.set_param("/data_collector/reset_robot", False)
+            if rospy.get_param("/data_collector/end_robot"):
+                os._exit(0)
+            if rospy.get_param("/data_collector/stop_move"):
+                continue
             # Generate desired joint angles based on current joystick pose
             desired_cmd = self._retarget_base()
             if self.robot.arm.with_gripper:

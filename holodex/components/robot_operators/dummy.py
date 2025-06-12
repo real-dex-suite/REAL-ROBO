@@ -23,11 +23,17 @@ class DummyDexArmTeleOp:
         self.arm_type = arm_type
         self.gripper_control = float(gripper_init_state == "close")
         self.logger = spdlog.ConsoleLogger("RobotController")
+        self._setup_params()
 
         # Initialize robot controller
         self.robot = RobotController(teleop=True, simulator=simulator, gripper=gripper, arm_type=arm_type, gripper_init_state=gripper_init_state)
         self.init_arm_ee_pose = self._get_tcp_position()
 
+    def _setup_params(self):
+        rospy.set_param("/data_collector/stop_move", False)
+        rospy.set_param("/data_collector/end_robot", False)
+        rospy.set_param("/data_collector/reset_robot", False)
+        
     def _get_tcp_position(self):
         """Get the TCP position based on the arm type"""
         if self.arm_type == "flexiv":
@@ -43,6 +49,15 @@ class DummyDexArmTeleOp:
         print("Start controlling the robot hand using the Dummy Teleop.\n")
 
         while True:
+            cprint(f'stop_move: {rospy.get_param("/data_collector/stop_move")}, end_robot: {rospy.get_param("/data_collector/end_robot")}, reset_robot: {rospy.get_param("/data_collector/reset_robot")}', "yellow")
+
+            if rospy.get_param("/data_collector/reset_robot"):
+                self.robot.home_robot()
+                rospy.set_param("/data_collector/reset_robot", False)
+            if rospy.get_param("/data_collector/end_robot"):
+                os._exit(0)
+            if rospy.get_param("/data_collector/stop_move"):
+                continue
             # Generate desired joint angles based on current joystick pose
             desired_cmd = self.init_arm_ee_pose.copy()
             if self.robot.arm.with_gripper:

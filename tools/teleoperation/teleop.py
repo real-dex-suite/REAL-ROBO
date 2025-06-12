@@ -40,32 +40,30 @@ def main(configs):
         time.sleep(2)
         teleop_process.start()
 
-    # Joining all the processes
-    for process in tactile_processes:
-        process.join()
-        
-    for process in robot_camera_processes:
-        process.join()
-
-    for process in robot_camera_stream_processes:
-        process.join()
-        
-    if detection_process is not None:
-        detection_process.join()
-
-    for process in keypoint_transform_processes:
-        process.join()
-
-    for process in plotter_processes:
-        process.join()
-        
-    if tactile_visualizer_process is not None:
-        tactile_visualizer_process.join()
-    
     if teleop_process is not None:
         teleop_process.join()
 
+    # Kill all the sub processes
+    for process in tactile_processes:
+        process.kill()
+        
+    for process in robot_camera_processes:
+        process.kill()
 
+    for process in robot_camera_stream_processes:
+        process.kill()
+        
+    if detection_process is not None:
+        detection_process.kill()
+
+    for process in keypoint_transform_processes:
+        process.kill()
+
+    for process in plotter_processes:
+        process.kill()
+        
+    if tactile_visualizer_process is not None:
+        tactile_visualizer_process.kill()
  
 if __name__ == '__main__':
     main()
