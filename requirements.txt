@@ -18,3 +18,4 @@ pyspacemouse
 open3d
 ninja
 defusedxml
+minimalmodbus
