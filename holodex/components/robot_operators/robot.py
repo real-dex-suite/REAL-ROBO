@@ -39,23 +39,24 @@ class RobotController(object):
         arm_type="franka",
         simulator=None,
         gripper=None,
+        gripper_init_state="open",
     ) -> None:
         self.arm_type = arm_type
         if arm_type == "flexiv":
             from holodex.robot.arm.flexiv.flexiv import FlexivArm
-            self.arm = FlexivArm(gripper=gripper)
+            self.arm = FlexivArm(gripper=gripper, gripper_init_state=gripper_init_state)
             cprint("Call FlexivArm", "red")
         elif arm_type == "franka":
             if simulator is not None:
                 if simulator == "genesis":
                     from holodex.robot.arm.franka.franka_genesis_env_wrapper import FrankaGenesisEnvWrapper
-                    self.arm = FrankaGenesisEnvWrapper(control_mode="joint", gripper=gripper) # modify this 
+                    self.arm = FrankaGenesisEnvWrapper(control_mode="joint", gripper=gripper, gripper_init_state=gripper_init_state) # modify this 
                     cprint("Call FrankaGenesisEnvWrapper", "red")
                 else:
                     raise NotImplementedError(f"Robot controller under simulator {simulator} is not implemented.")
             else:
                 from holodex.robot.arm.franka.franka_env_wrapper import FrankaEnvWrapper
-                self.arm = FrankaEnvWrapper(control_mode="joint", gripper=gripper) # modify this 
+                self.arm = FrankaEnvWrapper(control_mode="joint", gripper=gripper, gripper_init_state=gripper_init_state) # modify this 
                 cprint("Call FrankaEnvWrapper", "red")
         elif arm_type == "jaka":
             from holodex.robot.arm.jaka.jaka import JakaArm
@@ -66,7 +67,8 @@ class RobotController(object):
                     control_mode="joint",
                     safety_moving_trans=JAKA_SAFE_MOVING_TRANS,
                     random_jaka_home=False,
-                    gripper=gripper
+                    gripper=gripper,
+                    gripper_init_state=gripper_init_state,
                 )
             )
             cprint("Call JakaArm", "red")

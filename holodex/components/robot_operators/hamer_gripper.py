@@ -77,7 +77,7 @@ class HamerGripperDexArmTeleOp(object):
     '''
     TODO
     '''
-    def __init__(self, simulator=None, gripper=None, arm_type="franka"):
+    def __init__(self, simulator=None, gripper=None, arm_type="franka", gripper_init_state="open"):
         self.arm_type = arm_type
         raise NotImplementedError("HamerGripperDexArmTeleOp is not finished.")
         if RETARGET_TYPE == "dexpilot":
@@ -107,7 +107,7 @@ class HamerGripperDexArmTeleOp(object):
         self._setup_subscribers()
 
         # Initialize robot controller
-        self.robot = RobotController(teleop=True, simulator=simulator, gripper=gripper, arm_type=arm_type)
+        self.robot = RobotController(teleop=True, simulator=simulator, gripper=gripper, arm_type=arm_type, gripper_init_state=gripper_init_state)
         self.init_tcp = np.array(self._get_tcp_position())
         self.arm_ee_pose = self._get_tcp_position()
 
@@ -476,7 +476,7 @@ class HamerGripperDexArmTeleOp(object):
                     break
                 # Generate desired joint angles based on current joystick pose
                 desired_cmd = self.motion(finger_configs)
-                self.robot.move(np.concatenate([desired_cmd, self.finger_distance]))
+                self.robot.move(np.concatenate([desired_cmd, self.finger_distance < 0.05]))
                 
 if __name__ == "__main__":
     hamer = HamerDexArmTeleOp()

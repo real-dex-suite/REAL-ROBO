@@ -95,21 +95,24 @@ def hamer_gripper_teleop(teleop_configs):
     notify_process_start("Starting Teleoperation Process")
     teleop = HamerGripperDexArmTeleOp(simulator=teleop_configs.get("simulator", None), 
                                       gripper=teleop_configs.get("gripper", "panda"),
-                                      arm_type=teleop_configs.get("arm", "franka"))
-    teleop.move(teleop_configs['finger_configs'])
+                                      arm_type=teleop_configs.get("arm", "franka"),
+                                      gripper_init_state=teleop_configs.get("gripper_init_state", "open"))
+    teleop.move()
 
 def pico_teleop(teleop_configs):
     notify_process_start("Starting Teleoperation Process")
     teleop = PICODexArmTeleOp(simulator=teleop_configs.get("simulator", None), 
                               gripper=teleop_configs.get("gripper", "ctek"),
-                              arm_type=teleop_configs.get("arm", "franka"))
-    teleop.move(teleop_configs['finger_configs'])
+                              arm_type=teleop_configs.get("arm", "franka"),
+                              gripper_init_state=teleop_configs.get("gripper_init_state", "open"))
+    teleop.move()
 
 def kb_teleop(teleop_configs):
     notify_process_start("Starting Teleoperation Process")
     teleop = KBArmTeleop(simulator=teleop_configs.get("simulator", None), 
                          gripper=teleop_configs.get("gripper", "panda"),
-                         arm_type=teleop_configs.get("arm", "franka"))
+                         arm_type=teleop_configs.get("arm", "franka"),
+                         gripper_init_state=teleop_configs.get("gripper", "open"))
     teleop.move()
 
 def get_tactile_stream_processes(configs):

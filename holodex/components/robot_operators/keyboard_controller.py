@@ -26,7 +26,7 @@ rotation_step = 0.05
 
 
 class KBArmTeleop(object):
-    def __init__(self, simulator=None, gripper=None, arm_type="franka"):
+    def __init__(self, simulator=None, gripper=None, arm_type="franka", gripper_init_state="open"):
         self.arm_type = arm_type
         rospy.init_node("keyboard_arm_teleop")
 
@@ -46,7 +46,7 @@ class KBArmTeleop(object):
         )
 
         # Initializing the robot controller
-        self.robot = RobotController(teleop=True, simulator=simulator, gripper=gripper, arm_type=arm_type)
+        self.robot = RobotController(teleop=True, simulator=simulator, gripper=gripper, arm_type=arm_type, gripper_init_state=gripper_init_state)
 
         # Initializing the arm pose
         self.arm_ee_pose = self.robot.arm.get_tcp_position(euler=False)

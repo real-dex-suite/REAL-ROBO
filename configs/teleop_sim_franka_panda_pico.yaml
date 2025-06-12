@@ -11,6 +11,7 @@ finger_configs:
   three_dim: true
 simulator: genesis
 gripper: panda # null
+gripper_init_state: open
 arm: franka
 hand: null # TODO
 hydra:  

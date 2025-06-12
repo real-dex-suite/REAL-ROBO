@@ -66,10 +66,10 @@ def rfu_to_flu(T_rfu):
     return T_flu
     
 class PICODexArmTeleOp:
-    def __init__(self, simulator=None, gripper=None, arm_type="franka"):
+    def __init__(self, simulator=None, gripper=None, arm_type="franka", gripper_init_state="open"):
         self.arm_type = arm_type
         self.trans_scale = 1
-        self.finger_distance = np.array([1.0])
+        self.gripper_state = float(gripper_init_state == "close")
         self.logger = spdlog.ConsoleLogger("RobotController")
 
         # Initialize state variables
@@ -80,12 +80,11 @@ class PICODexArmTeleOp:
         self._setup_subscribers()
 
         # Initialize robot controller
-        self.robot = RobotController(teleop=True, simulator=simulator, gripper=gripper, arm_type=arm_type)
+        self.robot = RobotController(teleop=True, simulator=simulator, gripper=gripper, arm_type=arm_type, gripper_init_state=gripper_init_state)
         self.init_arm_ee_pose = self._get_tcp_position()
         self.init_arm_ee_to_world = np.eye(4)
         self.init_arm_ee_to_world[:3, 3] = self.init_arm_ee_pose[:3]
         self.init_arm_ee_to_world[:3, :3] = quat2mat(self.init_arm_ee_pose[3:7])
-        self.init_gripper_width = np.array(self._get_finger_distance())
         self.arm_ee_pose = None
         self.joystick_pose = np.array([0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]) # xyz, wxyz
 
@@ -97,7 +96,7 @@ class PICODexArmTeleOp:
             ("/data_collector/reset_robot", Bool, self._callback_reset_robot),
             ("/data_collector/stop_move", Bool, self._callback_stop_move),
             ("/data_collector/end_robot", Bool, self._callback_end_robot),
-            ("vr/gripper", Float64, self._callback_finger_distance),
+            ("vr/gripper", Float64, self._callback_gripper),
             ("vr/ee_pose", Pose, self._callback_ee_pose),
         ]
         for topic, msg_type, callback in topics_callbacks:
@@ -110,9 +109,6 @@ class PICODexArmTeleOp:
         else:
             return self.robot.arm.get_tcp_position()
 
-    def _get_finger_distance(self):
-        return self.robot.arm.get_gripper_position()
-    
     def _callback_ee_pose(self, pose):
         """Callback function to update joystick pose from VR data
         
@@ -148,9 +144,9 @@ class PICODexArmTeleOp:
         rot = mat2quat(rot)
         self.joystick_pose = np.concatenate([pos, rot], axis=0)
 
-    def _callback_finger_distance(self, data):
-        """Callback function to update finger distance from VR data"""
-        self.finger_distance = np.array(data.data)
+    def _callback_gripper(self, data):
+        """Callback function to update gripper from VR data"""
+        self.gripper_state = np.array(data.data)
 
     def _callback_arm_ee_pose(self, data):
         """Callback function to update arm end-effector pose"""
@@ -166,11 +162,17 @@ class PICODexArmTeleOp:
 
     def _callback_reset_robot(self, msg):
         """Callback function to reset robot position"""
-        self.robot.move(np.concatenate([self.init_arm_ee_pose, np.expand_dims(self.init_gripper_width, axis=0)]))
+        if self.robot.arm.with_gripper:
+            self.robot.move(np.concatenate([self.init_arm_ee_pose, np.expand_dims(self.robot.arm.gripper_init_state == "close", axis=0)]))
+        else:
+            self.robot.move(np.concatenate([self.init_arm_ee_pose]))
         
     def _callback_reset_done(self, msg):
         """Callback function to handle reset done event"""
-        self.robot.move(np.concatenate([self.init_arm_ee_pose, np.expand_dims(self.init_gripper_width, axis=0)]))
+        if self.robot.arm.with_gripper:
+            self.robot.move(np.concatenate([self.init_arm_ee_pose, np.expand_dims(self.robot.arm.gripper_init_state == "close", axis=0)]))
+        else:
+            self.robot.move(np.concatenate([self.init_arm_ee_pose]))
 
     def _retarget_base(self):
         """Retarget the base position of the robot arm"""
@@ -194,4 +196,4 @@ class PICODexArmTeleOp:
                     break
                 # Generate desired joint angles based on current joystick pose
                 desired_cmd = self._retarget_base()
-                self.robot.move(np.concatenate([desired_cmd, np.expand_dims(self.finger_distance, axis=0)]))
+                self.robot.move(np.concatenate([desired_cmd, np.expand_dims(self.gripper_state, axis=0)]))

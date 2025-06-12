@@ -22,6 +22,7 @@ class JakaArm(object):
         safety_moving_trans=100,
         random_jaka_home=False,
         gripper=None,
+        gripper_init_state="open",
     ):
         # rospy.init_node('jaka_arm_controller')
 
@@ -63,6 +64,7 @@ class JakaArm(object):
 
         self.with_gripper = gripper is not None
         if self.with_gripper:
+            raise NotImplementedError("gripper is not implemented for FlexivArm")
             self.dof += 1
             
         self.safety_moving_trans = safety_moving_trans
@@ -96,9 +98,6 @@ class JakaArm(object):
         if len(output) == 1:
             print(output)
         return np.array(output[1])
-    
-    def get_gripper_position(self):
-        raise NotImplementedError("JAKA with gripper is not implemented now.")
     
     def open_gripper(self):
         raise NotImplementedError("JAKA with gripper is not implemented now.")

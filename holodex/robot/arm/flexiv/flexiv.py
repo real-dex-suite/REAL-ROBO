@@ -18,7 +18,7 @@ from collections import deque
 
 
 class FlexivArm(object):
-    def __init__(self, gripper=None):
+    def __init__(self, gripper=None, gripper_init_state="open"):
         self.robot_sn = "Rizon4-062521"
         self.logger = spdlog.ConsoleLogger("RobotController")
         self.mode = flexivrdk.Mode
@@ -30,6 +30,7 @@ class FlexivArm(object):
         
         self.with_gripper = gripper is not None
         if self.with_gripper:
+            raise NotImplementedError("gripper is not implemented for FlexivArm")
             self.dof += 1
             
         # Control parameters
@@ -148,9 +149,6 @@ class FlexivArm(object):
             self.logger.error(f"Failed to get TCP position: {e}")
             return None
         
-    def get_gripper_position(self):
-        raise NotImplementedError("Flexiv with gripper is not implemented now.")
-    
     def open_gripper(self):
         raise NotImplementedError("Flexiv with gripper is not implemented now.")
     

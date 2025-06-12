@@ -13,7 +13,7 @@ BAUD = 115200
 PORT = '/dev/ttyUSB0'  # 修改为您的COM口号
 
 
-class Gripper:
+class CTekGripper:
     """gripper init"""
 
     def __init__(self):
@@ -59,33 +59,39 @@ class Gripper:
             self.instrument.write_register(MOTION_TRIGGER, 1, functioncode=6)
     
     # 开爪
-    def open_gripper(self, speed=80, force=40):
+    def open_gripper(self, speed=80, force=40, block=True, waiting_time=3):
         self.write_position(4000) # 0 - 12cm 12000-->4000
         self.write_speed(speed)
         # 写输入
         self.write_force(force)
         # 触发运动
         self.trigger_motion()
+        if block:
+            time.sleep(waiting_time)
     
     # 关爪
-    def close_gripper(self, speed=80, force=40):
+    def close_gripper(self, speed=80, force=40, block=True, waiting_time=3):
         self.write_position(12000)
         self.write_speed(speed)
         # 写输入
         self.write_force(force)
         # 触发运动
         self.trigger_motion()
+        if block:
+            time.sleep(waiting_time)
 
-    def move_gripper(self, position, speed=80, force=40):
+    def move_gripper(self, position, speed=80, force=40, block=True, waiting_time=3):
         self.write_position(position)
         self.write_speed(speed)
         # 写输入
         self.write_force(force)
         # 触发运动
         self.trigger_motion()
+        if block:
+            time.sleep(waiting_time)
 
 if __name__ == '__main__':
-    gripper = Gripper()
+    gripper = CTekGripper()
 
     gripper.close_gripper()
     time.sleep(3)

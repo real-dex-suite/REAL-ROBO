@@ -36,7 +36,7 @@ class FrankaEnvWrapper:
     operations while handling the underlying ROS communication and state management.
     """
 
-    def __init__(self, control_mode: str = "joint", teleop: bool = False, gripper="ctek"):
+    def __init__(self, control_mode: str = "joint", teleop: bool = False, gripper="ctek", gripper_init_state="open"):
         """
         Initialize robot arm controller.
 
@@ -55,7 +55,14 @@ class FrankaEnvWrapper:
         self.with_gripper = gripper is not None
         if self.with_gripper:
             self.dof += 1
-            
+        
+        if self.gripper == "ctek":
+            from holodex.robot.gripper.ctek import CTekGripper
+            self.gripper_wrapper = CTekGripper()
+        elif self.gripper == "panda":
+            self.gripper_wrapper = self.arm
+        else:
+            raise NotImplementedError(f"Gripper {self.gripper} is not supported for FrankaEnvWrapper.")
         # Set up the robot control configuration based on the specified mode
         if control_mode == "joint":
             # TODO: make these configurable
@@ -80,7 +87,14 @@ class FrankaEnvWrapper:
         self._fa_cmd_id = 0
         self._init_time = rospy.Time.now().to_time()
         self.ik_solver = FrankaSolver(ik_type="motion_gen", ik_sim=not (gripper=="panda"))
-        
+        self.gripper_init_state = gripper_init_state
+        if gripper_init_state == "open":
+            self.open_gripper()
+        elif gripper_init_state == "close":
+            self.close_gripper()
+        else:
+            raise NotImplementedError(f"Unknown gripper_init_state {gripper_init_state}")
+
     def _initialize_state(self):
         """Initialize robot state variables."""
         self.current_joint_state = self.arm.get_joints()
@@ -172,54 +186,21 @@ class FrankaEnvWrapper:
             None
         """
         if self.gripper == "panda":
-            self.arm.open_gripper(block=block, skill_desc="OpenGripper")
+            self.gripper_wrapper.open_gripper(block=block, skill_desc="OpenGripper")
         elif self.gripper == "ctek":
-            pass
+            self.gripper_wrapper.open_gripper(block=block)
         else:
             pass
 
     def close_gripper(self, block=True):
         """Close gripper and attempt to grasp object."""
         if self.gripper == "panda":
-            self.arm.close_gripper(grasp=True, block=block, skill_desc="CloseGripper")
+            self.gripper_wrapper.close_gripper(grasp=True, block=block, skill_desc="CloseGripper")
         elif self.gripper == "ctek":
-            pass
+            self.gripper_wrapper.close_gripper(block=block)
         else:
             pass
 
-
-    def get_gripper_position(self) -> float:
-        """
-        Get current gripper width.
-
-        Returns:
-            float: The current width of the gripper.
-        """
-        if self.with_gripper:
-            if self.gripper == "panda":
-                return self.arm.get_gripper_width()
-            else:
-                return 1
-        else:
-            raise RuntimeError("No gripper equipped in Franka. get_gripper_position should not work.")
-    
-
-    def get_gripper_is_grasped(self) -> bool:
-        """
-        Check if gripper is currently grasping an object. Save this in data!
-
-        Returns:
-            bool: True if the gripper is grasping something, False otherwise.
-        """
-        
-        if self.with_gripper:
-            if self.gripper == "panda":
-                return self.arm.get_gripper_is_grasped()
-            else:
-                return False
-        else:
-            raise RuntimeError("No gripper equipped in Franka. get_gripper_is_grasped should not work.")
-    
     def move_joint(self, target_joint: list):
         timestamp = rospy.Time.now().to_time() - self._init_time
 
@@ -247,7 +228,7 @@ class FrankaEnvWrapper:
         target_joint = self.solve_ik(target_ee)
         self.move_joint(target_joint)
         
-    def move_gripper(self, gripper_cmd):
+    def move_gripper(self, gripper_cmd: bool = True):
         """
         Control gripper for teleoperation with binary open/close command.
         Includes debouncing to avoid too frequent control commands.
@@ -260,32 +241,23 @@ class FrankaEnvWrapper:
         """
         if self.with_gripper:
             if self.gripper == "panda":
-                # Initialize state tracking if not already set
-                if not hasattr(self, '_gripper_state'):
-                    if self.get_gripper_position() > 0.02:
-                        self._gripper_state = "open"
-                    else:
-                        self._gripper_state = "closed"
-                    
-                # Debounce logic - only send commands when state actually changes
-                if float(gripper_cmd) > 0.05:
+                if not gripper_cmd:
                     self.open_gripper()
-                    # Open gripper command
-                    if self._gripper_state != 'open':
-                        self._gripper_state = 'open'
                 else:
                     self.close_gripper()
-                    # Close gripper command
-                    if self._gripper_state != 'closed':
-                        self._gripper_state = 'closed'
+            elif self.gripper == "ctek":
+                if not gripper_cmd:
+                    self.open_gripper()
+                else:
+                    self.close_gripper()
             else:
                 raise NotImplementedError(f"Gripper {self.gripper} is not implemented.")
         else:
             raise RuntimeError("No gripper equipped in Franka. move_gripper should not work.")
-          
+             
     def move(self, target_cmd):
         self.move_joint_ik(target_cmd[:7])
-        if self.with_gripper:
+        if self.with_gripper and len(target_cmd) > 7:
             self.move_gripper(target_cmd[7])
         
     def run(self):

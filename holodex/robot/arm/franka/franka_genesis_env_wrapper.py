@@ -21,13 +21,14 @@ class LowPassFilter:
         return self.prev_value
     
 class FrankaGenesisEnvWrapper:
-    def __init__(self, control_mode="joint", teleop=False, gripper="panda"):
+    def __init__(self, control_mode="joint", teleop=False, gripper="panda", gripper_init_state="open"):
         assert gripper in ["panda"] or gripper is None, f"Gripper {gripper} is not supported for FrankaGenesisWrapper."
         rospy.init_node('genesis_tele', anonymous=True)
         rospy.sleep(1.0)
 
         self.ik_solver = FrankaSolver(ik_type="motion_gen", ik_sim=True, simulator="genesis")
         self.dof = 7
+        self.gripper = gripper
         self.with_gripper = gripper is not None
         if self.with_gripper:
             self.dof += 1
@@ -55,7 +56,13 @@ class FrankaGenesisEnvWrapper:
             self._callback_current_ee_state,
             queue_size=1,
         )
-
+        self.gripper_init_state = gripper_init_state
+        if gripper_init_state == "open":
+            self.open_gripper()
+        elif gripper_init_state == "close":
+            self.close_gripper()
+        else:
+            raise NotImplementedError(f"Unknown gripper_init_state {gripper_init_state}")
         self._initialize_state()
         
     def _initialize_state(self):
@@ -94,12 +101,6 @@ class FrankaGenesisEnvWrapper:
         # Retrieve the current end-effector pose and return it as a concatenated array
         return np.array(self.current_ee_state)
     
-    def get_gripper_position(self):
-        if self.with_gripper:
-            return self.current_joint_state[7]
-        else:
-            raise RuntimeError("No gripper equipped in Franka. get_gripper_position should not work.")
-    
     def home_robot(self):
         pass
     
@@ -108,6 +109,7 @@ class FrankaGenesisEnvWrapper:
             # Open the robot's gripper
             gripper_msg = Bool(data=True)
             self.gripper_control_pub.publish(gripper_msg)
+            self._gripper_state = 'open'
         else:
             raise RuntimeError("No gripper equipped in Franka. open_gripper should not work.")
         
@@ -116,10 +118,11 @@ class FrankaGenesisEnvWrapper:
             # Open the robot's gripper
             gripper_msg = Bool(data=False)
             self.gripper_control_pub.publish(gripper_msg)
+            self._gripper_state = 'close'
         else:
             raise RuntimeError("No gripper equipped in Franka. close_gripper should not work.")
         
-    def move_gripper(self, gripper_cmd):
+    def move_gripper(self, gripper_cmd: bool = True):
         """
         Control gripper for teleoperation with binary open/close command.
         Includes debouncing to avoid too frequent control commands.
@@ -132,24 +135,15 @@ class FrankaGenesisEnvWrapper:
         """
         if self.with_gripper:
             if self.gripper == "panda":
-                # Initialize state tracking if not already set
-                if not hasattr(self, '_gripper_state'):
-                    if self.get_gripper_position() > 0.02:
-                        self._gripper_state = "open"
-                    else:
-                        self._gripper_state = "closed"
-                    
-                # Debounce logic - only send commands when state actually changes
-                if float(gripper_cmd) > 0.05:
+                if not gripper_cmd:
                     self.open_gripper()
-                    # Open gripper command
-                    if self._gripper_state != 'open':
-                        self._gripper_state = 'open'
                 else:
                     self.close_gripper()
-                    # Close gripper command
-                    if self._gripper_state != 'closed':
-                        self._gripper_state = 'closed'
+            elif self.gripper == "ctek":
+                if not gripper_cmd:
+                    self.open_gripper()
+                else:
+                    self.close_gripper()
             else:
                 raise NotImplementedError(f"Gripper {self.gripper} is not implemented.")
         else:
@@ -205,7 +199,7 @@ class FrankaGenesisEnvWrapper:
         
     def move(self, target_cmd):
         self.move_joint_ik(target_cmd[:7])
-        if self.with_gripper:
+        if self.with_gripper and len(target_cmd) > 7:
             self.move_gripper(target_cmd[7])
         
     def run(self):
