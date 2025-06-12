@@ -242,7 +242,7 @@ class FrankaEnvWrapper:
                 - Values > 0.05: Open the gripper
                 
         """
-        if self.with_gripper:
+        if self.with_gripper and self.gripper_init_state == "open":
             if self.gripper == "panda":
                 if not gripper_cmd and self._gripper_state == "close":
                     self.open_gripper()
