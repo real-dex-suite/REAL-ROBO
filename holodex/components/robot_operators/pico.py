@@ -69,7 +69,7 @@ class PICODexArmTeleOp:
     def __init__(self, simulator=None, gripper=None, arm_type="franka", gripper_init_state="open"):
         self.arm_type = arm_type
         self.trans_scale = 1
-        self.gripper_state = float(gripper_init_state == "close")
+        self.gripper_control = float(gripper_init_state == "close")
         self.logger = spdlog.ConsoleLogger("RobotController")
 
         # Initialize state variables
@@ -146,7 +146,7 @@ class PICODexArmTeleOp:
 
     def _callback_gripper(self, data):
         """Callback function to update gripper from VR data"""
-        self.gripper_state = np.array(data.data)
+        self.gripper_control = np.array(data.data)
 
     def _callback_arm_ee_pose(self, data):
         """Callback function to update arm end-effector pose"""
@@ -196,4 +196,7 @@ class PICODexArmTeleOp:
                     break
                 # Generate desired joint angles based on current joystick pose
                 desired_cmd = self._retarget_base()
-                self.robot.move(np.concatenate([desired_cmd, np.expand_dims(self.gripper_state, axis=0)]))
+                if self.robot.arm.with_gripper:
+                    self.robot.move(np.concatenate([desired_cmd, np.expand_dims(self.gripper_control, axis=0)]))
+                else:
+                    self.robot.move(desired_cmd)

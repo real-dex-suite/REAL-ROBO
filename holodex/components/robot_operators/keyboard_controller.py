@@ -27,6 +27,7 @@ rotation_step = 0.05
 
 class KBArmTeleop(object):
     def __init__(self, simulator=None, gripper=None, arm_type="franka", gripper_init_state="open"):
+        raise NotImplementedError("KBArmTeleop is not finished.")
         self.arm_type = arm_type
         rospy.init_node("keyboard_arm_teleop")
 
