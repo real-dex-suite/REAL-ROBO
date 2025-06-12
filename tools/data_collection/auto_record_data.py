@@ -26,7 +26,10 @@ def main(configs):
         
     )
 
-    cprint(f'Collecting {configs.demo_num} demos in {demo_path}', 'yellow')
+    print("\n" + "*" * 78)
+    cprint(f"[   ok   ]     Collecting {configs.demo_num} demos in {demo_path}", "green", attrs=["bold"])
+    print("*" * 78 + "\n")
+
     collector.extract()
 
 if __name__ == '__main__':

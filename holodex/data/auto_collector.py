@@ -95,6 +95,7 @@ class AutoDataCollector(object):
         self.c_pressed = False
         self.r_pressed = False
         self.q_pressed = False
+        self.p_pressed = False
         self._setup_state_collection()
 
     def _setup_state_collection(self):
@@ -158,7 +159,9 @@ class AutoDataCollector(object):
                 if key.char == 'r':
                     self.r_pressed = True
                 if key.char == 'q':
-                    self.q_pressed = True                    
+                    self.q_pressed = True    
+                if key.char == 'p':
+                    self.q_pressed = True                   
             except AttributeError:
                 pass
                 # keyboard cmd
@@ -168,12 +171,16 @@ class AutoDataCollector(object):
         states = []
         state_cnt = 0
         try:
+            cprint(f"---------------------------------------------", "yellow", attrs=['bold'])
+            cprint(f"| s -> start recording, t -> stop recording |", "yellow", attrs=['bold'])
+            cprint(f"---------------------------------------------", "yellow", attrs=['bold'])
+            clear_input_buffer()
             while True:
                 if self.start:
-                    cprint(f"Start recording demo {self.demo_num}.", "yellow")
+                    cprint(f">>> Start recording demo {self.demo_num}.", "green", attrs=['bold'])
                     self.start = False
                     break
-
+            pbar = tqdm(total=None)
             while True:
                 if not self.keyboard_listener.is_alive():
                     self.keyboard_listener = keyboard.Listener(on_press=_on_press)
@@ -209,7 +216,6 @@ class AutoDataCollector(object):
                 if skip_loop:
                     continue                    
 
-                cprint(f'Recording demo {self.demo_num}, state {state_cnt}', 'green', 'on_black', attrs=['bold'])
                 state = dict()
 
                 # Arm data
@@ -244,12 +250,13 @@ class AutoDataCollector(object):
                 state['time'] = rospy.Time.now().to_time()
                 states.append(state)
                 state_cnt += 1
-
+                pbar.update(1)
                 self.frequency_timer.sleep()
 
                 #################################################### 
                 if self.stop:
                     self.stop = False
+                    pbar.close()
 
                     bool_true_msg = Bool()
                     bool_true_msg.data = True
@@ -260,10 +267,12 @@ class AutoDataCollector(object):
                     # stop robot move
                     rospy.set_param("/data_collector/stop_move", True)
 
-                    # stuck here waiting for the next command, c for continue, d for delete, r for reset, s for stop
-                    cprint('Waiting for the next command: ', 'yellow')
-                    cprint('restart -> r, save and continue -> c', 'yellow')
-
+                    clear_input_buffer()
+                    cprint(f'>>> Collected demo {self.demo_num} with {state_cnt} timesteps.', 'green', attrs=['bold'])
+                    cprint(f"-------------------------------------", "yellow", attrs=['bold'])
+                    cprint(f'| r -> restart, c -> continue       |', "yellow", attrs=['bold'])
+                    cprint(f'| q -> save+quit, p -> discard+quit |', 'yellow', attrs=['bold'])
+                    cprint(f"-------------------------------------", "yellow", attrs=['bold'])
                     while True:
                         if self.c_pressed:
                             self.c_pressed = False
@@ -272,15 +281,16 @@ class AutoDataCollector(object):
                             for state_idx, state in enumerate(tqdm(states, desc=f'Saving demo {self.demo_num}...')):
                                 state_pickle_path = os.path.join(self.storage_path, f'{state_idx + 1}')
                                 store_pickle_data(state_pickle_path, state)
-
-                            states = []
-                            state_cnt = 0
                             self.demo_num += 1
                             self.storage_path = os.path.join(self.storage_root, f'demonstration_{self.demo_num}')
 
+                            # reset the robot
+                            cprint(f"Resetting the robot...", 'blue')
+                            states = []
+                            state_cnt = 0
+
                             # reset
                             rospy.set_param("/data_collector/reset_robot", True)
-
                             wait_reset_start = time.time()
                             while True:
                                 if not rospy.get_param("/data_collector/reset_robot"):
@@ -289,11 +299,16 @@ class AutoDataCollector(object):
                                 if time.time() - wait_reset_start > reset_timeout:
                                     cprint(f"Reset failed after {reset_timeout} s. Turn to the next demo.")
                                     break
+                            clear_input_buffer()
+                            cprint(f"---------------------------------------------", "yellow", attrs=['bold'])
+                            cprint(f"| s -> start recording, t -> stop recording |", "yellow", attrs=['bold'])
+                            cprint(f"---------------------------------------------", "yellow", attrs=['bold'])
                             while True:
                                 if self.start:
-                                    cprint(f"Start recording demo {self.demo_num}.", "yellow")
+                                    cprint(f"Start recording demo {self.demo_num}.", "green", attrs=['bold'])
                                     self.start = False
                                     break
+                            pbar = tqdm(total=None)
                             break
                         
                         elif self.r_pressed:
@@ -303,9 +318,9 @@ class AutoDataCollector(object):
                             cprint(f"Resetting the robot...", 'blue')
                             states = []
                             state_cnt = 0
+
                             # reset
                             rospy.set_param("/data_collector/reset_robot", True)
-
                             wait_reset_start = time.time()
                             while True:
                                 if not rospy.get_param("/data_collector/reset_robot"):
@@ -314,19 +329,79 @@ class AutoDataCollector(object):
                                 if time.time() - wait_reset_start > reset_timeout:
                                     cprint(f"Reset failed after {reset_timeout} s. Please manually reset. Turn to the next demo by default.")
                                     break
+                            clear_input_buffer()
+                            cprint(f"---------------------------------------------", "yellow", attrs=['bold'])
+                            cprint(f"| s -> start recording, t -> stop recording |", "yellow", attrs=['bold'])
+                            cprint(f"---------------------------------------------", "yellow", attrs=['bold'])
                             while True:
                                 if self.start:
-                                    cprint(f"Start recording demo {self.demo_num}.", "yellow")
+                                    cprint(f"Start recording demo {self.demo_num}.", "green", attrs=['bold'])
                                     self.start = False
                                     break
+                            pbar = tqdm(total=None)
                             break
-                        elif self.q_pressed:
-                            self.q_pressed = False
+                            
+                        elif self.p_pressed:
+                            self.p_pressed = False
+
+                            # reset the robot
+                            cprint(f"Resetting the robot...", 'blue')
+                            states = []
+                            state_cnt = 0
+
+                            # reset
+                            rospy.set_param("/data_collector/reset_robot", True)
+                            wait_reset_start = time.time()
+                            while True:
+                                if not rospy.get_param("/data_collector/reset_robot"):
+                                    rospy.set_param("/data_collector/stop_move", False)
+                                    break
+                                if time.time() - wait_reset_start > reset_timeout:
+                                    cprint(f"Reset failed after {reset_timeout} s. Turn to the next demo.")
+                                    break
+
                             # quit the program
-                            cprint(f'Finished recording! Data can be found in {self.storage_root}', 'green')
+                            cprint(f"------------------------------------------", "green", attrs=['bold'])
+                            cprint(f'Finished recording! Data can be found in {self.storage_root}', 'green', attrs=['bold'])
+                            cprint(f"------------------------------------------", "green", attrs=['bold'])
+
                             rospy.set_param("/data_collector/end_robot", True)
                             sys.exit(0)
-                
+                            
+                        elif self.q_pressed:
+                            self.q_pressed = False
+
+                            # Saving the pickle file save path
+                            os.makedirs(self.storage_path, exist_ok=True)
+                            for state_idx, state in enumerate(tqdm(states, desc=f'Saving demo {self.demo_num}...')):
+                                state_pickle_path = os.path.join(self.storage_path, f'{state_idx + 1}')
+                                store_pickle_data(state_pickle_path, state)
+                            self.demo_num += 1
+                            self.storage_path = os.path.join(self.storage_root, f'demonstration_{self.demo_num}')
+
+                            # reset the robot
+                            cprint(f"Resetting the robot...", 'blue')
+                            states = []
+                            state_cnt = 0
+
+                            # reset
+                            rospy.set_param("/data_collector/reset_robot", True)
+                            wait_reset_start = time.time()
+                            while True:
+                                if not rospy.get_param("/data_collector/reset_robot"):
+                                    rospy.set_param("/data_collector/stop_move", False)
+                                    break
+                                if time.time() - wait_reset_start > reset_timeout:
+                                    cprint(f"Reset failed after {reset_timeout} s. Turn to the next demo.")
+                                    break
+                                    
+                            # quit the program
+                            cprint(f"------------------------------------------", "green", attrs=['bold'])
+                            cprint(f'Finished recording! Data can be found in {self.storage_root}', 'green', attrs=['bold'])
+                            cprint(f"------------------------------------------", "green", attrs=['bold'])
+
+                            rospy.set_param("/data_collector/end_robot", True)
+                            sys.exit(0)
         except KeyboardInterrupt:
             cprint('Finished recording! Data can be found in {}'.format(self.storage_path), 'green')
             sys.exit(0)

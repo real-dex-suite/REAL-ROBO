@@ -49,8 +49,6 @@ class DummyDexArmTeleOp:
         print("Start controlling the robot hand using the Dummy Teleop.\n")
 
         while True:
-            cprint(f'stop_move: {rospy.get_param("/data_collector/stop_move")}, end_robot: {rospy.get_param("/data_collector/end_robot")}, reset_robot: {rospy.get_param("/data_collector/reset_robot")}', "yellow")
-
             if rospy.get_param("/data_collector/reset_robot"):
                 self.robot.home_robot()
                 rospy.set_param("/data_collector/reset_robot", False)

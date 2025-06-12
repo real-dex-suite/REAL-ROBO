@@ -186,7 +186,7 @@ class FrankaEnvWrapper:
         return quat
 
     def home_robot(self):
-        self.arm.goto_joints(self.home_joints, duration=5)
+        self.move_joint(self.home_joints)
         if self.with_gripper:
             self.move_gripper(self.gripper_init_state)
 
