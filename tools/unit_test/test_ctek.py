@@ -60,7 +60,7 @@ class Gripper:
             self.instrument.write_register(MOTION_TRIGGER, 1, functioncode=6)
     
     # 开爪
-    def open_gripper(self, speed=100, force=40):
+    def open_gripper(self, speed=80, force=40):
         self.write_position(4000) # 0 - 12cm 12000-->4000
         self.write_speed(speed)
         # 写输入
@@ -69,7 +69,7 @@ class Gripper:
         self.trigger_motion()
     
     # 关爪
-    def close_gripper(self, speed=100, force=40):
+    def close_gripper(self, speed=80, force=40):
         self.write_position(12000)
         self.write_speed(speed)
         # 写输入
@@ -77,7 +77,7 @@ class Gripper:
         # 触发运动
         self.trigger_motion()
 
-    def move_gripper(self, position, speed=100, force=40):
+    def move_gripper(self, position, speed=80, force=40):
         self.write_position(position)
         self.write_speed(speed)
         # 写输入
@@ -88,11 +88,56 @@ class Gripper:
 if __name__ == '__main__':
     gripper = Gripper()
     for i in range(1):
+        print(">>> open 8cm")
         gripper.open_gripper()
-        print(gripper.read_force_state())
-        print(gripper.read_position())
         time.sleep(3)
+        print("force_state:", gripper.read_force_state())
+        print("position:", gripper.read_position())
+        print(">>>>>>>>")
+        print(">>> close 0cm")
         gripper.close_gripper()
-        print(gripper.read_force_state())
-        print(gripper.read_position())
         time.sleep(3)
+        print("force_state:", gripper.read_force_state())
+        print("position:", gripper.read_position())
+        print(">>>>>>>>")
+    print(">>> open 8cm")
+    gripper.open_gripper()
+    time.sleep(3)
+    print("force_state:", gripper.read_force_state())
+    print("position:", gripper.read_position())
+    print(">>>>>>>>")
+
+    print(">>> move 6cm")
+    gripper.move_gripper(6000)
+    time.sleep(3)
+    print("force_state:", gripper.read_force_state())
+    print("position:", gripper.read_position())
+    print(">>>>>>>>")
+
+    print(">>> move 4cm")
+    gripper.move_gripper(8000)
+    time.sleep(3)
+    print("force_state:", gripper.read_force_state())
+    print("position:", gripper.read_position())
+    print(">>>>>>>>")
+
+    print(">>> move 2cm")
+    gripper.move_gripper(10000)
+    time.sleep(3)
+    print("force_state:", gripper.read_force_state())
+    print("position:", gripper.read_position())
+    print(">>>>>>>>")
+
+    print(">>> move 0cm")
+    gripper.move_gripper(12000)
+    time.sleep(3)
+    print("force_state:", gripper.read_force_state())
+    print("position:", gripper.read_position())
+    print(">>>>>>>>")
+
+    print(">>> move 8cm")
+    gripper.move_gripper(4000)
+    time.sleep(3)
+    print("force_state:", gripper.read_force_state())
+    print("position:", gripper.read_position())
+    print(">>>>>>>>")
