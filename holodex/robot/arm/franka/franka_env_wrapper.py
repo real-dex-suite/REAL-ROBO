@@ -88,6 +88,7 @@ class FrankaEnvWrapper:
         self._init_time = rospy.Time.now().to_time()
         self.ik_solver = FrankaSolver(ik_type="motion_gen", ik_sim=not (gripper=="panda"))
         self.gripper_init_state = gripper_init_state
+        self._gripper_state = gripper_init_state
         if gripper_init_state == "open":
             self.open_gripper()
         elif gripper_init_state == "close":
@@ -191,6 +192,7 @@ class FrankaEnvWrapper:
             self.gripper_wrapper.open_gripper(block=block)
         else:
             pass
+        self._gripper_state = 'open'
 
     def close_gripper(self, block=True):
         """Close gripper and attempt to grasp object."""
@@ -200,6 +202,7 @@ class FrankaEnvWrapper:
             self.gripper_wrapper.close_gripper(block=block)
         else:
             pass
+        self._gripper_state = 'close'
 
     def move_joint(self, target_joint: list):
         timestamp = rospy.Time.now().to_time() - self._init_time
@@ -241,14 +244,14 @@ class FrankaEnvWrapper:
         """
         if self.with_gripper:
             if self.gripper == "panda":
-                if not gripper_cmd:
+                if not gripper_cmd and self._gripper_state == "close":
                     self.open_gripper()
-                else:
+                elif gripper_cmd and self._gripper_state == "open":
                     self.close_gripper()
             elif self.gripper == "ctek":
-                if not gripper_cmd:
+                if not gripper_cmd and self._gripper_state == "close":
                     self.open_gripper()
-                else:
+                elif gripper_cmd and self._gripper_state == "open":
                     self.close_gripper()
             else:
                 raise NotImplementedError(f"Gripper {self.gripper} is not implemented.")

@@ -181,7 +181,7 @@ class PICODexArmTeleOp:
         current_arm_pose[3:7] = mat2quat(quat2mat(self.joystick_pose[3:7]) @ self.init_arm_ee_to_world[:3, :3])
         return current_arm_pose
     
-    def move(self, finger_configs):
+    def move(self):
         """Main control loop for robot movement"""
         print("\n" + "*" * 78)
         cprint("[   ok   ]     Controller initiated. ", "green", attrs=["bold"])

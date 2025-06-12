@@ -394,7 +394,7 @@ class HamerGripperDexArmTeleOp(object):
         current_tcp_rot = np.array(current_tcp)
         return current_tcp_rot
 
-    def motion(self, finger_configs):
+    def motion(self):
         """Generate motion commands for the robot"""
         desired_cmd = []
 
@@ -461,7 +461,7 @@ class HamerGripperDexArmTeleOp(object):
         self.init_arm_transformation_matrix[:3, 3] = self.init_arm_pos.reshape(3)
 
 
-    def move(self, finger_configs):
+    def move(self):
         """Main control loop for robot movement"""
         print("\n" + "*" * 78)
         cprint("[   ok   ]     Controller initiated. ", "green", attrs=["bold"])
@@ -475,9 +475,9 @@ class HamerGripperDexArmTeleOp(object):
                 if self.end_robot:
                     break
                 # Generate desired joint angles based on current joystick pose
-                desired_cmd = self.motion(finger_configs)
+                desired_cmd = self.motion()
                 self.robot.move(np.concatenate([desired_cmd, self.finger_distance < 0.05]))
                 
 if __name__ == "__main__":
-    hamer = HamerDexArmTeleOp()
+    hamer = HamerGripperDexArmTeleOp()
     hamer.move()
