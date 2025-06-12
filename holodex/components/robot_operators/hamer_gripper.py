@@ -150,30 +150,6 @@ class HamerGripperDexArmTeleOp(object):
             queue_size=1,
         )
         rospy.Subscriber(
-            "/data_collector/reset_done",
-            Bool,
-            self._callback_reset_done,
-            queue_size=1,
-        )
-        rospy.Subscriber(
-            "/data_collector/reset_robot",
-            Bool,
-            self._callback_reset_robot,
-            queue_size=1,
-        )
-        rospy.Subscriber(
-            "/data_collector/stop_move",
-            Bool,
-            self._callback_stop_move,
-            queue_size=1,
-        )
-        rospy.Subscriber(
-            "/data_collector/end_robot",
-            Bool,
-            self._callback_end_robot,
-            queue_size=1,
-        )
-        rospy.Subscriber(
             HAMER_FINGER_DISTANCE_TOPIC,
             Float64MultiArray,
             self._callback_finger_distance,
@@ -205,20 +181,20 @@ class HamerGripperDexArmTeleOp(object):
             HAMER_ARM_NUM_KEYPOINTS, 3
         )
 
-    def _callback_end_robot(self, msg):
-        self.end_robot = msg.data
+    # def _callback_end_robot(self, msg):
+    #     self.end_robot = msg.data
 
-    def _callback_stop_move(self, msg):
-        self.stop_move = msg.data
+    # def _callback_stop_move(self, msg):
+    #     self.stop_move = msg.data
 
-    def _callback_reset_robot(self, msg):
-        if msg.data:
-            self.robot.home_robot()
+    # def _callback_reset_robot(self, msg):
+    #     if msg.data:
+    #         self.robot.home_robot()
 
-    def _callback_reset_done(self, msg):
-        self.robot.home_robot()
-        if msg.data and self.arm_type is not None:
-            self._calibrate_arm_bounds()
+    # def _callback_reset_done(self, msg):
+    #     self.robot.home_robot()
+    #     if msg.data and self.arm_type is not None:
+    #         self._calibrate_arm_bounds()
 
     # Filter functions for smoothing
     def _low_pass_filter(self, new_value, state, alpha=0.4):
@@ -461,10 +437,6 @@ class HamerGripperDexArmTeleOp(object):
 
         while True:
             if (self.arm_coords is not None) and (self.hand_coords is not None):
-                if self.stop_move:
-                    continue
-                if self.end_robot:
-                    break
                 # Generate desired joint angles based on current joystick pose
                 desired_cmd = self.motion()
                 self.robot.move(np.concatenate([desired_cmd, self.finger_distance < 0.05]))

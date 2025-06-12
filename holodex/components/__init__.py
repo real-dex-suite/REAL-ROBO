@@ -11,3 +11,5 @@ from .robot_operators.hamer import *
 from .robot_operators.hamer_gripper import *
 from .robot_operators.pico import *
 from .robot_operators.keyboard_controller import *
+
+from .robot_operators.collector_state_manager import *

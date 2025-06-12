@@ -87,6 +87,7 @@ class FrankaEnvWrapper:
         self._setup_gripper_state_collection()
         self._setup_data_collection_publisher()
         self._setup_franka_command_publisher()
+        self.home_joints = self.get_arm_position()
 
         self._fa_cmd_id = 0
         self._init_time = rospy.Time.now().to_time()
@@ -185,8 +186,10 @@ class FrankaEnvWrapper:
         return quat
 
     def home_robot(self):
-        pass
-        
+        self.arm.goto_joints(self.home_joints, duration=5)
+        if self.with_gripper:
+            self.move_gripper(self.gripper_init_state)
+
     def get_arm_position(self) -> list:
         """
         Get current joint positions.

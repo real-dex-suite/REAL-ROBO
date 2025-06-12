@@ -13,6 +13,7 @@ from holodex.utils.network import ImageSubscriber, frequency_timer, Float64Multi
 from holodex.tactile.utils import fetch_paxini_info
 from termcolor import cprint
 from pynput import keyboard
+from tqdm import tqdm
 
 def clear_input_buffer():
     termios.tcflush(sys.stdin, termios.TCIFLUSH)
@@ -34,12 +35,8 @@ class AutoDataCollector(object):
     ):
         rospy.init_node('data_extractor', disable_signals = True)
 
-        # read the first demo number
-        demo_num = input("Enter the first demo number: ")
-
         self.storage_root = storage_root
-        self.demo_start_idx = int(demo_num)
-        self.demo_num = int(demo_num)
+        self.demo_num = 1
         self.num_tactiles = num_tactiles
         self.storage_path = os.path.join(self.storage_root, f'demonstration_{self.demo_num}')
         if self.num_tactiles > 0:
@@ -95,10 +92,11 @@ class AutoDataCollector(object):
         self.frequency_timer = frequency_timer(RECORD_FPS)
 
         # ros publish for reset
+        self.start = False
         self.stop = False
+
         self.reset_publisher = rospy.Publisher("/data_collector/reset_robot", Bool, queue_size=1)
         self.stop_publisher = rospy.Publisher("/data_collector/stop_move", Bool, queue_size=1)   
-        self.reset_done_publisher = rospy.Publisher("/data_collector/reset_done", Bool, queue_size=1)
         self.end_publisher = rospy.Publisher("/data_collector/end_robot", Bool, queue_size=1)
 
     def _setup_state_collection(self):
@@ -126,6 +124,9 @@ class AutoDataCollector(object):
     def _callback_arm_ee_pose(self, data):
         self.arm_ee_pose = data
 
+    def _reset_done_callback(self, data):
+        self.reset_done = True
+
     def _collect_state_data(self):
         """
         Collect all state data into a dictionary
@@ -146,23 +147,32 @@ class AutoDataCollector(object):
             state['arm_commanded_ee_pose'] = self.arm_commanded_ee_pose.data
 
         return state
-    
-    def _on_press(self, key):
-        try:
-            if not self.stop: 
-                if key.char == 's':
-                    print(f"Key pressed: {key.char}")
-                    self.stop = True
-        except AttributeError:
-            # print(f"Special key {key} pressed")
-            pass
    
-    def extract(self):
-        counter = 1
+    def extract(self, reset_timeout=10):
+        def _on_press(key):
+            nonlocal self
+            try:
+                if not self.start: 
+                    if key.char == 's':
+                        self.start = True
+                if not self.stop:
+                    if key.char == 't':
+                        self.stop = True
+            except AttributeError:
+                pass
+
+        states = []
+        state_cnt = 0
         try:
             while True:
+                if self.start:
+                    cprint(f"Start recording demo {self.demo_num}.", "yellow")
+                    self.start = False
+                    break
+
+            while True:
                 if not self.keyboard_listener.is_alive():
-                    self.keyboard_listener = keyboard.Listener(on_press=self._on_press)
+                    self.keyboard_listener = keyboard.Listener(on_press=_on_press)
                     self.keyboard_listener.start()
                 skip_loop = False
 
@@ -195,8 +205,7 @@ class AutoDataCollector(object):
                 if skip_loop:
                     continue                    
 
-                #print('Valid Data', time.time())
-                cprint(f'Valid Data at {time.time()}', 'green', 'on_black', attrs=['bold'])
+                cprint(f'Recording demo {self.demo_num}, state {state_cnt}', 'green', 'on_black', attrs=['bold'])
                 state = dict()
 
                 # Arm data
@@ -213,34 +222,29 @@ class AutoDataCollector(object):
                 #TODO: Arm Effort, Velocity
 
                 # Image data
-                for cam_num in range(self.num_cams):
-                    state['camera_{}_color_image'.format(cam_num + 1)] = self.color_image_subscribers[cam_num].get_image()
-                    state['camera_{}_depth_image'.format(cam_num + 1)] = self.depth_image_subscribers[cam_num].get_image()
-                
+                if self.num_cams > 0:
+                    for cam_num in range(self.num_cams):
+                        state['camera_{}_color_image'.format(cam_num + 1)] = self.color_image_subscribers[cam_num].get_image()
+                        state['camera_{}_depth_image'.format(cam_num + 1)] = self.depth_image_subscribers[cam_num].get_image()
+                    
                 # tactile data
-                tactile_data = {}
-                for tactile_num in range(self.num_tactiles):
-                    raw_datas = np.array(self.tactile_subscribers[tactile_num].get_data()).reshape(self.sensor_per_board, POINT_PER_SENSOR, FORCE_DIM_PER_POINT)
-                    for (tactile_id, raw_data) in enumerate(raw_datas):
-                        tactile_data[self.tactile_info['id'][tactile_num + 1][tactile_id]] = raw_data
-                state['tactile_data'] = tactile_data
+                if self.num_tactiles > 0:
+                    tactile_data = {}
+                    for tactile_num in range(self.num_tactiles):
+                        raw_datas = np.array(self.tactile_subscribers[tactile_num].get_data()).reshape(self.sensor_per_board, POINT_PER_SENSOR, FORCE_DIM_PER_POINT)
+                        for (tactile_id, raw_data) in enumerate(raw_datas):
+                            tactile_data[self.tactile_info['id'][tactile_num + 1][tactile_id]] = raw_data
+                    state['tactile_data'] = tactile_data
 
                 # Temporal information
                 state['time'] = rospy.Time.now().to_time()
+                states.append(state)
+                state_cnt += 1
 
-                # Saving the pickle file save path
-                # # TODO: add delete functionality
-                if not os.path.exists(self.storage_path):
-                    os.makedirs(self.storage_path)
-                state_pickle_path = os.path.join(self.storage_path, f'{counter}')
-                store_pickle_data(state_pickle_path, state)
-
-                counter += 1
                 self.frequency_timer.sleep()
 
                 #################################################### 
                 if self.stop:
-                    cprint(f'Successfully record {self.demo_num} traj! Data can be found in {self.storage_path}', 'green')
                     self.stop = False
 
                     bool_true_msg = Bool()
@@ -253,58 +257,67 @@ class AutoDataCollector(object):
                     self.stop_publisher.publish(bool_true_msg)
 
                     # stuck here waiting for the next command, c for continue, d for delete, r for reset, s for stop
-                    while True:
-                        cprint('Waiting for the next command: ', 'yellow')
-                        cprint('c -> continue, d -> delete, r -> reset, q -> quit, x -> stop robot', 'yellow')
-                        clear_input_buffer()
-                        input_cmd = input("Enter the next command: ")
+                    cprint('Waiting for the next command: ', 'yellow')
+                    cprint('restart -> r, save and continue -> c', 'yellow')
+                    clear_input_buffer()
+                    input_cmd = input("Enter the next command: ")
 
-                        if input_cmd == 'c':
-                            # update demo_num and continue recording
-                            counter = 1
-                            self.demo_num += 1
-                            self.storage_path = os.path.join(self.storage_root, f'demonstration_{self.demo_num}')
-                            self.reset_done_publisher.publish(bool_true_msg)
-                            cprint(f"Start recording at {self.storage_path}", 'green')
+                    if input_cmd == 'c':
+                        # update demo_num and continue recording
 
-                            # reset
-                            self.reset_publisher.publish(bool_true_msg)
-                            rospy.sleep(1)
+                        # Saving the pickle file save path
+                        os.makedirs(self.storage_path, exist_ok=True)
+                        for state_idx, state in enumerate(tqdm(states, desc=f'Saving demo {self.demo_num}...')):
+                            state_pickle_path = os.path.join(self.storage_path, f'{state_idx + 1}')
+                            store_pickle_data(state_pickle_path, state)
 
-                            # start robot move
-                            self.stop_publisher.publish(bool_false_msg)
+                        states = []
+                        state_cnt = 0
+                        self.demo_num += 1
+                        self.storage_path = os.path.join(self.storage_root, f'demonstration_{self.demo_num}')
 
-                            break
+                        # reset
+                        self.reset_publisher.publish(bool_true_msg)
 
-                        elif input_cmd == 'd':
-                            # remove the last data
-                            shutil.rmtree(self.storage_path)
-                            cprint(f"Removing the last data at {self.storage_path}", 'red')
-                            self.demo_num -= 1
-                            continue
+                        wait_reset_start = time.time()
+                        while True:
+                            if self.reset_done:
+                                self.reset_publisher.publish(bool_false_msg)
+                                # start robot move
+                                self.stop_publisher.publish(bool_false_msg)
+                                self.reset_done = False
+                                break
+                            if time.time() - wait_reset_start > reset_timeout:
+                                cprint(f"Reset failed after {reset_timeout} s. Turn to the next demo.")
+                                break
 
-                        elif input_cmd == 'r':
-                            # reset the robot
-                            cprint(f"Resetting the robot...", 'blue')
-                            self.reset_publisher.publish(bool_true_msg)
-                            rospy.sleep(1)
-                            continue
+                    elif input_cmd == 'r':
+                        # reset the robot
+                        cprint(f"Resetting the robot...", 'blue')
+                        states = []
+                        state_cnt = 0
+                        # reset
+                        self.reset_publisher.publish(bool_true_msg)
+                        
+                        while True:
+                            if self.reset_done:
+                                self.reset_publisher.publish(bool_false_msg)
+                                # start robot move
+                                self.stop_publisher.publish(bool_false_msg)
+                                self.reset_done = False
+                                break
+                            if time.time() - wait_reset_start > reset_timeout:
+                                cprint(f"Reset failed after {reset_timeout} s. Turn to the next demo.")
+                                break
 
-                        elif input_cmd == 'q':
-                            # quit the program
-                            cprint(f'Finished recording! Sucessfully record {self.demo_start_idx} ~ {self.demo_num} traj! Data can be found in {self.storage_root}', 'green')
-                            self.end_publisher.publish(bool_true_msg)
-                            sys.exit(0)
+                    elif input_cmd == 'q':
+                        # quit the program
+                        cprint(f'Finished recording! Data can be found in {self.storage_root}', 'green')
+                        self.end_publisher.publish(bool_true_msg)
+                        sys.exit(0)
 
-                        elif input_cmd == 'x':
-                            # stop the robot move
-                            cprint(f"Stop the robot move...", 'red')
-                            self.stop_publisher.publish(bool_true_msg)
-                            continue
-
-                        else:
-
-                            cprint(f'Invalid command {input_cmd}!', 'red')
+                    else:
+                        cprint(f'Invalid command {input_cmd}!', 'red')
                 
         except KeyboardInterrupt:
             cprint('Finished recording! Data can be found in {}'.format(self.storage_path), 'green')

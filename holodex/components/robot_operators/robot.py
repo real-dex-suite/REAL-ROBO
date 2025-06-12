@@ -86,10 +86,6 @@ class RobotController(object):
         else:
             self.hand = None
         self.teleop = teleop
-        # self.home = home
-        # if self.home is True:
-        #     self.home_robot()
-        # self.home_robot()
 
     def home_robot(self):
         if self.arm_type is not None:

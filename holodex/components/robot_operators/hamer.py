@@ -119,37 +119,6 @@ class HamerDexArmTeleOp(object):
             queue_size=1,
         )
 
-        rospy.Subscriber(
-            "/data_collector/reset_done",
-            Bool,
-            self._callback_reset_done,
-            queue_size=1,
-        )
-
-        rospy.Subscriber(
-            "/data_collector/reset_robot",
-            Bool,
-            self._callback_reset_robot,
-            queue_size=1,
-        )
-
-        self.stop_move = False
-        rospy.Subscriber(
-            "/data_collector/stop_move",
-            Bool,
-            self._callback_stop_move,
-            queue_size=1,
-        )
-
-        self.end_robot = False
-        rospy.Subscriber(
-            "/data_collector/end_robot",
-            Bool,
-            self._callback_end_robot,
-            queue_size=1,
-        )
-
-
         # Initializing the robot controller
         self.robot = RobotController(teleop=True, simulator=simulator, arm_type=arm_type)
         
@@ -259,20 +228,20 @@ class HamerDexArmTeleOp(object):
 
         return desired_joint_angles
 
-    def _callback_end_robot(self, msg):
-        self.end_robot = msg.data
+    # def _callback_end_robot(self, msg):
+    #     self.end_robot = msg.data
 
-    def _callback_stop_move(self, msg):
-        self.stop_move = msg.data
+    # def _callback_stop_move(self, msg):
+    #     self.stop_move = msg.data
 
-    def _callback_reset_robot(self, msg):
-        if msg.data: self.robot.home_robot()
+    # def _callback_reset_robot(self, msg):
+    #     if msg.data: self.robot.home_robot()
 
-    def _callback_reset_done(self, msg):
-        self.robot.home_robot()
-        if msg.data:
-            if self.arm_type is not None:
-                self._calibrate_arm_bounds()
+    # def _callback_reset_done(self, msg):
+    #     self.robot.home_robot()
+    #     if msg.data:
+    #         if self.arm_type is not None:
+    #             self._calibrate_arm_bounds()
 
     # Low-pass filter function to smooth translation values
     def _low_pass_filter(self, new_value, state, alpha=0.4):
@@ -625,10 +594,6 @@ class HamerDexArmTeleOp(object):
                 #                            |         |         |         |         |         |
                 #                            v         v         v         v         v         v
                 # Desired_joint_angles   [_______] [_______] [_______] [_______] [_______] [_______] + [hand]
-                if self.stop_move:
-                    continue
-                if self.end_robot:
-                    break
 
                 desired_joint_angles = self.motion(finger_configs)
                 if SPACE_MOUSE_CONTROL:

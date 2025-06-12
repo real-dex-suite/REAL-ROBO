@@ -5,6 +5,8 @@ from geometry_msgs.msg import Pose
 from holodex.utils.files import *
 from holodex.utils.vec_ops import coord_in_bound, best_fit_transform, normalize_vector
 from holodex.constants import *
+from holodex.components.robot_operators.collector_state_manager import CollectorStateManager
+
 from copy import deepcopy as copy
 from scipy.spatial.transform import Rotation as R
 from termcolor import cprint
@@ -81,6 +83,7 @@ class PICODexArmTeleOp:
 
         # Initialize robot controller
         self.robot = RobotController(teleop=True, simulator=simulator, gripper=gripper, arm_type=arm_type, gripper_init_state=gripper_init_state)
+        self.collector_state_manager = CollectorStateManager()
         self.init_arm_ee_pose = self._get_tcp_position()
         self.init_arm_ee_to_world = np.eye(4)
         self.init_arm_ee_to_world[:3, 3] = self.init_arm_ee_pose[:3]
@@ -91,10 +94,6 @@ class PICODexArmTeleOp:
     def _setup_subscribers(self):
         """Set up all ROS subscribers"""
         topics_callbacks = [
-            ("/data_collector/reset_done", Bool, self._callback_reset_done),
-            ("/data_collector/reset_robot", Bool, self._callback_reset_robot),
-            ("/data_collector/stop_move", Bool, self._callback_stop_move),
-            ("/data_collector/end_robot", Bool, self._callback_end_robot),
             ("vr/gripper", Float64, self._callback_gripper),
             ("vr/ee_pose", Pose, self._callback_ee_pose),
         ]
@@ -118,56 +117,35 @@ class PICODexArmTeleOp:
             This is based on the assumption that the VR end-effector pose is in the left hand coordinate system.
             Please modify the callback function if the VR end-effector pose is in a different coordinate system.
         """
-        pos = np.array([
-            pose.position.x,
-            pose.position.y,
-            pose.position.z
-        ])
-        
-        # 转换四元数为旋转矩阵
-        quat = [
-            pose.orientation.w,
-            pose.orientation.x,
-            pose.orientation.y,
-            pose.orientation.z
-        ]
+        if pose is not None:
+            pos = np.array([
+                pose.position.x,
+                pose.position.y,
+                pose.position.z
+            ])
             
-        rot = quat2mat(quat)
-        transmat = np.zeros((4,4))
-        transmat[:3, :3] = rot
-        transmat[:3, 3] = pos
-        transmat = swap_y_z_axis(transmat)
-        transmat = rfu_to_flu(transmat)
-        rot = transmat[:3, :3]
-        pos = transmat[:3, 3]
-        rot = mat2quat(rot)
-        self.joystick_pose = np.concatenate([pos, rot], axis=0)
+            # 转换四元数为旋转矩阵
+            quat = [
+                pose.orientation.w,
+                pose.orientation.x,
+                pose.orientation.y,
+                pose.orientation.z
+            ]
+                
+            rot = quat2mat(quat)
+            transmat = np.zeros((4,4))
+            transmat[:3, :3] = rot
+            transmat[:3, 3] = pos
+            transmat = swap_y_z_axis(transmat)
+            transmat = rfu_to_flu(transmat)
+            rot = transmat[:3, :3]
+            pos = transmat[:3, 3]
+            rot = mat2quat(rot)
+            self.joystick_pose = np.concatenate([pos, rot], axis=0)
 
     def _callback_gripper(self, data):
         """Callback function to update gripper from VR data"""
         self.gripper_control = np.array(data.data)
-
-    def _callback_end_robot(self, msg):
-        """Callback function to set end_robot flag"""
-        self.end_robot = msg.data
-
-    def _callback_stop_move(self, msg):
-        """Callback function to set stop_move flag"""
-        self.stop_move = msg.data
-
-    def _callback_reset_robot(self, msg):
-        """Callback function to reset robot position"""
-        if self.robot.arm.with_gripper:
-            self.robot.move(np.concatenate([self.init_arm_ee_pose, np.expand_dims(self.robot.arm.gripper_init_state == "close", axis=0)]))
-        else:
-            self.robot.move(np.concatenate([self.init_arm_ee_pose]))
-        
-    def _callback_reset_done(self, msg):
-        """Callback function to handle reset done event"""
-        if self.robot.arm.with_gripper:
-            self.robot.move(np.concatenate([self.init_arm_ee_pose, np.expand_dims(self.robot.arm.gripper_init_state == "close", axis=0)]))
-        else:
-            self.robot.move(np.concatenate([self.init_arm_ee_pose]))
 
     def _retarget_base(self):
         """Retarget the base position of the robot arm"""
@@ -184,14 +162,16 @@ class PICODexArmTeleOp:
         print("Start controlling the robot hand using the PICO VR.\n")
 
         while True:
-            if self.joystick_pose is not None:
-                if self.stop_move:
-                    continue
-                if self.end_robot:
-                    break
-                # Generate desired joint angles based on current joystick pose
-                desired_cmd = self._retarget_base()
-                if self.robot.arm.with_gripper:
-                    self.robot.move(np.concatenate([desired_cmd, np.expand_dims(self.gripper_control, axis=0)]))
-                else:
-                    self.robot.move(desired_cmd)
+            if self.collector_state_manager.stop_move:
+                continue
+            if self.collector_state_manager.end_robot:
+                break
+            if self.collector_state_manager.reset_robot:
+                self.robot.home_robot()
+                    
+            # Generate desired joint angles based on current joystick pose
+            desired_cmd = self._retarget_base()
+            if self.robot.arm.with_gripper:
+                self.robot.move(np.concatenate([desired_cmd, np.expand_dims(self.gripper_control, axis=0)]))
+            else:
+                self.robot.move(desired_cmd)
