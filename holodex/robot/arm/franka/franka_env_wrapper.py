@@ -15,6 +15,7 @@ try:
     )
     from franka_interface_msgs.msg import RobotState
     from sensor_msgs.msg import JointState
+    from std_msgs.msg import Bool
 except:
     rospy.logwarn("frankapy not loaded! Please check whether we are doing teleop in simulation.")
 try:
@@ -149,6 +150,9 @@ class FrankaEnvWrapper:
         self.command_ee_pose_publisher = FloatArrayPublisher(
             publisher_name="/franka/commanded_ee_pose"
         )
+        self.gripper_publisher = rospy.Publisher(
+            "/franka/gripper_control", Bool, queue_size=1
+        )
 
     def _initialize_state(self):
         """Initialize robot state variables."""
@@ -213,7 +217,10 @@ class FrankaEnvWrapper:
             trans = current_ee_pose.translation
             rot_quat = current_ee_pose.quaternion
         return np.concatenate([trans, rot_quat])
-
+    
+    def get_gripper_position(self):
+        return 1.0 if self._gripper_state == "close" else 0.0
+    
     def solve_ik(self, ee_pose: list) -> list:
         """
         Solve inverse kinematics.
@@ -245,7 +252,7 @@ class FrankaEnvWrapper:
         if self.gripper == "panda":
             self.gripper_wrapper.open_gripper(block=block, skill_desc="OpenGripper")
         elif self.gripper == "ctek":
-            self.gripper_wrapper.open_gripper(block=block)
+            self.gripper_wrapper.open_gripper(block=False)
         else:
             pass
         self._gripper_state = 'open'
@@ -255,7 +262,7 @@ class FrankaEnvWrapper:
         if self.gripper == "panda":
             self.gripper_wrapper.close_gripper(grasp=True, block=block, skill_desc="CloseGripper")
         elif self.gripper == "ctek":
-            self.gripper_wrapper.close_gripper(block=block)
+            self.gripper_wrapper.close_gripper(block=False)
         else:
             pass
         self._gripper_state = 'close'
@@ -299,6 +306,8 @@ class FrankaEnvWrapper:
             self.command_ee_pose_publisher.publish(target_ee)
         if target_joint is not None:
             self.command_joint_state_publisher.publish(target_joint)
+        if self.with_gripper:
+            self.gripper_publisher.publish(bool(self.get_gripper_position()))
 
     def move_gripper(self, gripper_cmd: bool = True):
         """
@@ -351,22 +360,6 @@ class FrankaEnvWrapper:
             rate.sleep()
         if self.with_gripper:
             self.open_gripper()
-
-    def shutdown(self):
-        """
-        Clean shutdown of robot controller.
-
-        Returns:
-            None
-        """
-        # TODO: shutdown the robot
-        pass
-
-    def reset(self):
-        """
-        This function is used to reset the robot to the home position from the frankapy.
-        """
-        self.arm.reset_joints()
 
 if __name__ == "__main__":
     try:

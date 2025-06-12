@@ -93,12 +93,6 @@ class RobotController(object):
         if HAND_TYPE is not None:
             self.hand.home_robot()
 
-    def reset_robot(self):
-        if self.arm_type is not None:
-            self.arm.reset()
-        if HAND_TYPE is not None:
-            self.hand.reset()
-
     def get_arm_position(self):
         return self.arm.get_arm_position()
 
