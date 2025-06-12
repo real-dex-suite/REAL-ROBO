@@ -13,6 +13,8 @@ try:
         PosePositionSensorMessage,
         CartesianImpedanceSensorMessage,
     )
+    from franka_interface_msgs.msg import RobotState
+    from sensor_msgs.msg import JointState
 except:
     rospy.logwarn("frankapy not loaded! Please check whether we are doing teleop in simulation.")
 try:
@@ -21,6 +23,7 @@ except:
     from kinematics_solver import FrankaSolver
 from scipy.spatial.transform import Rotation as R
 from termcolor import cprint
+from holodex.utils.network import JointStatePublisher, FloatArrayPublisher
 class FrankaEnvWrapper:
     """
     Wrapper class for controlling Franka robot arm.
@@ -79,10 +82,11 @@ class FrankaEnvWrapper:
                 f"Unsupported control mode: '{control_mode}'. "
                 "Supported modes are 'joint' or 'cartesian'."
             )
-
-        self.cmd_pub = rospy.Publisher(
-            FC.DEFAULT_SENSOR_PUBLISHER_TOPIC, SensorDataGroup, queue_size=1000
-        )
+        
+        self._setup_franka_state_collection()
+        self._setup_gripper_state_collection()
+        self._setup_data_collection_publisher()
+        self._setup_franka_command_publisher()
 
         self._fa_cmd_id = 0
         self._init_time = rospy.Time.now().to_time()
@@ -95,6 +99,55 @@ class FrankaEnvWrapper:
             self.close_gripper()
         else:
             raise NotImplementedError(f"Unknown gripper_init_state {gripper_init_state}")
+        
+        self.robot_state = None
+        if self.with_gripper and gripper == "panda":
+            self.gripper_state = None
+
+    def _callback_robot_state(self, data):
+        """Callback for robot state"""
+        self.robot_state = data
+
+    def _callback_gripper_state(self, data):
+        """Callback for gripper state"""
+        self.gripper_state = data
+
+    def _setup_franka_command_publisher(self):
+        self.cmd_pub = rospy.Publisher(
+            FC.DEFAULT_SENSOR_PUBLISHER_TOPIC, SensorDataGroup, queue_size=1000
+        )
+
+    def _setup_franka_state_collection(self):
+        """Set up franka state collection"""
+        rospy.Subscriber(
+            "/robot_state_publisher_node_1/robot_state",
+            RobotState,
+            self._callback_robot_state,
+            queue_size=1,
+        )
+
+    def _setup_gripper_state_collection(self):
+        """Set up gripper state collection"""
+        rospy.Subscriber(
+            "/franka_gripper_1/joint_states",
+            JointState,
+            self._callback_gripper_state,
+            queue_size=1,
+        )
+
+    def _setup_data_collection_publisher(self):
+        self.arm_joint_state_publisher = JointStatePublisher(
+            publisher_name="/franka/joint_states"
+        )
+        self.arm_ee_pose_publisher = FloatArrayPublisher(
+            publisher_name="/franka/ee_pose"
+        )
+        self.command_joint_state_publisher = JointStatePublisher(
+            publisher_name="/franka/commanded_joint_states"
+        )
+        self.command_ee_pose_publisher = FloatArrayPublisher(
+            publisher_name="/franka/commanded_ee_pose"
+        )
 
     def _initialize_state(self):
         """Initialize robot state variables."""
@@ -229,8 +282,21 @@ class FrankaEnvWrapper:
             None
         """
         target_joint = self.solve_ik(target_ee)
+        self.publish_state(target_ee, target_joint)
         self.move_joint(target_joint)
-        
+
+    def publish_state(self, target_ee=None, target_joint=None):
+        arm_joint_positions = self.get_arm_position()
+        arm_ee_pose = self.get_tcp_position()
+        if arm_joint_positions is not None:
+            self.arm_joint_state_publisher.publish(arm_joint_positions)
+        if arm_ee_pose is not None:
+            self.arm_ee_pose_publisher.publish(arm_ee_pose)
+        if target_ee is not None:
+            self.command_ee_pose_publisher.publish(target_ee)
+        if target_joint is not None:
+            self.command_joint_state_publisher.publish(target_joint)
+
     def move_gripper(self, gripper_cmd: bool = True):
         """
         Control gripper for teleoperation with binary open/close command.
@@ -304,6 +370,11 @@ if __name__ == "__main__":
         controller = FrankaEnvWrapper()
         # controller.run()
         # TODO: run the robot, and test at local side
+
+        from tqdm import tqdm
+        for _ in tqdm(range(10000)):
+            solved_pose = controller.ik_solver.compute_fk(np.zeros((7,)))
+
         i = 1
         while i < 100:
             target_pose = controller.get_tcp_position()

@@ -217,7 +217,10 @@ def get_teleop_process(teleop_configs):
         teleop_process = Process(target = pico_teleop, args = (teleop_configs, ))
     elif teleop_configs.tracker.type == 'KB': # Keyboard
         teleop_process = Process(target = kb_teleop, args = (teleop_configs, ), daemon=False)
-
+    elif teleop_configs.tracker.type == 'DUMMY':
+        teleop_process = None
+    else:
+        raise NotImplementedError(f"Unknown tracker {teleop_configs.tracker.type}")
     return teleop_process
 
 def start_tactile_visualizer():

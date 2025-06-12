@@ -9,25 +9,18 @@ from std_msgs.msg import Bool
 
 from holodex.utils.files import *
 from holodex.constants import *
-from holodex.utils.network import ImageSubscriber, frequency_timer, Float64MultiArray, TactileSubscriber
-from holodex.tactile.utils import fetch_paxini_info
+from holodex.utils.network import ImageSubscriber, frequency_timer, Float64MultiArray
 from termcolor import cprint
 from pynput import keyboard
-
+from franka_interface_msgs.msg import RobotState
 
 def clear_input_buffer():
     termios.tcflush(sys.stdin, termios.TCIFLUSH)
 
 
-# load module according to hand type
-hand_module = __import__("holodex.robot.hand")
-Hand_module_name = f'{HAND_TYPE}Hand' if HAND_TYPE is not None else None
-Hand = getattr(hand_module.robot, Hand_module_name) if HAND_TYPE is not None else None
-
-class AutoDataCollector(object):
+class AutoFrankaCollector(object):
     def __init__(
         self,
-        num_tactiles,
         num_cams,
         keyboard_control,
         storage_root,
@@ -41,17 +34,8 @@ class AutoDataCollector(object):
         self.storage_root = storage_root
         self.demo_start_idx = int(demo_num)
         self.demo_num = int(demo_num)
-        self.num_tactiles = num_tactiles
         self.storage_path = os.path.join(self.storage_root, f'demonstration_{self.demo_num}')
-        if self.num_tactiles > 0:
-            self.tactile_info, _, _, self.sensor_per_board = fetch_paxini_info()
-        self.tactile_subscribers = []
-        for tactile_num in range(self.num_tactiles):
-            self.tactile_subscribers.append(
-                TactileSubscriber(
-                    tactile_num = tactile_num + 1
-                )
-            )
+
 
         # ROS Subscribers based on the number of cameras used
         self.num_cams = num_cams
@@ -72,40 +56,15 @@ class AutoDataCollector(object):
                 )
             )
 
-        # Hand controller initialization
-        self.hand = Hand() if HAND_TYPE is not None else None
-
         # keyboard cmd
         self.keyboard_listener = keyboard.Listener(on_press=self._on_press)
         self.keyboard_listener.start()
-      
+
         self.keyboard_control = keyboard_control
 
-        if 'arm_ee_pose' in data_collection_type:
-            self.arm_ee_pose = None
-            # Keyboard control subscriber
-            if self.keyboard_control:
-                self.hand_commanded_joint_position = None
-                rospy.Subscriber(KEYBOARD_EE_TOPIC, Float64MultiArray, self._callback_keyboard_control_ee, queue_size = 1)
-                rospy.Subscriber(KEYBOARD_HAND_TOPIC, Float64MultiArray, self._callback_keyboard_control_hand, queue_size = 1)
-            else:
-                rospy.Subscriber(JAKA_EE_POSE_TOPIC, Float64MultiArray, self._callback_arm_ee_pose, queue_size = 1)
-
-        if 'arm_commanded_ee_pose' in data_collection_type:
-            self.arm_commanded_ee_pose = None
-            rospy.Subscriber(JAKA_COMMANDED_EE_POSE_TOPIC, Float64MultiArray, self._callback_arm_commanded_ee_pose, queue_size = 1)
-
-        if 'arm_joint_positions' in data_collection_type:
-            self.arm_joint_state = None
-            rospy.Subscriber(JAKA_JOINT_STATE_TOPIC, JointState, self._callback_arm_joint_state, queue_size = 1)
-
-        if 'arm_commanded_joint_state' in data_collection_type:
-            self.arm_commanded_joint_state = None
-            rospy.Subscriber(JAKA_COMMANDED_JOINT_STATE_TOPIC, JointState, self._callback_arm_commanded_joint_state, queue_size = 1)
-        
         # Frequency timer
         self.frequency_timer = frequency_timer(RECORD_FPS)
-
+        self._setup_franka_state_collection()
         # ros publish for reset
         self.stop = False
         self.reset_publisher = rospy.Publisher("/data_collector/reset_robot", Bool, queue_size=1)
@@ -113,6 +72,14 @@ class AutoDataCollector(object):
         self.hamer_recalib_publisher = rospy.Publisher("/data_collector/reset_done", Bool, queue_size=1)
         self.end_publisher = rospy.Publisher("/data_collector/end_robot", Bool, queue_size=1)
 
+    def _setup_franka_state_collection(self):
+        """Set up franka state collection"""
+        rospy.Subscriber(
+            self.franka_state_topic,
+            RobotState,
+            self._callback_robot_state,
+            queue_size=1,
+        )
 
     def _on_press(self, key):
         try:
@@ -127,46 +94,17 @@ class AutoDataCollector(object):
     def _callback_keyboard_control_ee(self, data):
         self.arm_ee_pose = data
 
-    def _callback_keyboard_control_hand(self, data):
-        self.hand_commanded_joint_position = data
-
-    def _callback_arm_commanded_ee_pose(self, data):
-        self.arm_commanded_ee_pose = data
-
-    def _callback_arm_joint_state(self, data):
-        self.arm_joint_state = data
     
-    def _callback_arm_commanded_joint_state(self, data):
-        self.arm_commanded_joint_state = data
-    
-    def _callback_arm_ee_pose(self, data):
-        self.arm_ee_pose = data
-
     def extract(self, offset = 0):
         counter = offset + 1
         try:
             while True:
                 skip_loop = False
 
-                # Checking for broken data streams
-                for tactile_subscriber in self.tactile_subscribers:
-                    if tactile_subscriber.get_data() is None:
-                        cprint('Tactile data not available!', 'red')
-                        skip_loop = True
 
-                if self.hand is not None and self.hand.get_hand_position() is None:
-                    cprint('Hand data not available!', 'red')
-                    skip_loop = True
-                
-                
-                # if self.arm_joint_state is None or self.arm_ee_pose is None or self.arm_commanded_joint_state is None:
+                # if self.arm_joint_state is None or self.arm_ee_pose is None:
                 #     cprint('Arm data not available!', 'red')
                 #     skip_loop = True
-
-                # TODO: fix this
-                if self.arm_joint_state is None or self.arm_ee_pose is None:
-                    cprint('Arm data not available!', 'red')
-                    skip_loop = True
 
                 for color_image_subscriber in self.color_image_subscribers:
                     if color_image_subscriber.get_image() is None:

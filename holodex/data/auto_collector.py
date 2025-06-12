@@ -9,22 +9,28 @@ from std_msgs.msg import Bool
 
 from holodex.utils.files import *
 from holodex.constants import *
-from holodex.utils.network import ImageSubscriber, frequency_timer, Float64MultiArray
+from holodex.utils.network import ImageSubscriber, frequency_timer, Float64MultiArray, TactileSubscriber
+from holodex.tactile.utils import fetch_paxini_info
 from termcolor import cprint
 from pynput import keyboard
-from franka_interface_msgs.msg import RobotState
 
 def clear_input_buffer():
     termios.tcflush(sys.stdin, termios.TCIFLUSH)
 
+if HAND_TYPE is not None:
+    # load module according to hand type
+    hand_module = __import__("holodex.robot.hand")
+    Hand_module_name = f'{HAND_TYPE}Hand'
+    Hand = getattr(hand_module.robot, Hand_module_name)
 
-class AutoFrankaCollector(object):
+class AutoDataCollector(object):
     def __init__(
         self,
+        num_tactiles,
         num_cams,
-        keyboard_control,
         storage_root,
-        data_collection_type,
+        arm_type="franka",
+        gripper="ctek",
     ):
         rospy.init_node('data_extractor', disable_signals = True)
 
@@ -34,13 +40,23 @@ class AutoFrankaCollector(object):
         self.storage_root = storage_root
         self.demo_start_idx = int(demo_num)
         self.demo_num = int(demo_num)
+        self.num_tactiles = num_tactiles
         self.storage_path = os.path.join(self.storage_root, f'demonstration_{self.demo_num}')
-
+        if self.num_tactiles > 0:
+            self.tactile_info, _, _, self.sensor_per_board = fetch_paxini_info()
+        self.tactile_subscribers = []
+        for tactile_num in range(self.num_tactiles):
+            self.tactile_subscribers.append(
+                TactileSubscriber(
+                    tactile_num = tactile_num + 1
+                )
+            )
 
         # ROS Subscribers based on the number of cameras used
         self.num_cams = num_cams
 
         self.color_image_subscribers, self.depth_image_subscribers = [], []
+
         for cam_num in range(self.num_cams):
             self.color_image_subscribers.append(
                 ImageSubscriber(
@@ -56,31 +72,81 @@ class AutoFrankaCollector(object):
                 )
             )
 
+        self.with_gripper = gripper is not None
+        self.gripper = gripper
+        # arm collector initialization
+        if self.arm_type == "flexiv":
+            self.data_collection_topic_type = "jaka"
+        elif self.arm_type == "franka":
+            self.data_collection_topic_type = "franka"
+        elif self.arm_type == "jaka":
+            self.data_collection_topic_type = "jaka"
+        else:
+            raise NotImplementedError(f"Unknown arm type {arm_type}")
+   
+        # Hand controller initialization
+        self.hand = Hand() if HAND_TYPE is not None else None
+
         # keyboard cmd
         self.keyboard_listener = keyboard.Listener(on_press=self._on_press)
         self.keyboard_listener.start()
-
-        self.keyboard_control = keyboard_control
-
+      
         # Frequency timer
         self.frequency_timer = frequency_timer(RECORD_FPS)
-        self._setup_franka_state_collection()
+
         # ros publish for reset
         self.stop = False
         self.reset_publisher = rospy.Publisher("/data_collector/reset_robot", Bool, queue_size=1)
         self.stop_publisher = rospy.Publisher("/data_collector/stop_move", Bool, queue_size=1)   
-        self.hamer_recalib_publisher = rospy.Publisher("/data_collector/reset_done", Bool, queue_size=1)
+        self.reset_done_publisher = rospy.Publisher("/data_collector/reset_done", Bool, queue_size=1)
         self.end_publisher = rospy.Publisher("/data_collector/end_robot", Bool, queue_size=1)
 
-    def _setup_franka_state_collection(self):
-        """Set up franka state collection"""
-        rospy.Subscriber(
-            self.franka_state_topic,
-            RobotState,
-            self._callback_robot_state,
-            queue_size=1,
-        )
+    def _setup_state_collection(self):
+        self.arm_ee_pose = None
+        rospy.Subscriber(f"/{self.data_collection_topic_type}/ee_pose", Float64MultiArray, self._callback_arm_ee_pose, queue_size = 1)
 
+        self.arm_commanded_ee_pose = None
+        rospy.Subscriber(f"/{self.data_collection_topic_type}/commanded_ee_pose", Float64MultiArray, self._callback_arm_commanded_ee_pose, queue_size = 1)
+
+        self.arm_joint_state = None
+        rospy.Subscriber(f"/{self.data_collection_topic_type}/joint_states", JointState, self._callback_arm_joint_state, queue_size = 1)
+
+        self.arm_commanded_joint_state = None
+        rospy.Subscriber(f"/{self.data_collection_topic_type}/commanded_joint_states", JointState, self._callback_arm_commanded_joint_state, queue_size = 1)
+    
+    def _callback_arm_commanded_ee_pose(self, data):
+        self.arm_commanded_ee_pose = data
+
+    def _callback_arm_joint_state(self, data):
+        self.arm_joint_state = data
+    
+    def _callback_arm_commanded_joint_state(self, data):
+        self.arm_commanded_joint_state = data
+    
+    def _callback_arm_ee_pose(self, data):
+        self.arm_ee_pose = data
+
+    def _collect_state_data(self):
+        """
+        Collect all state data into a dictionary
+
+        Returns:
+            dict: Dictionary containing all collected state data
+        """
+        state = {}
+
+        # Add arm data directly to state for compatibility with other collectors
+        if self.arm_joint_state is not None:
+            state['arm_joint_positions'] = self.arm_joint_state.position
+        if self.arm_commanded_joint_state is not None:
+            state['arm_commanded_joint_position'] = self.arm_commanded_joint_state.position
+        if self.arm_ee_pose is not None:
+            state['arm_ee_pose'] = self.arm_ee_pose.data
+        if self.arm_commanded_ee_pose is not None:
+            state['arm_commanded_ee_pose'] = self.arm_commanded_ee_pose.data
+
+        return state
+    
     def _on_press(self, key):
         try:
             if not self.stop: 
@@ -91,20 +157,29 @@ class AutoFrankaCollector(object):
             # print(f"Special key {key} pressed")
             pass
    
-    def _callback_keyboard_control_ee(self, data):
-        self.arm_ee_pose = data
-
-    
-    def extract(self, offset = 0):
-        counter = offset + 1
+    def extract(self):
+        counter = 1
         try:
             while True:
+                if not self.keyboard_listener.is_alive():
+                    self.keyboard_listener = keyboard.Listener(on_press=self._on_press)
+                    self.keyboard_listener.start()
                 skip_loop = False
 
+                # Checking for broken data streams
+                for tactile_subscriber in self.tactile_subscribers:
+                    if tactile_subscriber.get_data() is None:
+                        cprint('Tactile data not available!', 'red')
+                        skip_loop = True
 
-                # if self.arm_joint_state is None or self.arm_ee_pose is None:
-                #     cprint('Arm data not available!', 'red')
-                #     skip_loop = True
+                if self.hand is not None and self.hand.get_hand_position() is None:
+                    cprint('Hand data not available!', 'red')
+                    skip_loop = True
+
+                # TODO: fix this
+                if self.arm_collector.arm_joint_state is None or self.arm_collector.arm_ee_pose is None:
+                    cprint('Arm data not available!', 'red')
+                    skip_loop = True
 
                 for color_image_subscriber in self.color_image_subscribers:
                     if color_image_subscriber.get_image() is None:
@@ -124,30 +199,16 @@ class AutoFrankaCollector(object):
                 cprint(f'Valid Data at {time.time()}', 'green', 'on_black', attrs=['bold'])
                 state = dict()
 
+                # Arm data
+                arm_state = self._collect_state_data()
+                state.update(arm_state)
+
                 # Hand data
                 if self.hand is not None:
                     state['hand_joint_positions'] = self.hand.get_hand_position() # follow orignal joint order, first mcp-pip, then palm-mcp
                     state['hand_joint_velocity'] = self.hand.get_hand_velocity()
                     state['hand_joint_effort'] = self.hand.get_hand_torque()
-                
-                if self.keyboard_control:
-                    if self.hand_commanded_joint_position is not None:
-                        state['hand_commanded_joint_position'] = self.hand_commanded_joint_position.data
-                else:
                     state['hand_commanded_joint_position'] = self.hand.get_commanded_joint_position()
-
-                # Arm data
-                if getattr(self, 'arm_joint_state', None) is not None:
-                    state['arm_joint_positions'] = self.arm_joint_state.position
-                
-                if getattr(self, 'arm_commanded_joint_state', None) is not None:
-                    state['arm_commanded_joint_position'] = self.arm_commanded_joint_state.position
-
-                if getattr(self, 'arm_ee_pose', None) is not None:
-                    state['arm_ee_pose'] = self.arm_ee_pose.data
-
-                if getattr(self, 'arm_commanded_ee_pose', None) is not None:
-                    state['arm_commanded_ee_pose'] = self.arm_commanded_ee_pose.data
 
                 #TODO: Arm Effort, Velocity
 
@@ -165,7 +226,7 @@ class AutoFrankaCollector(object):
                 state['tactile_data'] = tactile_data
 
                 # Temporal information
-                state['time'] = time.time()
+                state['time'] = rospy.Time.now().to_time()
 
                 # Saving the pickle file save path
                 # # TODO: add delete functionality
@@ -175,11 +236,6 @@ class AutoFrankaCollector(object):
                 store_pickle_data(state_pickle_path, state)
 
                 counter += 1
-                # reset
-                if self.keyboard_control:
-                    self.arm_ee_pose = None
-                    self.hand_commanded_joint_position = None
-
                 self.frequency_timer.sleep()
 
                 #################################################### 
@@ -208,7 +264,7 @@ class AutoFrankaCollector(object):
                             counter = 1
                             self.demo_num += 1
                             self.storage_path = os.path.join(self.storage_root, f'demonstration_{self.demo_num}')
-                            self.hamer_recalib_publisher.publish(bool_true_msg)
+                            self.reset_done_publisher.publish(bool_true_msg)
                             cprint(f"Start recording at {self.storage_path}", 'green')
 
                             # reset

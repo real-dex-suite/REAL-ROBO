@@ -1,5 +1,6 @@
 defaults:
   - _self_
+  - teleop_real_franka_ctek_pico
   - override hydra/hydra_logging: disabled  
   - override hydra/job_logging: disabled  
 
@@ -8,18 +9,3 @@ demo_num: 1
 
 # data paths
 storage_path: 'expert_dataset/recorded_data/'
-
-# Number of tactile sensor board
-num_tactiles: 0
-
-# Number of view images 
-num_cams: 1
-
-# State Offset
-offset: 0
-
-# Keyboard Control
-keyboard_control: False
-
-# data collection type
-data_collection_type: ['arm_ee_pose', 'arm_joint_positions', 'arm_commanded_ee_pose']

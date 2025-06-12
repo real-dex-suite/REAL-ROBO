@@ -2,23 +2,32 @@ import os
 import hydra
 from holodex.data import AutoDataCollector
 from holodex.utils.files import make_dir
+from datetime import datetime
+from termcolor import cprint
 
 @hydra.main(version_base = '1.2', config_path='../../configs', config_name='demo_record')
 def main(configs):
-    demo_path = os.path.join(os.getcwd(), configs['storage_path'])
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    demo_path = os.path.join(os.getcwd(), configs['storage_path'], timestamp)
     make_dir(demo_path)
 
+    cam_serial_numbers = configs.get("robot_cam_serial_numbers", None)
+    num_cams = len(cam_serial_numbers) if cam_serial_numbers is not None else 0
+    
+    tactile_serial_numbers = configs.get("serial_port_number", None)
+    num_tactiles = len(tactile_serial_numbers) if tactile_serial_numbers is not None else 0
+    
     collector = AutoDataCollector(
-        num_tactiles= configs['num_tactiles'] ,
-        num_cams = configs['num_cams'], 
-        keyboard_control = configs['keyboard_control'], 
+        num_tactiles=num_tactiles,
+        num_cams=num_cams,
         storage_root = demo_path,
-        data_collection_type = configs['data_collection_type'],
+        arm_type = configs["arm"],
+        gripper = configs["gripper"],
+        
     )
 
-    print(f'Recording data for demonstration: {configs.demo_num} with offset: {configs.offset}.')
-    print(f'Storing the demonstration data in {demo_path}')
-    collector.extract(offset = configs.offset)
+    cprint(f'Collecting {configs.demo_num} demos in {demo_path}', 'yellow')
+    collector.extract()
 
 if __name__ == '__main__':
     main()

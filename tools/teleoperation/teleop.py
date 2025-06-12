@@ -35,9 +35,10 @@ def main(configs):
     if tactile_visualizer_process is not None:
         tactile_visualizer_process.start()
 
-    time.sleep(2)
-    # Teleop process
-    teleop_process.start()
+    if teleop_process is not None:
+        # Teleop process
+        time.sleep(2)
+        teleop_process.start()
 
     # Joining all the processes
     for process in tactile_processes:
@@ -60,8 +61,9 @@ def main(configs):
         
     if tactile_visualizer_process is not None:
         tactile_visualizer_process.join()
-        
-    teleop_process.join()
+    
+    if teleop_process is not None:
+        teleop_process.join()
 
 
  

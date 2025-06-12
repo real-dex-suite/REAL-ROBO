@@ -118,12 +118,6 @@ class HamerDexArmTeleOp(object):
             self._callback_arm_coords,
             queue_size=1,
         )
-        rospy.Subscriber(
-            JAKA_EE_POSE_TOPIC,
-            Float64MultiArray,
-            self._callback_arm_ee_pose,
-            queue_size=1,
-        )
 
         rospy.Subscriber(
             "/data_collector/reset_done",
@@ -252,9 +246,6 @@ class HamerDexArmTeleOp(object):
         self.arm_coords = np.array(list(coords.data)).reshape(
             HAMER_ARM_NUM_KEYPOINTS, 3
         )
-
-    def _callback_arm_ee_pose(self, data):
-        self.arm_ee_pose = np.array(data.data)
 
     def _retarget_hand(self, finger_configs):
         if RETARGET_TYPE == "dexpilot":

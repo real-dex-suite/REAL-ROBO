@@ -91,7 +91,6 @@ class PICODexArmTeleOp:
     def _setup_subscribers(self):
         """Set up all ROS subscribers"""
         topics_callbacks = [
-            (JAKA_EE_POSE_TOPIC, Float64MultiArray, self._callback_arm_ee_pose),
             ("/data_collector/reset_done", Bool, self._callback_reset_done),
             ("/data_collector/reset_robot", Bool, self._callback_reset_robot),
             ("/data_collector/stop_move", Bool, self._callback_stop_move),
@@ -147,10 +146,6 @@ class PICODexArmTeleOp:
     def _callback_gripper(self, data):
         """Callback function to update gripper from VR data"""
         self.gripper_control = np.array(data.data)
-
-    def _callback_arm_ee_pose(self, data):
-        """Callback function to update arm end-effector pose"""
-        self.arm_ee_pose = np.array(data.data)
 
     def _callback_end_robot(self, msg):
         """Callback function to set end_robot flag"""
