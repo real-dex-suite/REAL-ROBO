@@ -1,4 +1,4 @@
-# Real-Robo
+# Real-Robo Teleoperation (RR-T)
 
 Collecting tele-operation data with Real-Robo!
 
@@ -121,8 +121,12 @@ bash pipelines/teleop_real.sh
 bash pipelines/franka_record.sh
 ```
 
+#### Camera Calibration
+
+Please refer to [Camera Calibration](https://github.com/kingchou007/camera-calibration) for more details.
+
 ## Acknowledgement
 
-Real-Robo mainly borrows [Holo-dex](https://github.com/SridharPandian/Holo-Dex). Thanks for their wonderful job!
+Real-Robo mainly borrows [Holo-dex](https://github.com/SridharPandian/Holo-Dex) framework. Thanks for their wonderful job!
 
 Maintained by Jinzhou Li ([@kingchou007](https://github.com/kingchou007)) and Hongwei Fan ([@hwfan](https://github.com/hwfan)).
