@@ -56,7 +56,7 @@ class RobotController(object):
                     raise NotImplementedError(f"Robot controller under simulator {simulator} is not implemented.")
             else:
                 from holodex.robot.arm.franka.franka_env_wrapper import FrankaEnvWrapper
-                self.arm = FrankaEnvWrapper(control_mode="joint", gripper=gripper, gripper_init_state=gripper_init_state) # modify this 
+                self.arm = FrankaEnvWrapper(control_mode="cartesian", gripper=gripper, gripper_init_state=gripper_init_state) # modify this 
                 cprint("Call FrankaEnvWrapper", "red")
         elif arm_type == "jaka":
             from holodex.robot.arm.jaka.jaka import JakaArm

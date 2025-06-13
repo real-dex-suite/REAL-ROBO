@@ -118,7 +118,7 @@ bash pipelines/teleop_real.sh
 #### Real Data Recording
 
 ```bash
-bash pipelines/franka_record.sh
+bash pipelines/auto_record.sh
 ```
 
 ## Acknowledgement

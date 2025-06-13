@@ -40,7 +40,7 @@ class FrankaEnvWrapper:
     operations while handling the underlying ROS communication and state management.
     """
 
-    def __init__(self, control_mode: str = "joint", teleop: bool = False, gripper="ctek", gripper_init_state="open"):
+    def __init__(self, control_mode: str = "cartesian", teleop: bool = False, gripper="ctek", gripper_init_state="open"):
         """
         Initialize robot arm controller.
 
@@ -92,7 +92,16 @@ class FrankaEnvWrapper:
 
         self._fa_cmd_id = 0
         self._init_time = rospy.Time.now().to_time()
-        self.ik_solver = FrankaSolver(ik_type="motion_gen", ik_sim=not (gripper=="panda"))
+        if control_mode == "joint":
+            self.ik_solver = FrankaSolver(ik_type="motion_gen", ik_sim=not (gripper=="panda"))
+        elif control_mode == "cartesian":
+            self.ik_solver = None
+        else:
+            raise ValueError(
+                f"Unsupported control mode: '{control_mode}'. "
+                "Supported modes are 'joint' or 'cartesian'."
+            )
+        self.control_mode = control_mode
         self.gripper_init_state = gripper_init_state
         self._gripper_state = gripper_init_state
         if gripper_init_state == "open":
@@ -157,6 +166,7 @@ class FrankaEnvWrapper:
     def _initialize_state(self):
         """Initialize robot state variables."""
         self.current_joint_state = self.arm.get_joints()
+        self.current_pose = self.arm.get_pose()
 
     def _initialize_joint_control_config(self):
         """Configure joint control parameters."""
@@ -173,7 +183,7 @@ class FrankaEnvWrapper:
     def _initialize_cartesian_control_config(self):
         """Configure Cartesian control parameters."""
         self.arm.goto_pose(
-            FC.HOME_POSE,
+            self.current_pose,
             duration=10000,
             dynamic=True,
             buffer_time=10000,
@@ -203,14 +213,14 @@ class FrankaEnvWrapper:
         """
         return self.arm.get_joints()
 
-    def get_tcp_position(self, fk_pose=True) -> np.ndarray:
+    def get_tcp_position(self) -> np.ndarray:
         """
         Get TCP position and orientation.
 
         Returns:
             np.ndarray: [x, y, z, qw, qx, qy, qz]
         """
-        if fk_pose:
+        if self.control_mode == "joint":
             trans, rot_quat = self.ik_solver.compute_fk(self.get_arm_position())
         else:
             current_ee_pose = self.arm.get_pose()
@@ -280,7 +290,28 @@ class FrankaEnvWrapper:
             )
         )
         self.cmd_pub.publish(ros_msg)
-        
+
+    def move_pose(self, target_ee: list):
+        timestamp = rospy.Time.now().to_time() - self._init_time
+        self._fa_cmd_id += 1
+   
+        traj_gen_proto_msg = PosePositionSensorMessage(
+            id=self._fa_cmd_id, timestamp=timestamp, 
+            position=target_ee[:3], quaternion=target_ee[3:7]
+        )
+        fb_ctrlr_proto = CartesianImpedanceSensorMessage(
+            id=self._fa_cmd_id, timestamp=timestamp,
+            translational_stiffnesses=[600.0, 600.0, 600.0],
+            rotational_stiffnesses=FC.DEFAULT_ROTATIONAL_STIFFNESSES
+        )
+        ros_msg = make_sensor_group_msg(
+            trajectory_generator_sensor_msg=sensor_proto2ros_msg(
+                traj_gen_proto_msg, SensorDataMessageType.POSE_POSITION),
+            feedback_controller_sensor_msg=sensor_proto2ros_msg(
+                fb_ctrlr_proto, SensorDataMessageType.CARTESIAN_IMPEDANCE)
+            )
+        self.cmd_pub.publish(ros_msg)
+
     def move_joint_ik(self, target_ee: list):
         """
         Move joints to target positions.
@@ -338,7 +369,10 @@ class FrankaEnvWrapper:
             raise RuntimeError("No gripper equipped in Franka. move_gripper should not work.")
              
     def move(self, target_cmd):
-        self.move_joint_ik(target_cmd[:7])
+        if self.control_mode == "joint":
+            self.move_joint_ik(target_cmd[:7])
+        else:
+            self.move_pose(target_cmd[:7])
         if self.with_gripper and len(target_cmd) > 7:
             self.move_gripper(target_cmd[7])
         
