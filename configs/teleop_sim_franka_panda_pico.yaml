@@ -1,0 +1,20 @@
+defaults:
+  - _self_
+  - tactile: null # paxini
+  - tracker: pico # hamer # oculus 
+  - override hydra/hydra_logging: disabled  
+  - override hydra/job_logging: disabled  
+
+finger_configs:
+  freeze_index: false # Keep index finger fixed at [0, 0, 0, 0]
+  freeze_middle: false # Keep middle finger fixed at [0, 0, 0, 0]
+  three_dim: true
+simulator: genesis
+gripper: panda # null
+gripper_init_state: open
+arm: franka
+hand: null # TODO
+hydra:  
+  output_subdir: null  
+  run:  
+    dir: .

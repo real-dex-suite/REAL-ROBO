@@ -13,11 +13,9 @@ SMOOTH_FACTOR = 0.4 # 0.99
 # Robot type
 # HAND_TYPE = "Leap"
 HAND_TYPE = None
-# ARM_TYPE = "Jaka"
-# HAND_TYPE = None
-# ARM_TYPE = "Flexiv"
-ARM_TYPE = "Franka"
 
+# NOTE: ARM_TYPE will be deprecated.
+ARM_TYPE = "Flexiv"
 
 # Keyboard control
 # KEYBOARD_CONTROL_TOPIC = '/keyboard_control_node/keyboard_control'
@@ -272,7 +270,6 @@ PAXINI_IP_VIS_COORDS_3D = np.array([[-4.5    ,  4.30109,  2.97814],
                             [ 2.25   , 21.453  ,  0.0951 ]])
 
 # Realsense Camera parameters
-NUM_CAMS = 3
 CAM_FPS = 30
 WIDTH = 1280
 HEIGHT = 720

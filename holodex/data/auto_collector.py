@@ -13,35 +13,33 @@ from holodex.utils.network import ImageSubscriber, frequency_timer, Float64Multi
 from holodex.tactile.utils import fetch_paxini_info
 from termcolor import cprint
 from pynput import keyboard
-
+from tqdm import tqdm
 
 def clear_input_buffer():
     termios.tcflush(sys.stdin, termios.TCIFLUSH)
 
-
-# load module according to hand type
-hand_module = __import__("holodex.robot.hand")
-Hand_module_name = f'{HAND_TYPE}Hand' if HAND_TYPE is not None else None
-Hand = getattr(hand_module.robot, Hand_module_name) if HAND_TYPE is not None else None
+if HAND_TYPE is not None:
+    # load module according to hand type
+    hand_module = __import__("holodex.robot.hand")
+    Hand_module_name = f'{HAND_TYPE}Hand'
+    Hand = getattr(hand_module.robot, Hand_module_name)
 
 class AutoDataCollector(object):
     def __init__(
         self,
         num_tactiles,
         num_cams,
-        keyboard_control,
         storage_root,
-        data_collection_type,
+        arm_type="franka",
+        gripper="ctek",
     ):
         rospy.init_node('data_extractor', disable_signals = True)
 
-        # read the first demo number
-        demo_num = input("Enter the first demo number: ")
-
         self.storage_root = storage_root
-        self.demo_start_idx = int(demo_num)
-        self.demo_num = int(demo_num)
+        self.demo_num = 1
         self.num_tactiles = num_tactiles
+        self.arm_type = arm_type
+
         self.storage_path = os.path.join(self.storage_root, f'demonstration_{self.demo_num}')
         if self.num_tactiles > 0:
             self.tactile_info, _, _, self.sensor_per_board = fetch_paxini_info()
@@ -57,6 +55,7 @@ class AutoDataCollector(object):
         self.num_cams = num_cams
 
         self.color_image_subscribers, self.depth_image_subscribers = [], []
+
         for cam_num in range(self.num_cams):
             self.color_image_subscribers.append(
                 ImageSubscriber(
@@ -72,63 +71,51 @@ class AutoDataCollector(object):
                 )
             )
 
+        self.with_gripper = gripper is not None
+        self.gripper = gripper
+        # arm collector initialization
+        if self.arm_type == "flexiv":
+            self.data_collection_topic_type = "jaka"
+        elif self.arm_type == "franka":
+            self.data_collection_topic_type = "franka"
+        elif self.arm_type == "jaka":
+            self.data_collection_topic_type = "jaka"
+        else:
+            raise NotImplementedError(f"Unknown arm type {arm_type}")
+   
         # Hand controller initialization
         self.hand = Hand() if HAND_TYPE is not None else None
-
-        # keyboard cmd
-        self.keyboard_listener = keyboard.Listener(on_press=self._on_press)
-        self.keyboard_listener.start()
       
-        self.keyboard_control = keyboard_control
-
-        if 'arm_ee_pose' in data_collection_type:
-            self.arm_ee_pose = None
-            # Keyboard control subscriber
-            if self.keyboard_control:
-                self.hand_commanded_joint_position = None
-                rospy.Subscriber(KEYBOARD_EE_TOPIC, Float64MultiArray, self._callback_keyboard_control_ee, queue_size = 1)
-                rospy.Subscriber(KEYBOARD_HAND_TOPIC, Float64MultiArray, self._callback_keyboard_control_hand, queue_size = 1)
-            else:
-                rospy.Subscriber(JAKA_EE_POSE_TOPIC, Float64MultiArray, self._callback_arm_ee_pose, queue_size = 1)
-
-        if 'arm_commanded_ee_pose' in data_collection_type:
-            self.arm_commanded_ee_pose = None
-            rospy.Subscriber(JAKA_COMMANDED_EE_POSE_TOPIC, Float64MultiArray, self._callback_arm_commanded_ee_pose, queue_size = 1)
-
-        if 'arm_joint_positions' in data_collection_type:
-            self.arm_joint_state = None
-            rospy.Subscriber(JAKA_JOINT_STATE_TOPIC, JointState, self._callback_arm_joint_state, queue_size = 1)
-
-        if 'arm_commanded_joint_state' in data_collection_type:
-            self.arm_commanded_joint_state = None
-            rospy.Subscriber(JAKA_COMMANDED_JOINT_STATE_TOPIC, JointState, self._callback_arm_commanded_joint_state, queue_size = 1)
-        
         # Frequency timer
         self.frequency_timer = frequency_timer(RECORD_FPS)
 
         # ros publish for reset
+        self.start = False
         self.stop = False
-        self.reset_publisher = rospy.Publisher("/data_collector/reset_robot", Bool, queue_size=1)
-        self.stop_publisher = rospy.Publisher("/data_collector/stop_move", Bool, queue_size=1)   
-        self.hamer_recalib_publisher = rospy.Publisher("/data_collector/reset_done", Bool, queue_size=1)
-        self.end_publisher = rospy.Publisher("/data_collector/end_robot", Bool, queue_size=1)
+        self.c_pressed = False
+        self.r_pressed = False
+        self.q_pressed = False
+        self.e_pressed = False
+        self.i_pressed = False
+        self.p_pressed = False
+        self._setup_state_collection()
 
+    def _setup_state_collection(self):
+        self.arm_ee_pose = None
+        rospy.Subscriber(f"/{self.data_collection_topic_type}/ee_pose", Float64MultiArray, self._callback_arm_ee_pose, queue_size = 1)
 
-    def _on_press(self, key):
-        try:
-            if not self.stop: 
-                if key.char == 's':
-                    print(f"Key pressed: {key.char}")
-                    self.stop = True
-        except AttributeError:
-            # print(f"Special key {key} pressed")
-            pass
-   
-    def _callback_keyboard_control_ee(self, data):
-        self.arm_ee_pose = data
+        self.arm_commanded_ee_pose = None
+        rospy.Subscriber(f"/{self.data_collection_topic_type}/commanded_ee_pose", Float64MultiArray, self._callback_arm_commanded_ee_pose, queue_size = 1)
 
-    def _callback_keyboard_control_hand(self, data):
-        self.hand_commanded_joint_position = data
+        self.arm_joint_state = None
+        rospy.Subscriber(f"/{self.data_collection_topic_type}/joint_states", JointState, self._callback_arm_joint_state, queue_size = 1)
+
+        self.arm_commanded_joint_state = None
+        rospy.Subscriber(f"/{self.data_collection_topic_type}/commanded_joint_states", JointState, self._callback_arm_commanded_joint_state, queue_size = 1)
+
+        if self.with_gripper:
+            self.gripper_control = None
+            rospy.Subscriber(f"/{self.data_collection_topic_type}/gripper_control", Bool, self._callback_gripper_control, queue_size = 1)
 
     def _callback_arm_commanded_ee_pose(self, data):
         self.arm_commanded_ee_pose = data
@@ -142,10 +129,134 @@ class AutoDataCollector(object):
     def _callback_arm_ee_pose(self, data):
         self.arm_ee_pose = data
 
-    def extract(self, offset = 0):
-        counter = offset + 1
-        try:
+    def _callback_gripper_control(self, data):
+        self.gripper_control = data
+
+    def _collect_state_data(self):
+        """
+        Collect all state data into a dictionary
+
+        Returns:
+            dict: Dictionary containing all collected state data
+        """
+        state = {}
+
+        # Add arm data directly to state for compatibility with other collectors
+        if self.arm_joint_state is not None:
+            state['arm_joint_positions'] = self.arm_joint_state.position
+        if self.arm_commanded_joint_state is not None:
+            state['arm_commanded_joint_position'] = self.arm_commanded_joint_state.position
+        if self.arm_ee_pose is not None:
+            state['arm_ee_pose'] = self.arm_ee_pose.data
+        if self.arm_commanded_ee_pose is not None:
+            state['arm_commanded_ee_pose'] = self.arm_commanded_ee_pose.data
+        if self.gripper_control is not None and self.with_gripper:
+            state['gripper_joint_positions'] = self.gripper_control.data
+        return state
+
+    def extract(self, reset_timeout=10):
+        states = []
+        state_cnt = 0
+        pbar = None
+
+        def _on_press(key):
+            nonlocal self
+            try:
+                if not self.start: 
+                    if key.char == 's':
+                        self.start = True
+                if not self.stop:
+                    if key.char == 't':
+                        self.stop = True
+                if key.char == 'c':
+                    self.c_pressed = True
+                if key.char == 'r':
+                    self.r_pressed = True
+                if key.char == 'q':
+                    self.q_pressed = True    
+                if key.char == 'e':
+                    self.e_pressed = True     
+                if key.char == "i":
+                    self.i_pressed = True   
+                if key.char == "p":
+                    self.p_pressed = True            
+            except AttributeError:
+                pass
+                # keyboard cmd
+
+        def reset_robot():
+            nonlocal states
+            nonlocal state_cnt
+            # reset the robot
+            cprint(f"Resetting the robot...", 'blue')
+            states = []
+            state_cnt = 0
+
+            # reset
+            rospy.set_param("/data_collector/reset_robot", True)
+            wait_reset_start = time.time()
             while True:
+                if not rospy.get_param("/data_collector/reset_robot"):
+                    rospy.set_param("/data_collector/stop_move", False)
+                    break
+                if time.time() - wait_reset_start > reset_timeout:
+                    cprint(f"Reset failed after {reset_timeout} s. Please manually reset. Turn to the next demo by default.")
+                    break
+
+        def quit_program():
+            # quit the program
+            cprint(f"------------------------------------------", "green", attrs=['bold'])
+            cprint(f'Finished recording! Data can be found in {self.storage_root}', 'green', attrs=['bold'])
+            cprint(f"------------------------------------------", "green", attrs=['bold'])
+
+            rospy.set_param("/data_collector/end_robot", True)
+            sys.exit(0)
+
+        def quit_program_silently():
+            # quit the program
+            cprint(f"------------------------------------------", "green", attrs=['bold'])
+            cprint(f'Finished recording! Data can be found in {self.storage_root}', 'green', attrs=['bold'])
+            cprint(f'Teleop process will not be killed.', 'green', attrs=['bold'])
+            cprint(f"------------------------------------------", "green", attrs=['bold'])
+            # quit the program
+            rospy.set_param("/data_collector/end_robot", False)
+            rospy.set_param("/data_collector/reset_robot", False)
+            rospy.set_param("/data_collector/stop_move", False)
+            sys.exit(0)
+
+        def save_states():
+            nonlocal states
+            nonlocal self
+            # Saving the pickle file save path
+            os.makedirs(self.storage_path, exist_ok=True)
+            for state_idx, state in enumerate(tqdm(states, desc=f'Saving demo {self.demo_num}...')):
+                state_pickle_path = os.path.join(self.storage_path, f'{state_idx + 1}')
+                store_pickle_data(state_pickle_path, state)
+            self.demo_num += 1
+            self.storage_path = os.path.join(self.storage_root, f'demonstration_{self.demo_num}')
+
+        def wait_for_start():
+            nonlocal pbar
+            nonlocal self
+            clear_input_buffer()
+            cprint(f"---------------------------------------------", "yellow", attrs=['bold'])
+            cprint(f"| s -> start recording, t -> stop recording |", "yellow", attrs=['bold'])
+            cprint(f"---------------------------------------------", "yellow", attrs=['bold'])
+            while True:
+                if self.start:
+                    cprint(f"Start recording demo {self.demo_num}.", "green", attrs=['bold'])
+                    self.start = False
+                    break
+            pbar = tqdm(total=None)
+        reset_robot()
+        self.keyboard_listener = keyboard.Listener(on_press=_on_press)
+        self.keyboard_listener.start()
+        try:
+            wait_for_start()
+            while True:
+                if not self.keyboard_listener.is_alive():
+                    self.keyboard_listener = keyboard.Listener(on_press=_on_press)
+                    self.keyboard_listener.start()
                 skip_loop = False
 
                 # Checking for broken data streams
@@ -157,17 +268,12 @@ class AutoDataCollector(object):
                 if self.hand is not None and self.hand.get_hand_position() is None:
                     cprint('Hand data not available!', 'red')
                     skip_loop = True
-                
-                
-                # if self.arm_joint_state is None or self.arm_ee_pose is None or self.arm_commanded_joint_state is None:
-                #     cprint('Arm data not available!', 'red')
-                #     skip_loop = True
 
                 # TODO: fix this
                 if self.arm_joint_state is None or self.arm_ee_pose is None:
                     cprint('Arm data not available!', 'red')
                     skip_loop = True
-
+    
                 for color_image_subscriber in self.color_image_subscribers:
                     if color_image_subscriber.get_image() is None:
                         cprint('Color image not available!', 'red')
@@ -182,72 +288,47 @@ class AutoDataCollector(object):
                 if skip_loop:
                     continue                    
 
-                #print('Valid Data', time.time())
-                cprint(f'Valid Data at {time.time()}', 'green', 'on_black', attrs=['bold'])
                 state = dict()
+
+                # Arm data
+                arm_state = self._collect_state_data()
+                state.update(arm_state)
 
                 # Hand data
                 if self.hand is not None:
                     state['hand_joint_positions'] = self.hand.get_hand_position() # follow orignal joint order, first mcp-pip, then palm-mcp
                     state['hand_joint_velocity'] = self.hand.get_hand_velocity()
                     state['hand_joint_effort'] = self.hand.get_hand_torque()
-                
-                if self.keyboard_control:
-                    if self.hand_commanded_joint_position is not None:
-                        state['hand_commanded_joint_position'] = self.hand_commanded_joint_position.data
-                else:
                     state['hand_commanded_joint_position'] = self.hand.get_commanded_joint_position()
-
-                # Arm data
-                if getattr(self, 'arm_joint_state', None) is not None:
-                    state['arm_joint_positions'] = self.arm_joint_state.position
-                
-                if getattr(self, 'arm_commanded_joint_state', None) is not None:
-                    state['arm_commanded_joint_position'] = self.arm_commanded_joint_state.position
-
-                if getattr(self, 'arm_ee_pose', None) is not None:
-                    state['arm_ee_pose'] = self.arm_ee_pose.data
-
-                if getattr(self, 'arm_commanded_ee_pose', None) is not None:
-                    state['arm_commanded_ee_pose'] = self.arm_commanded_ee_pose.data
 
                 #TODO: Arm Effort, Velocity
 
                 # Image data
-                for cam_num in range(self.num_cams):
-                    state['camera_{}_color_image'.format(cam_num + 1)] = self.color_image_subscribers[cam_num].get_image()
-                    state['camera_{}_depth_image'.format(cam_num + 1)] = self.depth_image_subscribers[cam_num].get_image()
-                
+                if self.num_cams > 0:
+                    for cam_num in range(self.num_cams):
+                        state['camera_{}_color_image'.format(cam_num + 1)] = self.color_image_subscribers[cam_num].get_image()
+                        state['camera_{}_depth_image'.format(cam_num + 1)] = self.depth_image_subscribers[cam_num].get_image()
+                    
                 # tactile data
-                tactile_data = {}
-                for tactile_num in range(self.num_tactiles):
-                    raw_datas = np.array(self.tactile_subscribers[tactile_num].get_data()).reshape(self.sensor_per_board, POINT_PER_SENSOR, FORCE_DIM_PER_POINT)
-                    for (tactile_id, raw_data) in enumerate(raw_datas):
-                        tactile_data[self.tactile_info['id'][tactile_num + 1][tactile_id]] = raw_data
-                state['tactile_data'] = tactile_data
+                if self.num_tactiles > 0:
+                    tactile_data = {}
+                    for tactile_num in range(self.num_tactiles):
+                        raw_datas = np.array(self.tactile_subscribers[tactile_num].get_data()).reshape(self.sensor_per_board, POINT_PER_SENSOR, FORCE_DIM_PER_POINT)
+                        for (tactile_id, raw_data) in enumerate(raw_datas):
+                            tactile_data[self.tactile_info['id'][tactile_num + 1][tactile_id]] = raw_data
+                    state['tactile_data'] = tactile_data
 
                 # Temporal information
-                state['time'] = time.time()
-
-                # Saving the pickle file save path
-                # # TODO: add delete functionality
-                if not os.path.exists(self.storage_path):
-                    os.makedirs(self.storage_path)
-                state_pickle_path = os.path.join(self.storage_path, f'{counter}')
-                store_pickle_data(state_pickle_path, state)
-
-                counter += 1
-                # reset
-                if self.keyboard_control:
-                    self.arm_ee_pose = None
-                    self.hand_commanded_joint_position = None
-
+                state['time'] = rospy.Time.now().to_time()
+                states.append(state)
+                state_cnt += 1
+                pbar.update(1)
                 self.frequency_timer.sleep()
 
                 #################################################### 
                 if self.stop:
-                    cprint(f'Successfully record {self.demo_num} traj! Data can be found in {self.storage_path}', 'green')
                     self.stop = False
+                    pbar.close()
 
                     bool_true_msg = Bool()
                     bool_true_msg.data = True
@@ -256,62 +337,56 @@ class AutoDataCollector(object):
                     bool_false_msg.data = False
 
                     # stop robot move
-                    self.stop_publisher.publish(bool_true_msg)
+                    rospy.set_param("/data_collector/stop_move", True)
 
-                    # stuck here waiting for the next command, c for continue, d for delete, r for reset, s for stop
+                    clear_input_buffer()
+                    cprint(f'>>> Collected demo {self.demo_num} with {state_cnt} timesteps.', 'green', attrs=['bold'])
+                    cprint(f"--------------------------------------------", "yellow", attrs=['bold'])
+                    cprint(f'| r -> restart, c -> continue              |', "yellow", attrs=['bold'])
+                    cprint(f'| q -> save, dont kill teleop and quit     |', 'yellow', attrs=['bold'])
+                    cprint(f'| e -> discard, dont kill teleop and quit  |', 'yellow', attrs=['bold'])
+                    cprint(f'| i -> save, kill teleop and quit          |', 'yellow', attrs=['bold'])
+                    cprint(f'| p -> discard, kill teleop and quit       |', 'yellow', attrs=['bold'])
+                    cprint(f"--------------------------------------------", "yellow", attrs=['bold'])
                     while True:
-                        cprint('Waiting for the next command: ', 'yellow')
-                        cprint('c -> continue, d -> delete, r -> reset, q -> quit, x -> stop robot', 'yellow')
-                        clear_input_buffer()
-                        input_cmd = input("Enter the next command: ")
-
-                        if input_cmd == 'c':
-                            # update demo_num and continue recording
-                            counter = 1
-                            self.demo_num += 1
-                            self.storage_path = os.path.join(self.storage_root, f'demonstration_{self.demo_num}')
-                            self.hamer_recalib_publisher.publish(bool_true_msg)
-                            cprint(f"Start recording at {self.storage_path}", 'green')
-
-                            # reset
-                            self.reset_publisher.publish(bool_true_msg)
-                            rospy.sleep(1)
-
-                            # start robot move
-                            self.stop_publisher.publish(bool_false_msg)
-
+                        if self.c_pressed:
+                            self.c_pressed = False
+                            save_states()
+                            reset_robot()
+                            wait_for_start()
+                            break
+                        
+                        elif self.r_pressed:
+                            self.r_pressed = False
+                            reset_robot()
+                            wait_for_start()
                             break
 
-                        elif input_cmd == 'd':
-                            # remove the last data
-                            shutil.rmtree(self.storage_path)
-                            cprint(f"Removing the last data at {self.storage_path}", 'red')
-                            self.demo_num -= 1
-                            continue
+                        elif self.q_pressed:
+                            # save, dont kill teleop and quit
+                            self.q_pressed = False
+                            save_states()
+                            reset_robot()
+                            quit_program_silently()  
 
-                        elif input_cmd == 'r':
-                            # reset the robot
-                            cprint(f"Resetting the robot...", 'blue')
-                            self.reset_publisher.publish(bool_true_msg)
-                            rospy.sleep(1)
-                            continue
+                        elif self.e_pressed:
+                            # discard, dont kill teleop and quit
+                            self.e_pressed = False
+                            reset_robot()
+                            quit_program_silently()  
 
-                        elif input_cmd == 'q':
-                            # quit the program
-                            cprint(f'Finished recording! Sucessfully record {self.demo_start_idx} ~ {self.demo_num} traj! Data can be found in {self.storage_root}', 'green')
-                            self.end_publisher.publish(bool_true_msg)
-                            sys.exit(0)
+                        elif self.i_pressed:
+                            # save, kill teleop and quit
+                            self.i_pressed = False
+                            save_states()
+                            reset_robot()
+                            quit_program()
 
-                        elif input_cmd == 'x':
-                            # stop the robot move
-                            cprint(f"Stop the robot move...", 'red')
-                            self.stop_publisher.publish(bool_true_msg)
-                            continue
+                        elif self.p_pressed:
+                            self.p_pressed = False
+                            reset_robot()
+                            quit_program()
 
-                        else:
-
-                            cprint(f'Invalid command {input_cmd}!', 'red')
-                
         except KeyboardInterrupt:
             cprint('Finished recording! Data can be found in {}'.format(self.storage_path), 'green')
             sys.exit(0)

@@ -12,7 +12,6 @@ try:
 except:
     from robot import RobotController
 
-from pykalman import KalmanFilter
 from scipy.interpolate import CubicSpline
 from scipy.special import comb
 from scipy.spatial.transform import Slerp
@@ -27,7 +26,9 @@ rotation_step = 0.05
 
 
 class KBArmTeleop(object):
-    def __init__(self):
+    def __init__(self, simulator=None, gripper=None, arm_type="franka", gripper_init_state="open"):
+        raise NotImplementedError("KBArmTeleop is not finished.")
+        self.arm_type = arm_type
         rospy.init_node("keyboard_arm_teleop")
 
         rospy.Subscriber(
@@ -46,7 +47,7 @@ class KBArmTeleop(object):
         )
 
         # Initializing the robot controller
-        self.robot = RobotController(teleop=True)
+        self.robot = RobotController(teleop=True, simulator=simulator, gripper=gripper, arm_type=arm_type, gripper_init_state=gripper_init_state)
 
         # Initializing the arm pose
         self.arm_ee_pose = self.robot.arm.get_tcp_position(euler=False)

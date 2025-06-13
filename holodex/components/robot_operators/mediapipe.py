@@ -7,18 +7,19 @@ from holodex.constants import *
 from copy import deepcopy as copy
 import importlib
 
-# load module according to hand type
-module = __import__("holodex.robot.hand")
-KDLControl_module_name = f"{HAND_TYPE}KDLControl"
-Hand_module_name = f"{HAND_TYPE}Hand"
-# get relevant classes
-KDLControl = getattr(module.robot, KDLControl_module_name)
-Hand = getattr(module.robot, Hand_module_name)
+if HAND_TYPE is not None:
+    # load module according to hand type
+    module = __import__("holodex.robot.hand")
+    KDLControl_module_name = f"{HAND_TYPE}KDLControl"
+    Hand_module_name = f"{HAND_TYPE}Hand"
+    # get relevant classes
+    KDLControl = getattr(module.robot, KDLControl_module_name)
+    Hand = getattr(module.robot, Hand_module_name)
 
-# load constants according to hand type
-hand_type = HAND_TYPE.lower()
-JOINTS_PER_FINGER = eval(f"{hand_type.upper()}_JOINTS_PER_FINGER")
-JOINT_OFFSETS = eval(f"{hand_type.upper()}_JOINT_OFFSETS")
+    # load constants according to hand type
+    hand_type = HAND_TYPE.lower()
+    JOINTS_PER_FINGER = eval(f"{hand_type.upper()}_JOINTS_PER_FINGER")
+    JOINT_OFFSETS = eval(f"{hand_type.upper()}_JOINT_OFFSETS")
 
 
 class MPDexArmTeleOp(object):

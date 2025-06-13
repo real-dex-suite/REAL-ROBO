@@ -32,7 +32,7 @@ move_angular_velocity = 0.002
 
 
 class SpaceMouseTeleop(object):
-    def __init__(self):
+    def __init__(self, simulator=None, gripper=None, arm_type="franka"):
         pyspacemouse.open()
         rospy.init_node("space_mouse_teleop")
 
@@ -53,7 +53,7 @@ class SpaceMouseTeleop(object):
         )
 
         # Initializing the robot controller
-        self.robot = RobotController(teleop=True)
+        self.robot = RobotController(teleop=True, simulator=simulator, gripper=gripper, arm_type=arm_type)
 
         # Initializing the arm pose
         self.arm_ee_pose = self.robot.arm.get_tcp_position(euler=True, degree=False)

@@ -36,7 +36,7 @@ JS_NAMES = [
 class FrankaSolver:
     """Inverse Kinematics solver for Franka Emika Panda robot."""
 
-    def __init__(self, ik_type="motion_gen"):
+    def __init__(self, ik_type="motion_gen", ik_sim=False, simulator="genesis"):
         """
         Initialize the Franka IK Solver.
 
@@ -44,8 +44,8 @@ class FrankaSolver:
             ik_type (str): Type of IK solver to use. Options: "ik_solver" or "motion_gen"
         """
         self.tensor_args = TensorDeviceType()
-        self._initialize_robot_config()
-        self._initialize_solver(ik_type)
+        self._initialize_robot_config(ik_sim, simulator=simulator)
+        self._initialize_solver(ik_type, ik_sim, simulator=simulator)
 
         # Pre-allocate tensors for efficiency
         self.pos_tensor_buffer = torch.zeros(
@@ -55,9 +55,12 @@ class FrankaSolver:
             4, device=self.tensor_args.device, dtype=torch.float32
         )
 
-    def _initialize_robot_config(self):
+    def _initialize_robot_config(self, ik_sim=False, simulator="genesis"):
         """Load and initialize robot configuration."""
-        config_file = load_yaml(join_path(os.path.dirname(__file__), "franka.yml"))
+        if ik_sim:
+            config_file = load_yaml(join_path(os.path.dirname(__file__), f"franka_{simulator}.yml"))
+        else:
+            config_file = load_yaml(join_path(os.path.dirname(__file__), "franka.yml"))
         urdf_file = config_file["robot_cfg"]["kinematics"]["urdf_path"]
         base_link = config_file["robot_cfg"]["kinematics"]["base_link"]
         ee_link = config_file["robot_cfg"]["kinematics"]["ee_link"]
@@ -67,12 +70,12 @@ class FrankaSolver:
         )
         self.kin_model = CudaRobotModel(self.robot_cfg.kinematics)
 
-    def _initialize_solver(self, ik_type):
+    def _initialize_solver(self, ik_type, ik_sim=False, simulator="genesis"):
         """Initialize the appropriate solver based on ik_type."""
         if ik_type == "ik_solver":
             self._initialize_ik_solver()
         elif ik_type == "motion_gen":
-            self._initialize_motion_gen()
+            self._initialize_motion_gen(ik_sim=ik_sim, simulator=simulator)
         else:
             raise ValueError(f"Unsupported IK type: {ik_type}")
 
@@ -91,14 +94,21 @@ class FrankaSolver:
         )
         self.ik_solver = IKSolver(self.ik_config)
 
-    def _initialize_motion_gen(self):
+    def _initialize_motion_gen(self, ik_sim=False, simulator="genesis"):
         """Initialize the motion generator."""
+        if ik_sim:
+            config_file = load_yaml(join_path(os.path.dirname(__file__), f"franka_{simulator}.yml"))
+        else:
+            config_file = load_yaml(join_path(os.path.dirname(__file__), "franka.yml"))
+        urdf_file = config_file["robot_cfg"]["kinematics"]["urdf_path"]
+        base_link = config_file["robot_cfg"]["kinematics"]["base_link"]
+        ee_link = config_file["robot_cfg"]["kinematics"]["ee_link"]
         self.plan_config = MotionGenConfig.load_from_robot_config(
             self.robot_cfg,
             None,
             tensor_args=self.tensor_args,
             interpolation_dt=0.02,
-            ee_link_name="ee_link",
+            ee_link_name=ee_link,
         )
         self.motion_gen = MotionGen(self.plan_config)
         cprint("warming up motion gen solver", "green")
@@ -137,16 +147,18 @@ class FrankaSolver:
             position=self.tensor_args.to_device(target_trans),
             quaternion=self.tensor_args.to_device(target_quat),
         )
+        try:
+            result = self.motion_gen.plan_single(
+                cu_js.unsqueeze(0), ik_goal, self.plan_config_temp
+            )
 
-        result = self.motion_gen.plan_single(
-            cu_js.unsqueeze(0), ik_goal, self.plan_config_temp
-        )
-
-        if result.success.item():
-            motion_plan = result.get_interpolated_plan()
-            motion_plan = self.motion_gen.get_full_js(motion_plan)
-            motion_plan = motion_plan.get_ordered_joint_state(JS_NAMES)
-            return motion_plan.position.cpu().numpy().tolist()
+            if result.success.item():
+                motion_plan = result.get_interpolated_plan()
+                motion_plan = self.motion_gen.get_full_js(motion_plan)
+                motion_plan = motion_plan.get_ordered_joint_state(JS_NAMES)
+                return motion_plan.position.cpu().numpy().tolist()
+        except:
+            return None
         return None
 
     def solve_ik(self, target_position, target_quaternion):

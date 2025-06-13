@@ -309,11 +309,12 @@ class ActionExtractor(object):
                     arm_cmd_abs_joint = state_data['arm_commanded_joint_position']
                     demo_action_data[state_type].append(arm_cmd_abs_joint)
                 if state_type == "arm_cmd_ee_pose":
-                    if ARM_TYPE == "jaka":
-                        arm_cmd_ee_pose = robot.kine_forward(state_data['arm_commanded_joint_position'])[1]
-                        demo_action_data[state_type].append(arm_cmd_ee_pose)
-
-                    elif ARM_TYPE == "Flexiv":
+                    # TODO: ARM_TYPE --> arm_type in configs
+                    cprint("ARM_TYPE is deprecated, and will move to self.arm_type. Set 'Flexiv' by default.", "yellow")
+                    # if ARM_TYPE == "jaka":
+                    #     arm_cmd_ee_pose = robot.kine_forward(state_data['arm_commanded_joint_position'])[1]
+                    #     demo_action_data[state_type].append(arm_cmd_ee_pose)
+                    if ARM_TYPE == "Flexiv":
                         arm_cmd_ee_pose = state_data['arm_commanded_ee_pose']
                         demo_action_data[state_type].append(arm_cmd_ee_pose)
 

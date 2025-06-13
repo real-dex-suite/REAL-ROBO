@@ -52,7 +52,7 @@ def get_mano_coord_frame(keypoint_3d_array, oculus=False):
 
 
 class VRDexArmTeleOp(object):
-    def __init__(self):
+    def __init__(self, simulator=None, arm_type="jaka"):
         # Initializing the ROS Node
         rospy.init_node("vr_dexarm_teleop")
 
@@ -72,7 +72,8 @@ class VRDexArmTeleOp(object):
         )
 
         # Initializing the robot controller
-        self.robot = RobotController(teleop=True)
+        self.robot = RobotController(teleop=True, simulator=simulator, arm_type=arm_type)
+        self.arm_type = arm_type
         # Initializing the solvers
         self.fingertip_solver = self.robot.hand_KDLControl
         self.finger_joint_solver = self.robot.hand_JointControl
@@ -124,9 +125,9 @@ class VRDexArmTeleOp(object):
             with open(robohand_bounds_path, "r") as file:
                 self.robohand_bounds = yaml.safe_load(file)
 
-        if ARM_TYPE is not None:
+        if arm_type is not None:
             self._calibrate_vr_arm_bounds()
-            if ARM_TYPE == "Jaka":
+            if arm_type == "jaka":
                 # TODO configureable
                 self.leap2flange = np.eye(4)
                 self.leap2flange[:3, :3] = R.from_euler(
@@ -525,7 +526,7 @@ class VRDexArmTeleOp(object):
     def motion(self, finger_configs):
         desired_cmd = []
 
-        if ARM_TYPE is not None:
+        if self.arm_type is not None:
             desired_arm_pose = self._retarget_base()
             desired_cmd = np.concatenate([desired_cmd, desired_arm_pose])
 
@@ -600,6 +601,6 @@ class VRDexArmTeleOp(object):
                 and self.robot.get_hand_position() is not None
             ):
                 # Obtaining the desired angles
-                desired_joint_angles = self.motion(finger_configs)
+                desired_cmd = self.motion(finger_configs)
                 # Move the hand based on the desired angles
-                self.robot.move(desired_joint_angles)
+                self.robot.move(desired_cmd)

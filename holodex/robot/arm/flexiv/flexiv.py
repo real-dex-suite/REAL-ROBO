@@ -18,7 +18,7 @@ from collections import deque
 
 
 class FlexivArm(object):
-    def __init__(self):
+    def __init__(self, gripper=None, gripper_init_state="open"):
         self.robot_sn = "Rizon4-062521"
         self.logger = spdlog.ConsoleLogger("RobotController")
         self.mode = flexivrdk.Mode
@@ -27,7 +27,12 @@ class FlexivArm(object):
         self.initialize_connection()
         self.vel = 1.0
         self.dof = 7
-
+        
+        self.with_gripper = gripper is not None
+        if self.with_gripper:
+            raise NotImplementedError("gripper is not implemented for FlexivArm")
+            self.dof += 1
+            
         # Control parameters
         self.control_freq = 30
         self.control_period = 1 / self.control_freq
@@ -143,7 +148,26 @@ class FlexivArm(object):
         except Exception as e:
             self.logger.error(f"Failed to get TCP position: {e}")
             return None
-
+        
+    def open_gripper(self):
+        raise NotImplementedError("Flexiv with gripper is not implemented now.")
+    
+    def close_gripper(self):
+        raise NotImplementedError("Flexiv with gripper is not implemented now.")
+    
+    def move_gripper(self, gripper_cmd):
+        """
+        Control gripper for teleoperation with binary open/close command.
+        Includes debouncing to avoid too frequent control commands.
+        
+        Args:
+            gripper_cmd (float or int): Binary command for gripper
+                - Values <= 0.05: Close the gripper
+                - Values > 0.05: Open the gripper
+                
+        """
+        raise NotImplementedError("Flexiv with gripper is not implemented now.")
+    
     def read_tcp_position(self):
         while not self.stop_event.is_set():
             try:
@@ -179,22 +203,22 @@ class FlexivArm(object):
         self.move_queue.put(list(target_pose))
         self.publish_state(target_pose)
 
-    def move(self, target_arm_pose):
+    def move(self, target_ee_pose):
         # input 7
-        print(f"move to {target_arm_pose}")
+        print(f"move to {target_ee_pose}")
         try:
             # self.flexiv.ExecutePrimitive(
             #     f"MovePTP(target={target_arm_pose[0]} {target_arm_pose[1]} {target_arm_pose[2]} {target_arm_pose[3]} {target_arm_pose[4]} {target_arm_pose[5]} WORLD WORLD_ORIGIN)" #vel={self.vel})"
             # )
             # self.flexiv.SendCartesianMotionForce(target_arm_pose, [0]*6, 0.12, 1.0) # space mouse
-            self.publish_state(target_arm_pose)  # TODO maybe change to use cros
+            self.publish_state(target_ee_pose)  # TODO maybe change to use cros
             self.flexiv.SendCartesianMotionForce(
-                target_arm_pose, [0] * 6, 0.2, 1.0, 0.2, 0.4
+                target_ee_pose, [0] * 6, 0.2, 1.0, 0.2, 0.4
             )  # 0.4
             tcp_position = self.get_tcp_position()
             # cprint(f"tcp_position: {tcp_position}", "yellow")
             # time.sleep(1 / 30)
-
+            # TODO: add gripper
         except Exception as e:
             self.logger.error(f"Failed to move the robot: {e}")
 
