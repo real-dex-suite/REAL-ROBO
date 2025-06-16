@@ -129,4 +129,4 @@ Please refer to [Camera Calibration](https://github.com/kingchou007/camera-calib
 
 Real-Robo mainly borrows [Holo-dex](https://github.com/SridharPandian/Holo-Dex) framework. For the dexterous hand retargeting, we refer to and modify [AnyTeleop](https://github.com/dexsuite/dex-retargeting). Please cite their work if you use this code in your research. Thanks for their wonderful job!
 
-Maintained by Jinzhou Li ([@kingchou007](https://github.com/kingchou007)) and Hongwei Fan ([@hwfan](https://github.com/hwfan)).
+Maintained by Jinzhou Li ([@kingchou007](https://github.com/kingchou007)), Hongwei Fan ([@hwfan](https://github.com/hwfan)), Tianhao Wu ([@tianhaowu](https://github.com/tianhaowuhz)) and Jiyao Zhang ([@jiyao06](https://github.com/Jiyao06)).
