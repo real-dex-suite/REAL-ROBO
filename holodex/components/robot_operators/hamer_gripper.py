@@ -126,7 +126,7 @@ class HamerGripperDexArmTeleOp(object):
                 self.leap2flange[:3, :3] = R.from_euler(
                     "xyz", [0, 0, 214.5], degrees=True
                 ).as_matrix()
-            elif self.arm_type == "franka":
+            elif "franka" in self.arm_type:
                 self.leap2flange[:3, :3] = R.from_euler(
                     "xyz", [0, 0, -90], degrees=True
                 ).as_matrix()
@@ -160,7 +160,7 @@ class HamerGripperDexArmTeleOp(object):
         """Get the TCP position based on the arm type"""
         if self.arm_type == "flexiv":
             return self.robot.arm.get_tcp_position(euler=True, degree=False)
-        elif self.arm_type == "franka":
+        elif "franka" in self.arm_type:
             tcp_pose = self.robot.arm.get_tcp_position()  # w, x, y, z
             # Convert to euler
             tcp_quat_wxyz = tcp_pose[3:7]
