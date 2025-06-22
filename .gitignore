@@ -9,6 +9,7 @@ holo_dex.egg-info
 
 # Calibration files
 calibration_files/*
+calibration_results/*
 
 # Videos
 videos/*

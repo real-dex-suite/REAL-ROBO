@@ -1,4 +1,4 @@
-# Camera-Robot Calibration Guide
+rr# Camera-Robot Calibration Guide
 
 ## Environment Setup
 Don't forget to source the ROS environment before running the following commands
@@ -28,27 +28,38 @@ Make sure you have:
 
 - ROS Noetic environment set up
 
-#### Running the Calibration
+### Start the environment
 note: please source the ROS environment before running the following commands
 1. Open a new terminal and launch the RealSense camera node:
 ```bash
+source /opt/ros/noetic/setup.bash
 roslaunch realsense2_camera rs_camera.launch
 ```
 2. Open a new terminal and launch the rqt_image_view:
 ```bash
+source /opt/ros/noetic/setup.bash
 rqt_image_view
 ```
 We already have a script to launch the camera node and rqt_image_view, you can run the following command to launch them:
 ```bash
-bash /home/zhiyuan/REAL-ROBO/pipelines/run_calibrate.sh
+bash tools/calibration/run_calibrate.sh
 ```
 
+3. Start Franka
+```bash
+conda activate real-robo
+bash pipelines/start_franka.sh
+```
+And Press the
 Note: Test franka api use tcp_test.py
 ```bash
 bash pipelines/franka_init.sh
-python tcp_test.py
+python tools/calibration/tcp_test.py
 ```
+Make sure the tcp chaging while you move the robot.
 
+
+### Calibration 
 3. Run the calibration script:
 ```bash
 bash pipelines/franka_init.sh
@@ -59,7 +70,10 @@ Now, you can see the aurco marker in the rqt_image_view. Press any key to contin
 
 Usually, we need to calibrate more than 20 views to get a good calibration result.
 
-#### Calibration Result
+- some suggestion: 1. dont move too much far away
+- more rotation
+
+### Calibration Result
 
 The calibration result is saved in the `calibration_results` folder.
 
@@ -70,7 +84,7 @@ The result is a `npy` file, you can load it in the `cali_eye2hand.py` script to 
 You can test the calibration result by running the following command:
 ```bash
 # test the calibration result with 20 views
-python cali_eye2hand.py -t 20
+python tools/calibration/cali_eye2hand.py -t 20
 ```
 Please refer to the visualization example below:
 ![Calibration visualization showing coordinate axes](./example.png)
@@ -78,7 +92,7 @@ Please refer to the visualization example below:
 I am randomly moving the robot arm, and the coordinate axes almost aligned with the robot arm. The example is not the best case, you can try to move the robot arm to different positions to get a better result. The expected result is that the coordinate axes are aligned with the robot arm base well.
 
 
-#### Dependencies
+### Dependencies
 1. Install ROS Noetic (if not already installed):
 ```bash
 sudo apt-get install ros-noetic-sensor-msgs ros-noetic-cv-bridge ros-noetic-realsense2-camera
@@ -86,7 +100,7 @@ sudo apt-get install ros-noetic-sensor-msgs ros-noetic-cv-bridge ros-noetic-real
 
 2. Install OpenCV:
 ```bash
-sudo apt-get install python3-opencv
+sudo apt-get install python3-opencv click
 ```
 
 

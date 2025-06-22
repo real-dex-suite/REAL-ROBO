@@ -12,7 +12,7 @@ from std_msgs.msg import Float64MultiArray
 from geometry_msgs.msg import PoseStamped
 import argparse
 from frankapy import FrankaArm
-
+import click
 
 class Targeting:
     def __init__(self, test_views=20):
@@ -132,7 +132,7 @@ class Targeting:
             filter_corners = []
             filter_ids = []
             for i, marker_id in enumerate(ids):
-                if marker_id == self.acruco_id:
+                if marker_id == self.aruco_id:
                     rvec, tvec = rvecs[i], tvecs[i]
 
                     R, _ = cv2.Rodrigues(rvec[0])
@@ -171,7 +171,7 @@ class Targeting:
             test = 1  # Test calibration accuracy
         if test:
             # Load camera to base transformation matrix
-            T_camera_to_base = np.load(f"calibration_results/{self.test_views}_views_c2r.npy")
+            T_camera_to_base = np.load(f"calibration_results/{self.test_views}views_c2r.npy")
             T_base_to_camera = np.linalg.inv(T_camera_to_base)
 
             # Define coordinate axes
