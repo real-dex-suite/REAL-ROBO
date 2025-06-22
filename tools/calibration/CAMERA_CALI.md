@@ -18,11 +18,15 @@ source /opt/ros/noetic/setup.bash
 This guide explains how to run the eye-to-hand calibration between a camera and robot arm using `cali_eye2hand.py`.
 
 #### Prerequisites
-1. Make sure you have:
-   - A RealSense camera mounted in a fixed position observing the robot workspace
-   - A Franka robot arm
-   - An ArUco marker (ID: 582) attached to the robot end-effector
-   - ROS Noetic environment set up
+Make sure you have:
+
+- A RealSense camera mounted in a fixed position observing the robot workspace
+
+- A Franka robot arm can read tcp pose
+
+- An ArUco marker (ID: 582) attached to the robot end-effector
+
+- ROS Noetic environment set up
 
 #### Running the Calibration
 note: please source the ROS environment before running the following commands
@@ -41,13 +45,13 @@ bash /home/zhiyuan/REAL-ROBO/pipelines/run_calibrate.sh
 
 Note: Test franka api use tcp_test.py
 ```bash
-bash /home/zhiyuan/REAL-ROBO/pipelines/franka_init.sh
+bash pipelines/franka_init.sh
 python tcp_test.py
 ```
 
 3. Run the calibration script:
 ```bash
-bash /home/zhiyuan/REAL-ROBO/pipelines/franka_init.sh
+bash pipelines/franka_init.sh
 python cali_eye2hand.py
 ```
 
