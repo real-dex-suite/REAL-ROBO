@@ -88,8 +88,10 @@ class FrankaEnvWrapper:
         self._setup_gripper_state_collection()
         self._setup_data_collection_publisher()
         self._setup_franka_command_publisher()
-        self.home_joints = self.get_arm_position()
 
+        self.control_mode = control_mode
+        self.home_joints = self.get_arm_position()
+        self.home_pose = self.get_tcp_position()
         self._fa_cmd_id = 0
         self._init_time = rospy.Time.now().to_time()
         if control_mode == "joint":
@@ -101,7 +103,6 @@ class FrankaEnvWrapper:
                 f"Unsupported control mode: '{control_mode}'. "
                 "Supported modes are 'joint' or 'cartesian'."
             )
-        self.control_mode = control_mode
         self.gripper_init_state = gripper_init_state
         self._gripper_state = gripper_init_state
         if gripper_init_state == "open":
@@ -200,9 +201,12 @@ class FrankaEnvWrapper:
         return quat
 
     def home_robot(self):
-        self.move_joint(self.home_joints)
+        if self.control_mode == "joint":
+            self.move_joint(self.home_joints)
+        else:
+            self.move_pose(self.home_pose)
         if self.with_gripper:
-            self.move_gripper(self.gripper_init_state)
+            self.move_gripper(self.gripper_init_state == "close", block=True)
 
     def get_arm_position(self) -> list:
         """
@@ -340,7 +344,7 @@ class FrankaEnvWrapper:
         if self.with_gripper:
             self.gripper_publisher.publish(bool(self.get_gripper_position()))
 
-    def move_gripper(self, gripper_cmd: bool = True):
+    def move_gripper(self, gripper_cmd: bool = True, block: bool = False):
         """
         Control gripper for teleoperation with binary open/close command.
         Includes debouncing to avoid too frequent control commands.
@@ -355,14 +359,14 @@ class FrankaEnvWrapper:
             if self.gripper_init_state == "open":
                 if self.gripper == "panda":
                     if not gripper_cmd and self._gripper_state == "close":
-                        self.open_gripper()
+                        self.open_gripper(block=block)
                     elif gripper_cmd and self._gripper_state == "open":
-                        self.close_gripper()
+                        self.close_gripper(block=block)
                 elif self.gripper == "ctek":
                     if not gripper_cmd and self._gripper_state == "close":
-                        self.open_gripper()
+                        self.open_gripper(block=block)
                     elif gripper_cmd and self._gripper_state == "open":
-                        self.close_gripper()
+                        self.close_gripper(block=block)
                 else:
                     raise NotImplementedError(f"Gripper {self.gripper} is not implemented.")
         else:
