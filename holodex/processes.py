@@ -104,7 +104,9 @@ def pico_teleop(teleop_configs):
     teleop = PICODexArmTeleOp(simulator=teleop_configs.get("simulator", None), 
                               gripper=teleop_configs.get("gripper", "ctek"),
                               arm_type=teleop_configs.get("arm", "franka"),
-                              gripper_init_state=teleop_configs.get("gripper_init_state", "open"))
+                              gripper_init_state=teleop_configs.get("gripper_init_state", "open"),
+                              lock_rotation=teleop_configs.tracker.get("lock_rotation", False),
+                              lock_z=teleop_configs.tracker.get("lock_z", False))
     teleop.move()
 
 def dummy_teleop(teleop_configs):

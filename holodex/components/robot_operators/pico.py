@@ -67,7 +67,7 @@ def rfu_to_flu(T_rfu):
     return T_flu
     
 class PICODexArmTeleOp:
-    def __init__(self, simulator=None, gripper=None, arm_type="franka", gripper_init_state="open"):
+    def __init__(self, simulator=None, gripper=None, arm_type="franka", gripper_init_state="open", lock_rotation=False, lock_z=False):
         self.arm_type = arm_type
         self.trans_scale = 1
         self.gripper_control = float(gripper_init_state == "close")
@@ -89,6 +89,8 @@ class PICODexArmTeleOp:
         self.init_arm_ee_to_world[:3, :3] = quat2mat(self.init_arm_ee_pose[3:7])
         self.arm_ee_pose = None
         self.joystick_pose = np.array([0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]) # xyz, wxyz
+        self.lock_rotation = lock_rotation
+        self.lock_z = lock_z
 
     def _setup_params(self):
         rospy.set_param("/data_collector/stop_move", False)
@@ -154,8 +156,15 @@ class PICODexArmTeleOp:
     def _retarget_base(self):
         """Retarget the base position of the robot arm"""
         current_arm_pose = self.init_arm_ee_pose.copy()
-        current_arm_pose[:3]  = self.joystick_pose[:3] * self.trans_scale + self.init_arm_ee_to_world[:3, 3]
-        current_arm_pose[3:7] = mat2quat(quat2mat(self.joystick_pose[3:7]) @ self.init_arm_ee_to_world[:3, :3])
+        if self.lock_z:
+            current_arm_pose[:2]  = self.joystick_pose[:2] * self.trans_scale + self.init_arm_ee_to_world[:2, 3]
+            current_arm_pose[2:3] = self.init_arm_ee_to_world[2:3, 3].copy()
+        else:
+            current_arm_pose[:3]  = self.joystick_pose[:3] * self.trans_scale + self.init_arm_ee_to_world[:3, 3]
+        if self.lock_rotation:
+            current_arm_pose[3:7] = mat2quat(self.init_arm_ee_to_world[:3, :3].copy())
+        else:
+            current_arm_pose[3:7] = mat2quat(quat2mat(self.joystick_pose[3:7]) @ self.init_arm_ee_to_world[:3, :3])
         return current_arm_pose
     
     def move(self):
