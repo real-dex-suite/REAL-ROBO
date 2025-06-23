@@ -1,4 +1,4 @@
-rr# Camera-Robot Calibration Guide
+# Camera-Robot Calibration Guide
 
 ## Environment Setup
 Don't forget to source the ROS environment before running the following commands
