@@ -372,6 +372,7 @@ class FrankaEnvWrapper:
         if self.control_mode == "joint":
             self.move_joint_ik(target_cmd[:7])
         else:
+            self.publish_state(target_cmd[:7], None)
             self.move_pose(target_cmd[:7])
         if self.with_gripper and len(target_cmd) > 7:
             self.move_gripper(target_cmd[7])
