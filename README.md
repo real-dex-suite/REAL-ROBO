@@ -115,13 +115,13 @@ conda activate real-robo
 # Step 1: start franka daemon processes
 bash pipelines/start_franka.sh
 # Step 2: start teleop process
-bash pipelines/teleop_real.sh
+bash pipelines/teleop_real_fr3.sh
 ```
 
 #### Real Data Recording
 
 ```bash
-bash pipelines/auto_record.sh
+bash pipelines/auto_record_fr3.sh
 ```
 
 #### Camera Calibration

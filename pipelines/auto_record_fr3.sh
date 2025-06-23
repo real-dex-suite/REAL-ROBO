@@ -3,4 +3,4 @@ source /opt/ros/noetic/local_setup.bash
 cd dependencies/frankapy
 source catkin_ws/devel/setup.bash
 cd ../..
-python tools/data_collection/auto_record_data.py
+python tools/data_collection/auto_record_data.py --config-name=demo_record_franka_research
