@@ -11,4 +11,4 @@ if [ -n "$PIDS" ]; then
 else
     echo "No matching processes found."
 fi
-bash bash_scripts/start_control_pc.sh
+bash bash_scripts/start_control_pc.sh -i localhost
