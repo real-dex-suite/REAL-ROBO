@@ -90,8 +90,6 @@ class FrankaEnvWrapper:
         self._setup_franka_command_publisher()
 
         self.control_mode = control_mode
-        self.home_joints = self.get_arm_position()
-        self.home_pose = self.get_tcp_position()
         self._fa_cmd_id = 0
         self._init_time = rospy.Time.now().to_time()
         if control_mode == "joint":
@@ -103,6 +101,8 @@ class FrankaEnvWrapper:
                 f"Unsupported control mode: '{control_mode}'. "
                 "Supported modes are 'joint' or 'cartesian'."
             )
+        self.home_joints = self.get_arm_position()
+        self.home_pose = self.get_tcp_position()
         self.gripper_init_state = gripper_init_state
         self._gripper_state = gripper_init_state
         if gripper_init_state == "open":
