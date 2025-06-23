@@ -76,7 +76,7 @@ class AutoDataCollector(object):
         # arm collector initialization
         if self.arm_type == "flexiv":
             self.data_collection_topic_type = "jaka"
-        elif self.arm_type == "franka":
+        elif "franka" in self.arm_type:
             self.data_collection_topic_type = "franka"
         elif self.arm_type == "jaka":
             self.data_collection_topic_type = "jaka"
