@@ -1,6 +1,6 @@
 defaults:
   - _self_
-  - robot_camera
+  - robot_camera_franka_ctek
   - tactile: null # paxini
   - tracker: pico # hamer 
   - override hydra/hydra_logging: disabled  

@@ -1,0 +1,9 @@
+robot_cam_serial_numbers:
+  - "125322060991" # D415, mobile franka left camera
+  - "211422061450" # D415, mobile franka right camera
+
+# Robot camera stream resolution
+resolution: [1280, 720]
+
+# Visualize image streams
+visualize_stream: True

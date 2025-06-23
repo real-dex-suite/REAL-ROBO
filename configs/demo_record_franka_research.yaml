@@ -1,0 +1,11 @@
+defaults:
+  - _self_
+  - teleop_real_franka_research_pico
+  - override hydra/hydra_logging: disabled  
+  - override hydra/job_logging: disabled  
+
+# Recorded Demostration Number
+demo_num: 1
+
+# data paths
+storage_path: 'expert_dataset/recorded_data/'
