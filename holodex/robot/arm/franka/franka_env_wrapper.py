@@ -88,8 +88,10 @@ class FrankaEnvWrapper:
         self._setup_gripper_state_collection()
         self._setup_data_collection_publisher()
         self._setup_franka_command_publisher()
-        self.home_joints = self.get_arm_position()
 
+        self.control_mode = control_mode
+        self.home_joints = self.get_arm_position()
+        self.home_pose = self.get_tcp_position()
         self._fa_cmd_id = 0
         self._init_time = rospy.Time.now().to_time()
         if control_mode == "joint":
@@ -101,7 +103,6 @@ class FrankaEnvWrapper:
                 f"Unsupported control mode: '{control_mode}'. "
                 "Supported modes are 'joint' or 'cartesian'."
             )
-        self.control_mode = control_mode
         self.gripper_init_state = gripper_init_state
         self._gripper_state = gripper_init_state
         if gripper_init_state == "open":
@@ -200,9 +201,12 @@ class FrankaEnvWrapper:
         return quat
 
     def home_robot(self):
-        self.move_joint(self.home_joints)
+        if self.control_mode == "joint":
+            self.move_joint(self.home_joints)
+        else:
+            self.move_pose(self.home_pose)
         if self.with_gripper:
-            self.move_gripper(self.gripper_init_state)
+            self.move_gripper(self.gripper_init_state == "close", block=True)
 
     def get_arm_position(self) -> list:
         """
@@ -252,7 +256,7 @@ class FrankaEnvWrapper:
             raise ValueError("IK solution not found")
         return ik_res
 
-    def open_gripper(self, block=True):
+    def open_gripper(self, block=False):
         """
         Open gripper to maximum width.
 
@@ -262,17 +266,17 @@ class FrankaEnvWrapper:
         if self.gripper == "panda":
             self.gripper_wrapper.open_gripper(block=block, skill_desc="OpenGripper")
         elif self.gripper == "ctek":
-            self.gripper_wrapper.open_gripper(block=False)
+            self.gripper_wrapper.open_gripper(block=block)
         else:
             pass
         self._gripper_state = 'open'
 
-    def close_gripper(self, block=True):
+    def close_gripper(self, block=False):
         """Close gripper and attempt to grasp object."""
         if self.gripper == "panda":
             self.gripper_wrapper.close_gripper(grasp=True, block=block, skill_desc="CloseGripper")
         elif self.gripper == "ctek":
-            self.gripper_wrapper.close_gripper(block=False)
+            self.gripper_wrapper.close_gripper(block=block)
         else:
             pass
         self._gripper_state = 'close'
@@ -340,7 +344,7 @@ class FrankaEnvWrapper:
         if self.with_gripper:
             self.gripper_publisher.publish(bool(self.get_gripper_position()))
 
-    def move_gripper(self, gripper_cmd: bool = True):
+    def move_gripper(self, gripper_cmd: bool = True, block: bool = False):
         """
         Control gripper for teleoperation with binary open/close command.
         Includes debouncing to avoid too frequent control commands.
@@ -355,14 +359,14 @@ class FrankaEnvWrapper:
             if self.gripper_init_state == "open":
                 if self.gripper == "panda":
                     if not gripper_cmd and self._gripper_state == "close":
-                        self.open_gripper()
+                        self.open_gripper(block=block)
                     elif gripper_cmd and self._gripper_state == "open":
-                        self.close_gripper()
+                        self.close_gripper(block=block)
                 elif self.gripper == "ctek":
                     if not gripper_cmd and self._gripper_state == "close":
-                        self.open_gripper()
+                        self.open_gripper(block=block)
                     elif gripper_cmd and self._gripper_state == "open":
-                        self.close_gripper()
+                        self.close_gripper(block=block)
                 else:
                     raise NotImplementedError(f"Gripper {self.gripper} is not implemented.")
         else:
@@ -372,6 +376,7 @@ class FrankaEnvWrapper:
         if self.control_mode == "joint":
             self.move_joint_ik(target_cmd[:7])
         else:
+            self.publish_state(target_cmd[:7], None)
             self.move_pose(target_cmd[:7])
         if self.with_gripper and len(target_cmd) > 7:
             self.move_gripper(target_cmd[7])

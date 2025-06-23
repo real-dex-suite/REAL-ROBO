@@ -1,0 +1,8 @@
+robot_cam_serial_numbers:
+  - "311322301369" # D455 -> TwinAligner
+  
+# Robot camera stream resolution
+resolution: [1280, 720]
+
+# Visualize image streams
+visualize_stream: True

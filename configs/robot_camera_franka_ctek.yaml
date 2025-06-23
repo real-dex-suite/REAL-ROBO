@@ -1,5 +1,4 @@
 robot_cam_serial_numbers:
-  # - "311322301369" # D455 -> TwinAligner
   - "125322060991" # D415, mobile franka left camera
   - "211422061450" # D415, mobile franka right camera
 

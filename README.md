@@ -108,6 +108,7 @@ bash pipelines/teleop_sim.sh
 #### Real (Franka)
 
 !!! NOTE: Please change the settings in `dependencies/frankapy/bash_scripts/start_control_pc.sh` to your own.
+!!! NOTE: Run `bash pipelines/start_franka.sh` again if you change the controlling yaml.
 
 ```bash
 conda activate real-robo
