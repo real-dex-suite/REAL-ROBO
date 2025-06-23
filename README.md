@@ -43,7 +43,7 @@ export PATH=/usr/local/cuda-11.8/bin:$PATH
 export LD_LIBRARY_PATH=/usr/local/cuda-11.8/lib64:$LD_LIBRARY_PATH
 export CUDA_HOME=/usr/local/cuda-11.8
 
-git clone --recurse-submodules git@github.com:real-dex-suite/REAL-ROBO.git -b hwfan-dev-genesis
+git clone --recurse-submodules git@github.com:real-dex-suite/REAL-ROBO.git
 conda create -n real-robo python=3.8
 conda activate real-robo
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
