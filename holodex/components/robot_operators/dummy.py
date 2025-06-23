@@ -47,7 +47,7 @@ class DummyDexArmTeleOp:
         cprint("[   ok   ]     Controller initiated. ", "green", attrs=["bold"])
         print("*" * 78 + "\n")
         print("Start controlling the robot hand using the Dummy Teleop.\n")
-
+        # cnt = 0
         while True:
             if rospy.get_param("/data_collector/reset_robot"):
                 self.robot.home_robot()
@@ -58,6 +58,11 @@ class DummyDexArmTeleOp:
                 continue
             # Generate desired joint angles based on current joystick pose
             desired_cmd = self.init_arm_ee_pose.copy()
+            # if cnt % 100 < 50:
+            #     desired_cmd[1] += 0.03
+            # elif cnt % 100 >= 50:
+            #     desired_cmd[1] -= 0.03
+            # cnt += 1
             if self.robot.arm.with_gripper:
                 self.robot.move(np.concatenate([desired_cmd, np.expand_dims(self.gripper_control, axis=0)]))
             else:

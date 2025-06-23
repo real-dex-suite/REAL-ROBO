@@ -1,4 +1,4 @@
-# Real-Robo
+# Real-Robo Teleoperation (RR-T)
 
 Collecting tele-operation data with Real-Robo!
 
@@ -118,11 +118,15 @@ bash pipelines/teleop_real.sh
 #### Real Data Recording
 
 ```bash
-bash pipelines/franka_record.sh
+bash pipelines/auto_record.sh
 ```
+
+#### Camera Calibration
+
+Please refer to [Camera Calibration](https://github.com/kingchou007/camera-calibration) for more details.
 
 ## Acknowledgement
 
-Real-Robo mainly borrows [Holo-dex](https://github.com/SridharPandian/Holo-Dex). Thanks for their wonderful job!
+Real-Robo mainly borrows [Holo-dex](https://github.com/SridharPandian/Holo-Dex) framework. For the dexterous hand retargeting, we refer to and modify [AnyTeleop](https://github.com/dexsuite/dex-retargeting). Please cite their work if you use this code in your research. Thanks for their wonderful job!
 
-Maintained by Jinzhou Li ([@kingchou007](https://github.com/kingchou007)) and Hongwei Fan ([@hwfan](https://github.com/hwfan)).
+Maintained by Jinzhou Li ([@kingchou007](https://github.com/kingchou007)), Hongwei Fan ([@hwfan](https://github.com/hwfan)), Tianhao Wu ([@tianhaowu](https://github.com/tianhaowuhz)) and Jiyao Zhang ([@jiyao06](https://github.com/Jiyao06)).
