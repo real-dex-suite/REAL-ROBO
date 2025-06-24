@@ -4,11 +4,9 @@ Collecting tele-operation data with Real-Robo!
 
 ## Dependencies
 
-- Ubuntu 20.04 / 22.04
+- Ubuntu 20.04
 - CUDA 11.8
-- ROS noetic (necessary)
-  - [Installing ROS 1 in Ubuntu 22.04 (Chinese)](https://www.bilibili.com/opus/890840405512290392)
-- ROS humble (optional)
+- ROS noetic
 
 ## Supported Devices
 
@@ -65,28 +63,10 @@ cd dependencies/frankapy && ./bash_scripts/make_catkin.sh
 
 ### Step 1: Run VR Streamer
 
-#### Run on Docker (Recommended)
-
 ```bash
 pushd vr/pico_streamer
 # de-comment if no container exists
 bash start_streaming_docker.sh # --init
-popd
-```
-
-#### Run on Workstation (ROS 2 Installed)
-
-- Dependencies
-
-```bash
-bash install.sh
-```
-
-- Run
-
-```bash
-pushd vr/pico_streamer
-bash start_streaming_local.sh
 popd
 ```
 
