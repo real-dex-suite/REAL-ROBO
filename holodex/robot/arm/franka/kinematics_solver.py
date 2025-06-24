@@ -108,20 +108,14 @@ class FrankaSolver:
             None,
             filter_robot_command=True,
             tensor_args=self.tensor_args,
-            interpolation_dt=0.02,
             ee_link_name=ee_link,
             use_gradient_descent=True,
         )
         self.motion_gen = MotionGen(self.plan_config)
         cprint("warming up motion gen solver", "green")
-
-        self.motion_gen.warmup(warmup_js_trajopt=False)
+        self.motion_gen.warmup()
         self.plan_config_temp = MotionGenPlanConfig(
-            enable_graph=False,
-            enable_graph_attempt=4,
             max_attempts=2,
-            enable_finetune_trajopt=True,
-            time_dilation_factor=0.5,
         )
 
     def solve_ik_by_motion_gen(self, curr_joint_state, target_trans, target_quat):

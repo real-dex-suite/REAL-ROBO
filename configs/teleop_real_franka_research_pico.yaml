@@ -12,7 +12,7 @@ finger_configs:
   three_dim: true
 simulator: null
 gripper: panda
-gripper_init_state: close #open # close
+gripper_init_state: close # open # close
 arm: franka_joint
 hand: null # TODO
 hydra:  

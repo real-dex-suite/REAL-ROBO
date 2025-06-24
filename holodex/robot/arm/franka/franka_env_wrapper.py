@@ -249,7 +249,8 @@ class FrankaEnvWrapper:
             ValueError: If no IK solution found
         """
         ik_res = self.ik_solver.solve_ik_by_motion_gen(
-            self.get_arm_position(), ee_pose[:3], ee_pose[3:]
+            self.get_arm_position(), 
+            ee_pose[:3], ee_pose[3:]
         )
         ik_res = np.array(ik_res[-1])
         if ik_res is None:
