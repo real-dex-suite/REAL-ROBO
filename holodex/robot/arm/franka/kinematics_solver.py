@@ -106,9 +106,11 @@ class FrankaSolver:
         self.plan_config = MotionGenConfig.load_from_robot_config(
             self.robot_cfg,
             None,
+            filter_robot_command=True,
             tensor_args=self.tensor_args,
             interpolation_dt=0.02,
             ee_link_name=ee_link,
+            use_gradient_descent=True,
         )
         self.motion_gen = MotionGen(self.plan_config)
         cprint("warming up motion gen solver", "green")

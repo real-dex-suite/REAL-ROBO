@@ -108,7 +108,7 @@ class FrankaEnvWrapper:
         if gripper_init_state == "open":
             self.open_gripper()
         elif gripper_init_state == "close":
-            self.close_gripper()
+            self.close_gripper(grasp=False)
         else:
             raise NotImplementedError(f"Unknown gripper_init_state {gripper_init_state}")
         
@@ -271,10 +271,10 @@ class FrankaEnvWrapper:
             pass
         self._gripper_state = 'open'
 
-    def close_gripper(self, block=False):
+    def close_gripper(self, grasp=True, block=False):
         """Close gripper and attempt to grasp object."""
         if self.gripper == "panda":
-            self.gripper_wrapper.close_gripper(grasp=True, block=block, skill_desc="CloseGripper")
+            self.gripper_wrapper.close_gripper(grasp=grasp, block=block, skill_desc="CloseGripper")
         elif self.gripper == "ctek":
             self.gripper_wrapper.close_gripper(block=block)
         else:
