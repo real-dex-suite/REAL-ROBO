@@ -6,3 +6,4 @@ DEFAULT_FR3 = [0.040505826194643726, -0.00536819607860028,         -0.1853828476
 if __name__ == '__main__':
     fa = FrankaArm()
     fa.goto_joints(DEFAULT_FR3)
+    fa.open_gripper()

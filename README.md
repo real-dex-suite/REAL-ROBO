@@ -57,7 +57,7 @@ ln -sf /usr/lib/x86_64-linux-gnu/libffi.so.7 $CONDA_PREFIX/lib/libffi.so.7
 ```bash
 unset ROS_DISTRO && source /opt/ros/noetic/local_setup.bash
 pip install -e dependencies/frankapy
-cd dependencies/frankapy && ./bash_scripts/make_catkin.sh
+cd dependencies/frankapy && ./bash_scripts/make_catkin.sh && cd ../..
 ```
 
 ## Tele-operation
