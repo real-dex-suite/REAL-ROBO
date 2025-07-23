@@ -126,7 +126,7 @@ bash pipelines/auto_record.sh
 
 #### Camera Calibration
 
-Please refer to [Camera Calibration](https://github.com/kingchou007/camera-calibration) for more details.
+Please refer to [Camera Calibration](https://github.com/real-dex-suite/REAL-ROBO/blob/main/tools/calibration/CAMERA_CALI.md) for more details.
 
 ## Acknowledgement
 
