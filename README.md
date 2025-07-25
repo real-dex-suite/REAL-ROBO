@@ -1,8 +1,10 @@
 # Real-Robo Teleoperation (RR-T)
 
-Collecting tele-operation data with Real-Robo!
+Welcome to Real-Robo, an integrated framework for robotic teleoperation and control, designed to streamline the collection of tele-operation data.
 
 ![RR-T](./docs/data/example.gif)
+
+We invite and appreciate all contributions, whether it's reporting an issue, submitting a pull request, or offering feedback. Your input is crucial to us. Join our community to help enhance and simplify the data collection process!
 
 ## Supported Devices
 - Robot Arms
@@ -30,11 +32,11 @@ Collecting tele-operation data with Real-Robo!
     - [ ] Meta Quest 3
     
 ## Setup
-
 - Please refer to [Setup](./docs/setup.md) for more details.
 - Please refer to [Usage](./docs/usage.md) for more details.
 - Please refer to [Data Collection](./docs/data_collection.md) for more details.
 - For camera calibration, please see the [Camera Calibration Guide](https://github.com/real-dex-suite/REAL-ROBO/blob/main/tools/calibration/CAMERA_CALI.md). You may need to calibrate the camera if you plan to use point cloud data.
+
 
 ## TODO
 
@@ -42,13 +44,6 @@ Collecting tele-operation data with Real-Robo!
 - [ ] Add better documentation
 - [ ] Add more examples
 - [ ] Add more tutorials
-
-## Citation
-
-If you find this code useful, please cite our paper:
-
-```bibtex
-```
 
 ## Acknowledgement
 
@@ -61,3 +56,17 @@ Maintained by:
 - Jiyao Zhang ([jiyao06](https://github.com/Jiyao06))
 
 We thank them for their contributions.
+
+
+## Citation
+
+If you find this code useful, please cite our paper:
+
+```bibtex
+@article{li2025adaptive,
+  title={Adaptive Visuo-Tactile Fusion with Predictive Force Attention for Dexterous Manipulation},
+  author={Li, Jinzhou and Wu, Tianhao and Zhang, Jiyao and Chen, Zeyuan and Jin, Haotian and Wu, Mingdong and Shen, Yujun and Yang, Yaodong and Dong, Hao},
+  journal={arXiv preprint arXiv:2505.13982},
+  year={2025}
+}
+```
