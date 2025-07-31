@@ -1,4 +1,3 @@
-
 ## Dependencies
 
 - Ubuntu 20.04 / 22.04
@@ -6,7 +5,7 @@
 - ROS noetic (necessary)
   - [Installing ROS 1 in Ubuntu 22.04 (Chinese)](https://www.bilibili.com/opus/890840405512290392)
 - ROS humble (optional)
-    
+
 ## Installation
 
 ```bash
