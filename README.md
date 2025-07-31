@@ -1,135 +1,47 @@
 # Real-Robo Teleoperation (RR-T)
 
-Collecting tele-operation data with Real-Robo!
+Welcome to Real-Robo, an integrated framework for robotic teleoperation and control, designed to streamline the collection of tele-operation data.
 
-## Dependencies
+![RR-T](./docs/data/example.gif)
 
-- Ubuntu 20.04 / 22.04
-- CUDA 11.8
-- ROS noetic (necessary)
-  - [Installing ROS 1 in Ubuntu 22.04 (Chinese)](https://www.bilibili.com/opus/890840405512290392)
-- ROS humble (optional)
+We invite and appreciate all contributions, whether it's reporting an issue, submitting a pull request, or offering feedback. Your input is crucial to us. Join our community to help enhance and simplify the data collection process!
 
-## Supported Devices
+## Setup
 
-- Robot Arms
-  - [x] JAKA
-  - [x] Flexiv
-  - [x] Franka (tested)
-- Robot Hands
-  - hand
-    - [x] Leaphand
-    - [x] Paxini
-  - gripper
-    - [x] Panda Gripper (tested)
-- Tele-operation Devices
-  - dexterous hand
-    - [x] Mediapipe
-  - arm + dexterous hand
-    - [x] Leapmotion
-    - [x] Oculus VR
-    - [x] HAMER
-  - arm + gripper
-    - [x] PICO 4 (tested)
-    - [ ] Keyboard
-    - [ ] Spacemouse
-    - [ ] HAMER
-    - [ ] Meta Quest 3
-    
-## Installation
+- Please refer to [Setup](./docs/setup.md) for more details.
+- Please refer to [Usage](./docs/usage.md) for more details.
+- Please refer to [Data Collection](./docs/data_collection.md) for more details.
+- For camera calibration, please see the [Camera Calibration Guide](https://github.com/real-dex-suite/REAL-ROBO/blob/main/tools/calibration/CAMERA_CALI.md). You may need to calibrate the camera if you plan to use point cloud data.
 
-```bash
-export PATH=/usr/local/cuda-11.8/bin:$PATH
-export LD_LIBRARY_PATH=/usr/local/cuda-11.8/lib64:$LD_LIBRARY_PATH
-export CUDA_HOME=/usr/local/cuda-11.8
+## TODO
 
-git clone --recurse-submodules git@github.com:real-dex-suite/REAL-ROBO.git
-conda create -n real-robo python=3.8
-conda activate real-robo
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
-pip install -r requirements.txt
-pip install -e dependencies/curobo --no-build-isolation --verbose
-pip install -e .
-ln -sf /usr/lib/x86_64-linux-gnu/libffi.so.7 $CONDA_PREFIX/lib/libffi.so.7
-```
-
-### Franka Control
-
-```bash
-unset ROS_DISTRO && source /opt/ros/noetic/local_setup.bash
-pip install -e dependencies/frankapy
-cd dependencies/frankapy && ./bash_scripts/make_catkin.sh
-```
-
-## Tele-operation
-
-### Step 1: Run VR Streamer
-
-#### Run on Docker (Recommended)
-
-```bash
-pushd vr/pico_streamer
-# de-comment if no container exists
-bash start_streaming_docker.sh # --init
-popd
-```
-
-#### Run on Workstation (ROS 2 Installed)
-
-- Dependencies
-
-```bash
-bash install.sh
-```
-
-- Run
-
-```bash
-pushd vr/pico_streamer
-bash start_streaming_local.sh
-popd
-```
-
-### Step 2: Run VR Publisher
-
-```bash
-bash pipelines/vr_bridge.sh 
-```
-
-### Step 3: Run Tele-operation
-
-#### Simulation (Genesis)
-
-```bash
-conda activate real-robo
-bash pipelines/teleop_sim.sh
-```
-
-#### Real (Franka)
-
-!!! NOTE: Please change the settings in `dependencies/frankapy/bash_scripts/start_control_pc.sh` to your own.
-!!! NOTE: Run `bash pipelines/start_franka.sh` again if you change the controlling yaml.
-
-```bash
-conda activate real-robo
-# Step 1: start franka daemon processes
-bash pipelines/start_franka.sh
-# Step 2: start teleop process
-bash pipelines/teleop_real.sh
-```
-
-#### Real Data Recording
-
-```bash
-bash pipelines/auto_record.sh
-```
-
-#### Camera Calibration
-
-Please refer to [Camera Calibration](https://github.com/real-dex-suite/REAL-ROBO/blob/main/tools/calibration/CAMERA_CALI.md) for more details.
+- [ ] Add more devices
+- [ ] Add better documentation
+- [ ] Add more examples
+- [ ] Add more tutorials
 
 ## Acknowledgement
 
 Real-Robo mainly borrows [Holo-dex](https://github.com/SridharPandian/Holo-Dex) framework. For the dexterous hand retargeting, we refer to and modify [AnyTeleop](https://github.com/dexsuite/dex-retargeting). Please cite their work if you use this code in your research. Thanks for their wonderful job!
 
-Maintained by Jinzhou Li ([@kingchou007](https://github.com/kingchou007)), Hongwei Fan ([@hwfan](https://github.com/hwfan)), Tianhao Wu ([@tianhaowu](https://github.com/tianhaowuhz)) and Jiyao Zhang ([@jiyao06](https://github.com/Jiyao06)).
+Maintained by:
+
+- Jinzhou Li ([kingchou007](https://github.com/kingchou007))
+- Hongwei Fan ([hwfan](https://github.com/hwfan))
+- Tianhao Wu ([tianhaowu](https://github.com/tianhaowuhz))
+- Jiyao Zhang ([jiyao06](https://github.com/Jiyao06))
+
+We thank them for their contributions.
+
+## Citation
+
+If you find this code useful, please cite our paper:
+
+```bibtex
+@article{li2025adaptive,
+  title={Adaptive Visuo-Tactile Fusion with Predictive Force Attention for Dexterous Manipulation},
+  author={Li, Jinzhou and Wu, Tianhao and Zhang, Jiyao and Chen, Zeyuan and Jin, Haotian and Wu, Mingdong and Shen, Yujun and Yang, Yaodong and Dong, Hao},
+  journal={arXiv preprint arXiv:2505.13982},
+  year={2025}
+}
+```
