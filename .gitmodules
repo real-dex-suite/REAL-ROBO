@@ -7,3 +7,6 @@
 [submodule "dependencies/frankapy"]
 	path = dependencies/frankapy
 	url = git@github.com:iamlab-cmu/frankapy.git
+[submodule "dependencies/deoxys_control"]
+	path = dependencies/deoxys_control
+	url = git@github.com:UT-Austin-RPL/deoxys_control.git
