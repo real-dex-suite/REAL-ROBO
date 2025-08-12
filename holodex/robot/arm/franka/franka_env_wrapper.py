@@ -225,6 +225,7 @@ class FrankaEnvWrapper:
             np.ndarray: [x, y, z, qw, qx, qy, qz]
         """
         if self.control_mode == "joint":
+            # NOTE: rot_quat is wxyz.
             trans, rot_quat = self.ik_solver.compute_fk(self.get_arm_position())
         else:
             current_ee_pose = self.arm.get_pose()
