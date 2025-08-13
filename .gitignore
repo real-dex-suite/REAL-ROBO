@@ -60,3 +60,4 @@ configs/dataset/bottle_opening/ssl.yaml
 configs/replay.yaml
 configs/task/bottle_opening.yaml
 vr/pico_streamer
+*.tar.gz

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import cv2
 import os
 from tqdm import tqdm
-timestamp = "20250629_153714"
+timestamp = "20250627_pnp"
 path = f"expert_dataset/recorded_data/{timestamp}/demonstration_1"
 data_files = sorted([int(x) for x in os.listdir(path)])
 

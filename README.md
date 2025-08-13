@@ -79,6 +79,13 @@ bash pipelines/vr_bridge.sh
 
 ### Step 3: Run Tele-operation
 
+#### Visualize VR Control
+
+```bash
+conda activate real-robo
+bash pipelines/vis_vr.sh
+```
+
 #### Simulation (Genesis)
 
 ```bash
