@@ -233,6 +233,6 @@ class PICODexArmTeleOp:
                     self.robot.move(desired_cmd)
             else:
                 sofar = np.sqrt(np.sum((self._get_tcp_position()[:3] - self.init_arm_ee_pose[:3]) ** 2))
-                print(sofar)
                 if np.all(sofar > 1e-2):
+                    print("Resetting:", sofar)
                     self.robot.home_robot()
