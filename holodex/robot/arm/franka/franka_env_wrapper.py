@@ -103,6 +103,7 @@ class FrankaEnvWrapper:
             )
         self.home_joints = self.get_arm_position()
         self.home_pose = self.get_tcp_position()
+        self.home_interpolate_steps = 200
         self.gripper_init_state = gripper_init_state
         self._gripper_state = gripper_init_state
         if gripper_init_state == "open":
@@ -202,8 +203,14 @@ class FrankaEnvWrapper:
 
     def home_robot(self):
         if self.control_mode == "joint":
-            self.move_joint(self.home_joints)
+            current_joints = self.get_arm_position()
+            target_joints = self.home_joints
+            interpolated_all = np.linspace(current_joints, target_joints, num=self.home_interpolate_steps, axis=0)
+            for interpolated in interpolated_all:
+                self.move_joint(interpolated)
+                rospy.sleep(0.01)
         else:
+            # TODO: add interpolation
             self.move_pose(self.home_pose)
         if self.with_gripper:
             self.move_gripper(self.gripper_init_state == "close", block=True)

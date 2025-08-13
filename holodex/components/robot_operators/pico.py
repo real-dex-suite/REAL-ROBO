@@ -110,6 +110,7 @@ class PICODexArmTeleOp:
         self.arm_type = arm_type
         self.trans_scale = 1
         self.gripper_control = float(gripper_init_state == "close")
+        self.hand_trigger = False
         self.logger = spdlog.ConsoleLogger("RobotController")
 
         # Initialize state variables
@@ -224,8 +225,13 @@ class PICODexArmTeleOp:
             if rospy.get_param("/data_collector/stop_move"):
                 continue
             # Generate desired joint angles based on current joystick pose
-            desired_cmd = self._retarget_base()
-            if self.robot.arm.with_gripper:
-                self.robot.move(np.concatenate([desired_cmd, np.expand_dims(self.gripper_control, axis=0)]))
+            if np.all(np.abs(self.joystick_pose[:3]) > 1e-8):
+                desired_cmd = self._retarget_base()
+                if self.robot.arm.with_gripper:
+                    self.robot.move(np.concatenate([desired_cmd, np.expand_dims(self.gripper_control, axis=0)]))
+                else:
+                    self.robot.move(desired_cmd)
             else:
-                self.robot.move(desired_cmd)
+                sofar = np.sqrt(np.sum((self._get_tcp_position()[:3] - self.init_arm_ee_pose[:3]) ** 2))
+                if np.all(sofar > 1e-2):
+                    self.robot.home_robot()
