@@ -105,7 +105,7 @@ def pico_teleop(teleop_configs):
                               gripper=teleop_configs.get("gripper", "ctek"),
                               arm_type=teleop_configs.get("arm", "franka"),
                               gripper_init_state=teleop_configs.get("gripper_init_state", "open"),
-                              lock_rotation=teleop_configs.tracker.get("lock_rotation", False),
+                              lock_rotation=teleop_configs.tracker.get("lock_rotation", ["pitch", "roll"]),
                               lock_z=teleop_configs.tracker.get("lock_z", False))
     teleop.move()
 

@@ -65,9 +65,48 @@ def rfu_to_flu(T_rfu):
     T_flu = C @ T_rfu @ C_inv
     
     return T_flu
+
+def remove_euler_component_scipy(quat, remove_roll=False, remove_pitch=False, remove_yaw=False):
+    """
+    Remove specified Euler angle components from a quaternion using SciPy
     
+    Args:
+        quat: Input quaternion in [w, x, y, z] format (scalar first)
+        remove_roll: Flag to remove roll component (x-axis rotation)
+        remove_pitch: Flag to remove pitch component (y-axis rotation)
+        remove_yaw: Flag to remove yaw component (z-axis rotation)
+        
+    Returns:
+        New quaternion with specified components removed [w, x, y, z]
+    """
+    # Note: SciPy uses xyzw format (scalar last), so we need to convert input
+    quat_xyzw = np.array([quat[1], quat[2], quat[3], quat[0]])
+    
+    # Create Rotation object from quaternion
+    rotation = R.from_quat(quat_xyzw)
+    
+    # Extract Euler angles (using 'xyz' convention: roll, pitch, yaw)
+    euler_angles = rotation.as_euler('xyz', degrees=False)
+    
+    # Zero out the components we want to remove
+    if remove_roll:
+        euler_angles[0] = 0.0  # Roll (x-axis)
+    if remove_pitch:
+        euler_angles[1] = 0.0  # Pitch (y-axis)
+    if remove_yaw:
+        euler_angles[2] = 0.0  # Yaw (z-axis)
+    
+    # Create new rotation from modified Euler angles
+    new_rotation = R.from_euler('xyz', euler_angles)
+    
+    # Convert back to quaternion and adjust to wxyz format
+    new_quat_xyzw = new_rotation.as_quat()
+    new_quat = np.array([new_quat_xyzw[3], new_quat_xyzw[0], new_quat_xyzw[1], new_quat_xyzw[2]])
+    
+    return new_quat
+
 class PICODexArmTeleOp:
-    def __init__(self, simulator=None, gripper=None, arm_type="franka", gripper_init_state="open", lock_rotation=False, lock_z=False):
+    def __init__(self, simulator=None, gripper=None, arm_type="franka", gripper_init_state="open", lock_rotation=["pitch", "roll"], lock_z=False):
         self.arm_type = arm_type
         self.trans_scale = 1
         self.gripper_control = float(gripper_init_state == "close")
@@ -161,10 +200,12 @@ class PICODexArmTeleOp:
             current_arm_pose[2:3] = self.init_arm_ee_to_world[2:3, 3].copy()
         else:
             current_arm_pose[:3]  = self.joystick_pose[:3] * self.trans_scale + self.init_arm_ee_to_world[:3, 3]
-        if self.lock_rotation:
-            current_arm_pose[3:7] = mat2quat(self.init_arm_ee_to_world[:3, :3].copy())
-        else:
-            current_arm_pose[3:7] = mat2quat(quat2mat(self.joystick_pose[3:7]) @ self.init_arm_ee_to_world[:3, :3])
+        # NOTE: quat is wxyz.
+        filtered_quat = remove_euler_component_scipy(self.joystick_pose[3:7], 
+                                                    remove_roll="roll" in self.lock_rotation,
+                                                    remove_pitch="pitch" in self.lock_rotation,
+                                                    remove_yaw="yaw" in self.lock_rotation,)
+        current_arm_pose[3:7] = mat2quat(quat2mat(filtered_quat) @ self.init_arm_ee_to_world[:3, :3])
         return current_arm_pose
     
     def move(self):

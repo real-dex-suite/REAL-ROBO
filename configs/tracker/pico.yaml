@@ -3,5 +3,5 @@ type: PICO
 # Visualize 3D and 2D plots
 visualize_graphs: false
 
-lock_rotation: true
+lock_rotation: ["pitch", "roll"]
 lock_z: false

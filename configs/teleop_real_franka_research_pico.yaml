@@ -13,7 +13,7 @@ finger_configs:
 simulator: null
 gripper: panda
 gripper_init_state: open # close
-arm: franka
+arm: franka_joint
 hand: null # TODO
 hydra:  
   output_subdir: null  
