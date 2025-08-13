@@ -27,9 +27,10 @@ class ZMQSubscriber:
     def _process_message(self, message):
         number_pattern = re.compile(r'-?\d+\.\d+|-?\d+')
         numbers = number_pattern.findall(message)
-        trigger = numbers[0] if numbers else None
-        ee_pose = [float(num) for num in numbers[1:]] if len(numbers) > 1 else []
-        return trigger, ee_pose
+        hand_trigger = numbers[0] if numbers else None
+        trigger = numbers[1] if numbers else None
+        ee_pose = [float(num) for num in numbers[2:]] if len(numbers) > 1 else []
+        return hand_trigger, trigger, ee_pose
 
     def _create_pose_message(self, ee_pose):
         pose_msg = Pose()
@@ -43,20 +44,21 @@ class ZMQSubscriber:
     def listen(self):
         pub_ee_pose = rospy.Publisher('vr/ee_pose', Pose, queue_size=10)
         pub_gripper = rospy.Publisher('vr/gripper', Float64, queue_size=10)
-        
+        pub_hand_trigger = rospy.Publisher('vr/hand_trigger', Float64, queue_size=10)
         rospy.init_node('zmq_listener', anonymous=True)
         while not rospy.is_shutdown():
             try:
                 message = self.socket.recv_string()
-                trigger, ee_pose = self._process_message(message)
+                hand_trigger, trigger, ee_pose = self._process_message(message)
                 if DEBUG:
-                    rospy.loginfo(f"Gripper: {trigger}, EE Pose: {ee_pose}")
+                    rospy.loginfo(f"Hand Trigger: {hand_trigger}, Gripper: {trigger}, EE Pose: {ee_pose}")
                 
                 ee_pose_msg = self._create_pose_message(ee_pose)
                 trigger_msg = self._create_trigger_message(trigger)
-                
+                hand_trigger_msg = self._create_trigger_message(hand_trigger)
                 pub_ee_pose.publish(ee_pose_msg)
                 pub_gripper.publish(trigger_msg)
+                pub_hand_trigger.publish(hand_trigger_msg)
             except zmq.ZMQError as e:
                 rospy.logerr(f"ZMQ Error receiving message: {str(e)}")
             except Exception as e:
