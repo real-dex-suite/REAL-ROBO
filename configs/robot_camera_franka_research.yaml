@@ -1,5 +1,5 @@
 robot_cam_serial_numbers:
-  - "311322301369" # D455 -> TwinAligner
+  - "207122078785" # D435 -> TwinAligner
   
 # Robot camera stream resolution
 resolution: [1280, 720]
