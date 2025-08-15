@@ -225,7 +225,7 @@ class PICODexArmTeleOp:
             if rospy.get_param("/data_collector/stop_move"):
                 continue
             # Generate desired joint angles based on current joystick pose
-            if np.all(np.abs(self.joystick_pose[:3]) > 1e-8):
+            if np.sqrt(np.sum(self.joystick_pose[:3] ** 2)) > 1e-8:
                 desired_cmd = self._retarget_base()
                 if self.robot.arm.with_gripper:
                     self.robot.move(np.concatenate([desired_cmd, np.expand_dims(self.gripper_control, axis=0)]))
@@ -234,6 +234,7 @@ class PICODexArmTeleOp:
             else:
                 sofar_before = np.sqrt(np.sum((self._get_tcp_position()[:3] - self.init_arm_ee_pose[:3]) ** 2))
                 if np.all(sofar_before > 5e-2):
+                    print("Current joystick", self.joystick_pose[:3])
                     print(f"Resetting: {sofar_before}")
                     self.robot.home_robot()
                     sofar_after = np.sqrt(np.sum((self._get_tcp_position()[:3] - self.init_arm_ee_pose[:3]) ** 2))

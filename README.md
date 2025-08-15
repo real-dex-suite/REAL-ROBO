@@ -110,7 +110,8 @@ bash pipelines/teleop_real_fr3.sh
 #### Real Data Recording
 
 ```bash
-bash pipelines/auto_record.sh
+conda activate real-robo
+bash pipelines/auto_record_fr3.sh
 ```
 
 #### Camera Calibration

@@ -260,34 +260,42 @@ class AutoDataCollector(object):
                 skip_loop = False
 
                 # Checking for broken data streams
+                error_msg = []
                 for tactile_subscriber in self.tactile_subscribers:
                     if tactile_subscriber.get_data() is None:
+                        error_msg.append("tactile")
                         cprint('Tactile data not available!', 'red')
                         skip_loop = True
 
                 if self.hand is not None and self.hand.get_hand_position() is None:
+                    error_msg.append("hand")
                     cprint('Hand data not available!', 'red')
                     skip_loop = True
 
                 # TODO: fix this
                 if self.arm_joint_state is None or self.arm_ee_pose is None:
-                    cprint('Arm data not available!', 'red')
+                    # cprint(f'Arm data not available! {self.arm_joint_state} {self.arm_ee_pose}', 'red')
+                    error_msg.append("arm")
                     skip_loop = True
     
                 for color_image_subscriber in self.color_image_subscribers:
                     if color_image_subscriber.get_image() is None:
-                        cprint('Color image not available!', 'red')
+                        error_msg.append("color")
+                        # cprint('Color image not available!', 'red')
                         skip_loop = True
                 
                 # Comment out the depth image subscriber for now
                 for depth_image_subscriber in self.depth_image_subscribers:
                     if depth_image_subscriber.get_image() is None:
-                        cprint('Depth image not available!', 'red')
+                        error_msg.append("depth")
+                        # cprint('Depth image not available!', 'red')
                         skip_loop = True
 
                 if skip_loop:
+                    pbar.set_description("NO " + ",".join(error_msg))
                     continue                    
-
+                else:
+                    pbar.set_description("")
                 state = dict()
 
                 # Arm data
