@@ -300,6 +300,7 @@ class AutoDataCollector(object):
 
                 # Arm data
                 arm_state = self._collect_state_data()
+                print(arm_state['arm_ee_pose'])
                 state.update(arm_state)
 
                 # Hand data

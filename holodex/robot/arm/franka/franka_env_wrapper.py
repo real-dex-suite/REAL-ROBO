@@ -207,6 +207,7 @@ class FrankaEnvWrapper:
             target_joints = self.home_joints
             interpolated_all = np.linspace(current_joints, target_joints, num=self.home_interpolate_steps, axis=0)
             for interpolated in interpolated_all:
+                self.publish_state(np.concatenate(self.ik_solver.compute_fk(interpolated)).tolist(), interpolated)
                 self.move_joint(interpolated)
                 rospy.sleep(0.01)
         else:
@@ -342,6 +343,7 @@ class FrankaEnvWrapper:
     def publish_state(self, target_ee=None, target_joint=None):
         arm_joint_positions = self.get_arm_position()
         arm_ee_pose = self.get_tcp_position()
+        print(arm_ee_pose)
         if arm_joint_positions is not None:
             self.arm_joint_state_publisher.publish(arm_joint_positions)
         if arm_ee_pose is not None:
