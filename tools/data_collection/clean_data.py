@@ -63,11 +63,11 @@ if __name__ == "__main__":
                 arm_ee_poses.append(pickle.load(open(data_path, "rb"))["arm_ee_pose"])
             arm_ee_poses = np.array(arm_ee_poses)
             zero_diff_indexes = find_zero_diff_indices_both(arm_ee_poses)
-            print(arm_ee_poses[:, :3])
-            # for data_file_index, data_file in enumerate(data_files):
-            #     if data_file_index not in zero_diff_indexes:
-            #         data_path = os.path.join(demo_path, str(data_file))
-            #         target_dir = demo_path.replace(ori_data_dir, target_data_dir)
-            #         os.makedirs(target_dir, exist_ok=True)
-            #         target_path = os.path.join(target_dir, str(data_file))
-            #         shutil.copy(data_path, target_path)
+            print(zero_diff_indexes)
+            for data_file_index, data_file in enumerate(data_files):
+                if data_file_index not in zero_diff_indexes:
+                    data_path = os.path.join(demo_path, str(data_file))
+                    target_dir = demo_path.replace(ori_data_dir, target_data_dir)
+                    os.makedirs(target_dir, exist_ok=True)
+                    target_path = os.path.join(target_dir, str(data_file))
+                    shutil.copy(data_path, target_path)
