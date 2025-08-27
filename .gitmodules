@@ -1,3 +1,7 @@
+# Added deoxys_control_research3 as a submodule
+[submodule "dependencies/deoxys_control_research3"]
+	path = dependencies/deoxys_control_research3
+	url = https://github.com/XianyiCheng/deoxys_control_research3
 [submodule "dependencies/curobo"]
 	path = dependencies/curobo
 	url = https://github.com/NVlabs/curobo.git
