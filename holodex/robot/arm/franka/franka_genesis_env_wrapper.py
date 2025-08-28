@@ -7,18 +7,6 @@ except:
 from scipy.spatial.transform import Rotation as R
 from std_msgs.msg import Float64MultiArray, Bool
 import rospy
-
-class LowPassFilter:
-    def __init__(self, alpha):
-        self.alpha = alpha 
-        self.prev_value = None
-    
-    def __call__(self, new_value):
-        if self.prev_value is None:
-            self.prev_value = new_value
-        else:
-            self.prev_value = self.alpha * new_value + (1 - self.alpha) * self.prev_value
-        return self.prev_value
     
 class FrankaGenesisEnvWrapper:
     def __init__(self, control_mode="joint", teleop=False, gripper="panda", gripper_init_state="open"):
@@ -108,7 +96,7 @@ class FrankaGenesisEnvWrapper:
     def open_gripper(self):
         if self.with_gripper:
             # Open the robot's gripper
-            gripper_msg = Bool(data=True)
+            gripper_msg = Bool(data=False)
             self.gripper_control_pub.publish(gripper_msg)
             self._gripper_state = 'open'
         else:
@@ -117,7 +105,7 @@ class FrankaGenesisEnvWrapper:
     def close_gripper(self):
         if self.with_gripper:
             # Open the robot's gripper
-            gripper_msg = Bool(data=False)
+            gripper_msg = Bool(data=True)
             self.gripper_control_pub.publish(gripper_msg)
             self._gripper_state = 'close'
         else:
