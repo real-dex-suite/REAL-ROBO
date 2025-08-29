@@ -14,3 +14,9 @@
 [submodule "dependencies/deoxys_control"]
 	path = dependencies/deoxys_control
 	url = git@github.com:UT-Austin-RPL/deoxys_control.git
+[submodule "dependencies/oscbf"]
+	path = dependencies/oscbf
+	url = https://github.com/StanfordASL/oscbf.git
+[submodule "dependencies/dex-retargeting"]
+	path = dependencies/dex-retargeting
+	url = https://github.com/real-dex-suite/dex-retargeting.git
