@@ -65,7 +65,7 @@ class _ConsoleFormatter(logging.Formatter):
         message = record.getMessage()
         if record.exc_info:
             message = f"{message}\n{self.formatException(record.exc_info)}"
-        return f"{prefix} {message}"
+        return f"{prefix} {message} ({record.filename}:{record.lineno})"
 
 
 def _create_console_handler(level: int) -> logging.Handler:
