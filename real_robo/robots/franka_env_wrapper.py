@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
 """
-REAL-ROBO Wrapper
-author: Jinzhou Li
+FrankaEnvWrapper: A High-Level Interface for Franka Robot Control
 
-This wrapper is adapted from deoxys_control_research3 (https://github.com/UT-Austin-RPL/deoxys_control)
-We provide some additional helper functions for easier usage.
+Author: Jinzhou Li
+
+This module provides a convenient wrapper around the Deoxys FrankaInterface,
+enabling simplified and robust interaction with Franka robots for research and development.
+It offers user-friendly methods for querying robot state, controlling motion, and accessing
+robot data, while handling initialization and connection management.
+
+Adapted from: deoxys_control_research3 (https://github.com/UT-Austin-RPL/deoxys_control)
+
+Additional helper functions and safety checks are included to streamline common robotics workflows.
 """
 
 from __future__ import annotations
@@ -19,24 +26,10 @@ from typing import Optional
 from real_robo.robots.deoxys_imports import setup_deoxys_path
 setup_deoxys_path()
 
-# from real_robo.dependencies.deoxys_control_research3.deoxys.deoxys import config_root
-# from real_robo.dependencies.deoxys_control_research3.deoxys.deoxys.franka_interface import FrankaInterface
-# from real_robo.dependencies.deoxys_control_research3.deoxys.deoxys.utils import YamlConfig
-
 from deoxys import config_root
 from deoxys.franka_interface import FrankaInterface
 from deoxys.utils import YamlConfig
 from deoxys.utils.config_utils import get_default_controller_config
-
-
-# sys.path.append("dependencies/deoxys_control_research3/deoxys")
-# from deoxys import config_root
-# from deoxys.franka_interface import FrankaInterface
-# from deoxys.utils import YamlConfig
-
-# Initialize logger
-# from rr_helper import get_logo
-# from real_robo_logger import get_real_robo_logger
 from real_robo.robots.real_robo_logger import get_real_robo_logger
 logger = get_real_robo_logger("demo", console_level=logging.DEBUG)
 
@@ -56,9 +49,7 @@ class FrankaEnvWrapper:
         self.controller_type = controller_type
 
         # self.controller_cfg = get_default_controller_config(controller_type=controller_type)
-
         # Wait for the robot to be ready
-        # logger.info("\n%s", get_logo())
         self._wait_for_robot_state()
 
 
@@ -167,8 +158,6 @@ class FrankaEnvWrapper:
     ########################################################################
 
     #TODO 1: add safety check, if two cmd are too far away, don't do it. Which also important for VR teleop!
-
-
     def move_ee_pose(self, pose: np.ndarray) -> None:
         """Move the robot to the target end-effector pose.
         Args:
@@ -196,15 +185,10 @@ class FrankaEnvWrapper:
 
     #TODO 2: torque control
 
-    
-
-
-
-
-
-
-
 
 if __name__ == "__main__":
     robot = FrankaEnvWrapper()
-    print(robot.get_joint_positions())
+    while True:
+        # print(robot.get_joint_positions())
+        print(robot.get_ee_pose())
+        time.sleep(0.1)

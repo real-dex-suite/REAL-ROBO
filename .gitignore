@@ -60,3 +60,7 @@ configs/dataset/bottle_opening/ssl.yaml
 configs/replay.yaml
 configs/task/bottle_opening.yaml
 vr/pico_streamer
+
+# Ignore -info
+real_robo.egg-info/*
+test/*
