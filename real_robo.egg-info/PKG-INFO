@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: real-robo
+Version: 1.1.0
+Summary: An integrated framework for robotic teleoperation and control
+Home-page: https://github.com/real-dex-suite/REAL-ROBO
+Author: Jinzhou Li, Hongwei Fan
+Dynamic: author
+Dynamic: home-page
+Dynamic: summary

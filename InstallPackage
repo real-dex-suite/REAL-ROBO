@@ -1,0 +1,115 @@
+#!/bin/sh
+
+# RED='\033[0;31m'
+# NC='\033[0m' # No Color
+
+
+# # Test Version Ubuntu 24.04
+# # 1.Download franka python control
+
+# sudo apt install build-essential cmake git libpoco-dev libeigen3-dev -y
+
+# # For protoc
+# sudo apt-get install autoconf automake libtool curl make g++ unzip -y
+
+# # For zmq
+# sudo apt-get install libzmq3-dev -y
+
+# # download deoxys
+# git clone --recursive https://github.com/frankaemika/libfranka
+# cd libfranka
+
+# # echo "Which libfranka version are you going to use? (currently supporting 0.8.0 and 0.9.0, can do 0.10.0 but no guarantee)"
+# # read version
+# # echo "chose libfranka ${version}"
+# # if [[ "$version" != "0.8.0" && "$version" != "0.9.0" && "$version" != "0.10.0" ]]
+# # then
+# #     printf "${RED} The version ${version} won't be supported!!! \n ${NC}"
+# # fi
+# # git checkout ${version}
+
+# echo "Installing libfranka 0.15.0"
+# git checkout 0.15.0
+
+# git submodule update
+# cd ..
+
+# # download c++ zmq wrapper
+# git clone https://github.com/zeromq/zmqpp.git
+
+# # download yaml cpp package
+# git clone https://github.com/jbeder/yaml-cpp.git
+
+# # download spdlog package
+# git clone https://github.com/gabime/spdlog.git
+# cd spdlog
+# git checkout ac55e60488032b9acde8940a5de099541c4515da
+# cd ..
+
+# # download protobuf
+# git clone --recursive https://github.com/protocolbuffers/protobuf.git
+# cd protobuf
+# git checkout v3.13.0
+# git submodule update
+
+# ./autogen.sh
+# ./configure
+# make
+# make check
+# sudo make install
+# sudo ldconfig # refresh shared library cache.
+
+# # Install other apt packages
+# sudo apt install libreadline-dev -y
+# sudo apt install bzip2 -y
+# sudo apt install libmotif-dev libglfw3 -y
+
+# # Install pinocchio for libfranka 0.14.0 or later
+# sudo apt install -qqy lsb-release curl
+# sudo mkdir -p /etc/apt/keyrings
+# curl http://robotpkg.openrobots.org/packages/debian/robotpkg.asc \
+#     | sudo tee /etc/apt/keyrings/robotpkg.asc
+# echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/robotpkg.asc] http://robotpkg.openrobots.org/packages/debian/pub $(lsb_release -cs) robotpkg" \
+#     | sudo tee /etc/apt/sources.list.d/robotpkg.list
+
+# sudo apt update
+# sudo apt install -qqy robotpkg-py3*-pinocchio
+
+# # Setup the environment block for pinnochio dependency issues
+# MARKER="# >>> openrobots environment block >>>"
+# BASHRC="$HOME/.bashrc"
+
+# # Check if the block is already present
+# if grep -Fxq "$MARKER" "$BASHRC"; then
+#   echo "Environment block already exists in $BASHRC. Skipping."
+# else
+#   echo "Appending openrobots environment block to $BASHRC..."
+
+#   cat << 'EOF' >> "$BASHRC"
+
+# # >>> openrobots environment block >>>
+# export PATH=/opt/openrobots/bin:$PATH
+# export PKG_CONFIG_PATH=/opt/openrobots/lib/pkgconfig:$PKG_CONFIG_PATH
+# export LD_LIBRARY_PATH=/opt/openrobots/lib:$LD_LIBRARY_PATH
+# export PYTHONPATH=/opt/openrobots/lib/python3.10/site-packages:$PYTHONPATH # Adapt your desired python version here
+# export CMAKE_PREFIX_PATH=/opt/openrobots:$CMAKE_PREFIX_PATH
+
+# export LD_LIBRARY_PATH=/home/labuser/franka_workspace/deoxys_control/deoxys:$LD_LIBRARY_PATH
+# # <<< openrobots environment block <<<
+# EOF
+
+#   echo "Done. Please run 'source ~/.bashrc' or restart your terminal session to apply the changes."
+# fi
+
+
+cat <<'EOF' > header.txt
+# cmake-format: off
+#  ____  _____    _    _      ____        _           _           _   
+# |  _ \| ____|  / \  | |    |  _ \ _ __ (_)_ __   __| | ___  ___| |_ 
+# | |_) |  _|   / _ \ | |    | |_) | '_ \| | '_ \ / _` |/ _ \/ __| __|
+# |  _ <| |___ / ___ \| |___ |  _ <| |_) | | | | | (_| |  __/\__ \ |_ 
+# |_| \_\_____/_/   \_\_____|_| \_\| .__/|_|_| |_|\__,_|\___||___/\__|
+#                                  |_|        R E A L   R O B O T
+#
+# cmake-format: on
+EOF
