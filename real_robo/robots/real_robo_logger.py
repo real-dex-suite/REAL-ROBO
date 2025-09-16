@@ -33,7 +33,8 @@ def _determine_log_dir(override: Optional[Union[str, Path]]) -> Path:
     if env_override:
         return Path(env_override).expanduser()
 
-    return Path(__file__).resolve().parent / "real-robo" / "logs"
+    # Default to the package root's logs directory: real_robo/logs
+    return Path(__file__).resolve().parent.parent / "logs"
 
 
 def _stream_supports_color(stream) -> bool:
@@ -99,6 +100,7 @@ def _configure_logging(
     *,
     console_level: Optional[int] = None,
     log_dir: Optional[Union[str, Path]] = None,
+    enable_file_logging: Optional[bool] = None,
 ) -> None:
     global _LOGGER_INITIALIZED
     if _LOGGER_INITIALIZED:
@@ -106,8 +108,11 @@ def _configure_logging(
             _update_console_level(console_level)
         return
 
-    resolved_log_dir = _determine_log_dir(log_dir)
-    resolved_log_dir.mkdir(parents=True, exist_ok=True)
+    # Decide whether to attach file handlers. Default: disabled.
+    if enable_file_logging is None:
+        # Enable files only when explicitly requested via env var.
+        env_on = os.getenv("REAL_ROBO_LOG_TO_FILE", "0") not in ("", "0", "false", "False")
+        enable_file_logging = bool(env_on)
 
     base_logger = logging.getLogger(_LOGGER_NAME)
     base_logger.setLevel(logging.DEBUG)
@@ -116,12 +121,18 @@ def _configure_logging(
     console_handler = _create_console_handler(
         console_level if console_level is not None else _DEFAULT_CONSOLE_LEVEL
     )
-    debug_handler = _create_file_handler(resolved_log_dir / _DEBUG_LOG_NAME, logging.DEBUG)
-    error_handler = _create_error_handler(resolved_log_dir / _ERROR_LOG_NAME, logging.ERROR)
-
     base_logger.addHandler(console_handler)
-    base_logger.addHandler(debug_handler)
-    base_logger.addHandler(error_handler)
+    if enable_file_logging:
+        resolved_log_dir = _determine_log_dir(log_dir)
+        resolved_log_dir.mkdir(parents=True, exist_ok=True)
+        debug_handler = _create_file_handler(
+            resolved_log_dir / _DEBUG_LOG_NAME, logging.DEBUG
+        )
+        error_handler = _create_error_handler(
+            resolved_log_dir / _ERROR_LOG_NAME, logging.ERROR
+        )
+        base_logger.addHandler(debug_handler)
+        base_logger.addHandler(error_handler)
 
     _LOGGER_INITIALIZED = True
 
@@ -140,6 +151,7 @@ def get_real_robo_logger(
     *,
     console_level: Optional[int] = None,
     log_dir: Optional[Union[str, Path]] = None,
+    enable_file_logging: Optional[bool] = None,
 ) -> logging.Logger:
     """Return a configured logger for REAL-ROBO components.
 
@@ -150,10 +162,14 @@ def get_real_robo_logger(
         console_level: Optional override for console handler severity.
         log_dir: Optional path or string pointing to the directory where log
             files should be written. If omitted, ``REAL_ROBO_LOG_DIR`` is
-            honored, falling back to ``real-robo/logs``.
+            honored, falling back to ``real_robo/logs``.
     """
 
-    _configure_logging(console_level=console_level, log_dir=log_dir)
+    _configure_logging(
+        console_level=console_level,
+        log_dir=log_dir,
+        enable_file_logging=enable_file_logging,
+    )
 
     if not name:
         return logging.getLogger(_LOGGER_NAME)

@@ -1,0 +1,7 @@
+numpy
+pyyaml
+easydict
+termcolor
+zmq
+protobuf==3.20.3
+pybullet==3.2.7

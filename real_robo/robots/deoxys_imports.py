@@ -10,22 +10,72 @@ import os
 import sys
 from pathlib import Path
 
-# Get the project root directory (where this file is located)
-PROJECT_ROOT = Path(__file__).parent.parent.absolute()
-DEOXYS_PATH = PROJECT_ROOT / "dependencies" / "deoxys_control_research3" / "deoxys"
+# Figure out possible locations for the vendorized deoxys tree.
+_ROBOTS_DIR = Path(__file__).resolve().parent
+_PACKAGE_ROOT = _ROBOTS_DIR.parent
+_REPO_ROOT = _PACKAGE_ROOT.parent
 
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+_CANDIDATE_ROOTS = (
+    _PACKAGE_ROOT,
+    _REPO_ROOT,
+)
 
-from real_robo_logger import get_real_robo_logger
+DEOXYS_PATH = None
+for base in _CANDIDATE_ROOTS:
+    candidate = base / "dependencies" / "deoxys_control_research3" / "deoxys"
+    if candidate.exists():
+        DEOXYS_PATH = candidate
+        break
 
+if DEOXYS_PATH is None:
+    raise ImportError(
+        "Could not locate the bundled deoxys repository. Ensure the 'dependencies/' folder "
+        "is present alongside the REAL-ROBO sources or install deoxys separately."
+    )
+
+if str(_PACKAGE_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PACKAGE_ROOT))
+
+# from al_robo_logger import get_real_robo_logger
+from real_robo.robots.real_robo_logger import get_real_robo_logger
 
 def setup_deoxys_path():
-    """Add deoxys to Python path if not already present."""
+    """Add deoxys and its vendored Python deps to sys.path.
+
+    This includes the protobuf/python tree so that ``google.protobuf`` can be
+    imported without requiring a separate pip installation of ``protobuf``.
+    """
+    added = []
+
     deoxys_path_str = str(DEOXYS_PATH)
     if deoxys_path_str not in sys.path:
         sys.path.insert(0, deoxys_path_str)
-        print(f"Added deoxys path: {deoxys_path_str}")
+        added.append(deoxys_path_str)
+
+    # Prefer system/provided protobuf. Only fall back to vendored copy
+    # if it actually contains the needed modules (any_pb2). Older
+    # vendored versions (e.g., 2.5.0) don't have Any and will break.
+    try:
+        import google.protobuf.any_pb2  # type: ignore
+        have_modern_protobuf = True
+    except Exception:
+        have_modern_protobuf = False
+
+    proto_py = DEOXYS_PATH / "protobuf" / "python"
+    any_pb2_file = proto_py / "google" / "protobuf" / "any_pb2.py"
+    if not have_modern_protobuf and any_pb2_file.exists():
+        proto_py_str = str(proto_py)
+        if proto_py_str not in sys.path:
+            sys.path.insert(0, proto_py_str)
+            added.append(proto_py_str)
+    elif not have_modern_protobuf:
+        print(
+            "Warning: protobuf runtime not found and bundled version lacks any_pb2. "
+            "Please install 'protobuf>=3.20' in your environment."
+        )
+
+    if added:
+        print("Added deoxys path(s): " + ", ".join(added))
     return deoxys_path_str
 
 
