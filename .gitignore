@@ -63,4 +63,4 @@ vr/pico_streamer
 
 # Ignore -info
 real_robo.egg-info/*
-test/*
+# test
