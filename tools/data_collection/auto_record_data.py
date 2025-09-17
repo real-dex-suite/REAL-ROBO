@@ -1,6 +1,6 @@
 import os
 import hydra
-from holodex.data import AutoDataCollector
+from real_robo.data import AutoDataCollector
 from holodex.utils.files import make_dir
 from datetime import datetime
 from termcolor import cprint

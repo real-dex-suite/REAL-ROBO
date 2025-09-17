@@ -12,15 +12,16 @@ Additional helper functions and safety checks are included to streamline common 
 """
 
 from __future__ import annotations
-import time
+
 import logging
 import time
-import sys
+from typing import Any, Mapping, MutableMapping, Sequence
+
 import numpy as np
-from typing import Optional
 
 # Add deoxys to path
 from real_robo.robots.deoxys_imports import setup_deoxys_path
+from real_robo.robots.robot_base import RobotBase
 setup_deoxys_path()
 from deoxys import config_root
 from deoxys.franka_interface import FrankaInterface
@@ -30,7 +31,7 @@ from real_robo.robots.real_robo_logger import get_real_robo_logger
 logger = get_real_robo_logger("demo", console_level=logging.DEBUG)
 
 
-class FrankaEnvWrapper:
+class FrankaEnvWrapper(RobotBase):
     def __init__(
         self,
         controller_type: str = "JOINT_POSITION",
@@ -40,7 +41,7 @@ class FrankaEnvWrapper:
     ) -> None:
         
         # initilize deoxys
-        self.robot_interface =FrankaInterface(config_root + f"/{interface_cfg}", use_visualizer=False)
+        self.robot_interface = FrankaInterface(config_root + f"/{interface_cfg}", use_visualizer=False)
         self.controller_cfg = YamlConfig(config_root + f"/{controller_cfg}").as_easydict()
         self.controller_type = controller_type
 
@@ -152,41 +153,54 @@ class FrankaEnvWrapper:
     ########################################################################
     ########################## control the robot ###########################
     ########################################################################
-    def _control(self, controller_type: str, action: np.ndarray | dict, cfg=None):
+    def control(
+        self,
+        controller_type: str,
+        action: Any,
+        *,
+        controller_cfg: Mapping[str, object] | None = None,
+    ) -> MutableMapping[str, float] | None:
         """Control the robot using the specified controller type and action."""
-        if cfg is None:
+        cfg: Mapping[str, object]
+        if controller_cfg is None:
             cfg = self.controller_cfg
+        else:
+            cfg = controller_cfg
         # TODO: add safety check here
         if controller_type not in ["JOINT_POSITION", "JOINT_VELOCITY", "JOINT_TORQUE",
                                    "JOINT_IMPEDANCE", "CARTESIAN_VELOCITY",
                                    "OSC_POSITION", "OSC_YAW", "OSC_POSE",
                                    "POSE_IMPEDANCE_VIA_IK"]:
             raise ValueError(f"Unsupported controller type: {controller_type}")
-        
-        return self.robot_interface.control(
+
+        result: MutableMapping[str, float] | None = self.robot_interface.control(
             controller_type=controller_type,
             action=action,
             controller_cfg=cfg,
         )
+        return result
 
      # -------- OSC: position / yaw / pose --------
-    def osc_position(self, x_des):
-        self._control(
+    def osc_position(self, x_des: Any) -> None:
+        self.control(
             controller_type="OSC_POSITION",
             action=x_des,
-            cfg=self.controller_cfg,
         )
 
-    def osc_yaw(self, x_des, yaw_des):
-        pass
+    def osc_yaw(self, x_des: Any, yaw_des: float) -> None:
+        raise NotImplementedError("OSC yaw control is not implemented for FrankaEnvWrapper yet")
 
-
-    def osc_pose(self, x_des, R_des):
-        pass
+    def osc_pose(self, x_des: Any, R_des: np.ndarray) -> None:
+        raise NotImplementedError("OSC pose control is not implemented for FrankaEnvWrapper yet")
 
     # -------- Pose→IK→Impedance --------
-    def pose_impedance_via_ik(self, x_des, R_des, ik_solve):
-        pass
+    def pose_impedance_via_ik(
+        self,
+        x_des: Any,
+        R_des: np.ndarray,
+        ik_solve: Sequence[float] | None = None,
+    ) -> None:
+        raise NotImplementedError("Pose impedance via IK is not implemented for FrankaEnvWrapper yet")
 
 
 

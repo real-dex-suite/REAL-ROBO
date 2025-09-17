@@ -8,7 +8,6 @@ import pyrealsense2 as rs
 
 # TODO: support multi-cameras
 
-
 class RealSenseRGBDCamera:
     '''
     RealSense RGB-D Camera.

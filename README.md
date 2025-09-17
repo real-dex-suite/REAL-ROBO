@@ -1,10 +1,10 @@
 # Real-Robo Teleoperation (RR-T)
 
-Welcome to Real-Robo, an integrated framework for robotic teleoperation and control, designed to streamline the collection of tele-operation data.
+Real-Robo, an integrated framework for robotic teleoperation and control, designed to streamline the collection of tele-operation data.
 
 ![RR-T](./docs/data/example.gif)
 
-We invite and appreciate all contributions, whether it's reporting an issue, submitting a pull request, or offering feedback. Your input is crucial to us. Join our community to help enhance and simplify the data collection process!
+**Note:** This new version is a major update. We have made significant changes to reduce or eliminate the dependency on ROS, aiming for a more lightweight and flexible framework. This should simplify installation and improve compatibility across different systems.
 
 ## Setup
 
