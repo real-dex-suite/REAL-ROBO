@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# Test Version Ubuntu 24.04
+# Install dependencies All in one script
+# Run this script with sudo privilege
+sudo apt install build-essential cmake git libpoco-dev libeigen3-dev -y
+
+# TODO1: Add other dependencies
+# TODO2: IK setup
+
+cat <<'EOF'
+===================================================
+        _____   ______      __       _
+       |  __ \ |  ____|    /  \     | |  o_o
+       | |  | || |__      / /\ \    | |  /|\
+       |  _  / |  __|    / /__\ \   | |  \|/
+       | | \ \ | |____  /  ____  \  | |____
+       |_|  \_\|______|/_/      \_\ |______|
+        R  E  A  L        ---      R  O  B  O
+===================================================
+                 Version: 2.0.0
+EOF
+
+# cmake-format: on
