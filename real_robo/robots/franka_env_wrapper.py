@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 """
 FrankaEnvWrapper: A High-Level Interface for Franka Robot Control
-
-Author: Jinzhou Li
-
 This module provides a convenient wrapper around the Deoxys FrankaInterface,
 enabling simplified and robust interaction with Franka robots for research and development.
 It offers user-friendly methods for querying robot state, controlling motion, and accessing
@@ -25,7 +22,6 @@ from typing import Optional
 # Add deoxys to path
 from real_robo.robots.deoxys_imports import setup_deoxys_path
 setup_deoxys_path()
-
 from deoxys import config_root
 from deoxys.franka_interface import FrankaInterface
 from deoxys.utils import YamlConfig
@@ -156,34 +152,42 @@ class FrankaEnvWrapper:
     ########################################################################
     ########################## control the robot ###########################
     ########################################################################
-
-    #TODO 1: add safety check, if two cmd are too far away, don't do it. Which also important for VR teleop!
-    def move_ee_pose(self, pose: np.ndarray) -> None:
-        """Move the robot to the target end-effector pose.
-        Args:
-            pose (np.ndarray): A 7-dimensional array containing the target end-effector position and orientation (quaternion).
-        """
-        self.robot_interface.control(
-            controller_type="CARTESIAN_VELOCITY",
-            action=pose,
-            controller_cfg=self.controller_cfg,
-        )
-
-
-    def move_joint_positions(self, joint_positions_cmd: np.ndarray) -> None:
-        """Move the robot to the target joint positions.
-        Args:
-            joint_positions (np.ndarray): A 7-dimensional array containing the target joint positions.
-        """
+    def _control(self, controller_type: str, action: np.ndarray | dict, cfg=None):
+        """Control the robot using the specified controller type and action."""
+        if cfg is None:
+            cfg = self.controller_cfg
+        # TODO: add safety check here
+        if controller_type not in ["JOINT_POSITION", "JOINT_VELOCITY", "JOINT_TORQUE",
+                                   "JOINT_IMPEDANCE", "CARTESIAN_VELOCITY",
+                                   "OSC_POSITION", "OSC_YAW", "OSC_POSE",
+                                   "POSE_IMPEDANCE_VIA_IK"]:
+            raise ValueError(f"Unsupported controller type: {controller_type}")
         
-        #Do we need blocking here until the robot reaches the target position?
-        self.robot_interface.control(
-            controller_type="JOINT_POSITION",
-            action=joint_positions_cmd,
-            controller_cfg=self.controller_cfg,
+        return self.robot_interface.control(
+            controller_type=controller_type,
+            action=action,
+            controller_cfg=cfg,
         )
 
-    #TODO 2: torque control
+     # -------- OSC: position / yaw / pose --------
+    def osc_position(self, x_des):
+        self._control(
+            controller_type="OSC_POSITION",
+            action=x_des,
+            cfg=self.controller_cfg,
+        )
+
+    def osc_yaw(self, x_des, yaw_des):
+        pass
+
+
+    def osc_pose(self, x_des, R_des):
+        pass
+
+    # -------- Pose→IK→Impedance --------
+    def pose_impedance_via_ik(self, x_des, R_des, ik_solve):
+        pass
+
 
 
 if __name__ == "__main__":
