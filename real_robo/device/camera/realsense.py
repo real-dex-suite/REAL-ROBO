@@ -1,12 +1,12 @@
+# TODO: support multi-cameras
+
 '''
 RealSense Camera.
-References: https://github.com/rise-policy/RISE/tree/main/device/camera
 '''
 
 import numpy as np
 import pyrealsense2 as rs
 
-# TODO: support multi-cameras
 
 class RealSenseRGBDCamera:
     '''
@@ -50,7 +50,6 @@ class RealSenseRGBDCamera:
         self.align = rs.align(self.align_to)
         self.with_align = align
 
-
     def get_rgb_image(self):
         '''
         Get the RGB image from the camera.
@@ -60,7 +59,6 @@ class RealSenseRGBDCamera:
         color_image = np.asanyarray(color_frame.get_data()).astype(np.uint8)
         return color_image
 
-
     def get_depth_image(self):
         '''
         Get the depth image from the camera.
@@ -69,7 +67,6 @@ class RealSenseRGBDCamera:
         depth_frame = frames.get_depth_frame()
         depth_image = np.asanyarray(depth_frame.get_data()).astype(np.float32) / self.depth_scale
         return depth_image
-
 
     def get_rgbd_image(self):
         '''
@@ -81,3 +78,13 @@ class RealSenseRGBDCamera:
         color_image = np.asanyarray(frameset.get_color_frame().get_data()).astype(np.uint8)
         depth_image = np.asanyarray(frameset.get_depth_frame().get_data()).astype(np.float32) / self.depth_scale
         return color_image, depth_image
+
+
+if __name__ == "__main__":
+    import time
+    camera = RealSenseRGBDCamera(serial="342522072108", frame_rate=30, resolution=(1280, 720))
+    
+    while True:
+        color, depth = camera.get_rgbd_image()
+        print("Color shape: ", color.shape, " Depth shape: ", depth.shape)
+        time.sleep(0.1)
